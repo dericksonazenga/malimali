@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Wallet, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 const ExpensesPage = () => {
+  const { symbol } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>(mockExpenses);
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -33,7 +35,7 @@ const ExpensesPage = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2"><Label>Category *</Label><Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Transport, Labour..." className="h-12" /></div>
-            <div className="space-y-2"><Label>Amount (₹) *</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12" /></div>
+            <div className="space-y-2"><Label>Amount ({symbol}) *</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12" /></div>
             <div className="space-y-2"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12" /></div>
             <div className="space-y-2"><Label>Notes</Label><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" className="h-12" /></div>
             <div className="lg:col-span-4"><Button type="submit" className="h-12 px-8">Add Expense</Button></div>
@@ -42,7 +44,7 @@ const ExpensesPage = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex justify-between"><span>Expenses</span><span className="text-destructive font-mono">Total: ₹{total.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex justify-between"><span>Expenses</span><span className="text-destructive font-mono">Total: {symbol}{total.toLocaleString()}</span></CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Date</TableHead><TableHead>Notes</TableHead><TableHead /></TableRow></TableHeader>
@@ -50,7 +52,7 @@ const ExpensesPage = () => {
               {expenses.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.category}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold text-destructive">₹{e.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-destructive">{symbol}{e.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-muted-foreground">{e.date}</TableCell>
                   <TableCell className="text-muted-foreground">{e.notes}</TableCell>
                   <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => setExpenses((p) => p.filter((x) => x.id !== e.id))}><Trash2 className="w-4 h-4" /></Button></TableCell>

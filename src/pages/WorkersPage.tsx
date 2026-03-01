@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, Plus } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 const WorkersPage = () => {
+  const { symbol } = useCurrency();
   const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
@@ -44,14 +46,14 @@ const WorkersPage = () => {
           <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2"><Label>Name *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Worker name" className="h-12" /></div>
             <div className="space-y-2"><Label>Role</Label><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Loader, Driver..." className="h-12" /></div>
-            <div className="space-y-2"><Label>Salary (₹) *</Label><Input type="number" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="0" className="h-12" /></div>
+            <div className="space-y-2"><Label>Salary ({symbol}) *</Label><Input type="number" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="0" className="h-12" /></div>
             <div className="md:col-span-3"><Button type="submit" className="h-12 px-8">Add Worker</Button></div>
           </form>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex justify-between"><span className="flex items-center gap-2"><Users className="w-5 h-5" /> Workers</span><span className="text-warning font-mono">Pending: ₹{totalBalance.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex justify-between"><span className="flex items-center gap-2"><Users className="w-5 h-5" /> Workers</span><span className="text-warning font-mono">Pending: {symbol}{totalBalance.toLocaleString()}</span></CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Role</TableHead><TableHead className="text-right">Salary</TableHead><TableHead className="text-right">Paid</TableHead><TableHead className="text-right">Balance</TableHead><TableHead /></TableRow></TableHeader>
@@ -60,9 +62,9 @@ const WorkersPage = () => {
                 <TableRow key={w.id}>
                   <TableCell className="font-medium">{w.name}</TableCell>
                   <TableCell className="text-muted-foreground">{w.role}</TableCell>
-                  <TableCell className="text-right font-mono">₹{w.salary.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono text-success">₹{w.paid.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold">{w.balance > 0 ? <span className="text-warning">₹{w.balance.toLocaleString()}</span> : <span className="text-success">Paid</span>}</TableCell>
+                  <TableCell className="text-right font-mono">{symbol}{w.salary.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-success">{symbol}{w.paid.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-semibold">{w.balance > 0 ? <span className="text-warning">{symbol}{w.balance.toLocaleString()}</span> : <span className="text-success">Paid</span>}</TableCell>
                   <TableCell><Button variant="outline" size="sm" onClick={() => recordPayment(w.id)}>Pay</Button></TableCell>
                 </TableRow>
               ))}
