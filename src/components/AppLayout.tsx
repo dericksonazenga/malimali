@@ -2,8 +2,8 @@ import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, FileText, Star, ShoppingCart, Settings,
-  Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight,
+  LayoutDashboard, FileText, Star, ShoppingCart, Settings2,
+  Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,10 +20,11 @@ const navItems: NavItem[] = [
   { label: "Agent Entry", path: "/agent-entry", icon: <FileText className="w-5 h-5" /> },
   { label: "VIP Entry", path: "/vip-entry", icon: <Star className="w-5 h-5" /> },
   { label: "Sales Entry", path: "/sales-entry", icon: <ShoppingCart className="w-5 h-5" /> },
-  { label: "Rates", path: "/rates", icon: <Settings className="w-5 h-5" />, permission: "update_rates" },
+  { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
   { label: "Expenses", path: "/expenses", icon: <Wallet className="w-5 h-5" />, permission: "manage_expenses" },
   { label: "Workers", path: "/workers", icon: <Users className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "Settings", path: "/settings", icon: <Cog className="w-5 h-5" /> },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {

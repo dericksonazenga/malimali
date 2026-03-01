@@ -1,7 +1,8 @@
 import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockExpenses, mockCommodities } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Users } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const StatCard = ({ title, value, subtitle, icon, color }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string }) => (
   <Card className="animate-fade-in">
@@ -20,6 +21,7 @@ const StatCard = ({ title, value, subtitle, icon, color }: { title: string; valu
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
 
   const agentTotal = mockAgentEntries.reduce((s, e) => s + e.amount, 0);
   const vipTotal = mockVipEntries.reduce((s, e) => s + e.amount, 0);
@@ -37,10 +39,10 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Agent Purchases" value={`₹${agentTotal.toLocaleString()}`} subtitle={`${mockAgentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" />
-        <StatCard title="VIP Purchases" value={`₹${vipTotal.toLocaleString()}`} subtitle={`${mockVipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" />
-        <StatCard title="Sales" value={`₹${salesTotalAmount.toLocaleString()}`} subtitle={`${mockSalesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" />
-        <StatCard title="Expenses" value={`₹${expenseTotal.toLocaleString()}`} subtitle={`${mockExpenses.length} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" />
+        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${mockAgentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" />
+        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${mockVipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" />
+        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${mockSalesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" />
+        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${mockExpenses.length} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -79,9 +81,9 @@ const DashboardPage = () => {
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
                   <div className="flex gap-4 text-sm font-mono">
-                    <span className="text-muted-foreground">A: ₹{c.agentRate}</span>
-                    <span className="text-primary">V: ₹{c.vipRate}</span>
-                    <span className="text-success">S: ₹{c.salesRate}</span>
+                    <span className="text-muted-foreground">A: {symbol}{c.agentRate}</span>
+                    <span className="text-primary">V: {symbol}{c.vipRate}</span>
+                    <span className="text-success">S: {symbol}{c.salesRate}</span>
                   </div>
                 </div>
               ))}

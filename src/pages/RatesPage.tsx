@@ -6,43 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Settings, Save } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 const RatesPage = () => {
+  const { symbol } = useCurrency();
   const [commodities, setCommodities] = useState<Commodity[]>(mockCommodities);
   const [editing, setEditing] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ agentRate: 0, vipRate: 0, salesRate: 0 });
 
-  const startEdit = (c: Commodity) => {
-    setEditing(c.id);
-    setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate });
-  };
-
-  const saveEdit = (id: string) => {
-    setCommodities((prev) =>
-      prev.map((c) => c.id === id ? { ...c, ...editValues } : c)
-    );
-    setEditing(null);
-    toast.success("Rates updated!");
-  };
+  const startEdit = (c: Commodity) => { setEditing(c.id); setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate }); };
+  const saveEdit = (id: string) => { setCommodities((prev) => prev.map((c) => c.id === id ? { ...c, ...editValues } : c)); setEditing(null); toast.success("Rates updated!"); };
 
   return (
     <div className="space-y-6 max-w-4xl">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Rate Management</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Rate Management</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Commodity</TableHead>
-                <TableHead className="text-right">Agent Rate (₹/kg)</TableHead>
-                <TableHead className="text-right">VIP Rate (₹/kg)</TableHead>
-                <TableHead className="text-right">Sales Rate (₹/kg)</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
+            <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent Rate ({symbol}/kg)</TableHead><TableHead className="text-right">VIP Rate ({symbol}/kg)</TableHead><TableHead className="text-right">Sales Rate ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
             <TableBody>
               {commodities.map((c) => (
                 <TableRow key={c.id}>
@@ -56,9 +38,9 @@ const RatesPage = () => {
                     </>
                   ) : (
                     <>
-                      <TableCell className="text-right font-mono">₹{c.agentRate}</TableCell>
-                      <TableCell className="text-right font-mono">₹{c.vipRate}</TableCell>
-                      <TableCell className="text-right font-mono">₹{c.salesRate}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{c.agentRate}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{c.vipRate}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{c.salesRate}</TableCell>
                       <TableCell><Button variant="outline" size="sm" onClick={() => startEdit(c)}>Edit</Button></TableCell>
                     </>
                   )}
