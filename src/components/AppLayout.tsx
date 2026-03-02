@@ -17,9 +17,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: "Agent Entry", path: "/agent-entry", icon: <FileText className="w-5 h-5" /> },
-  { label: "VIP Entry", path: "/vip-entry", icon: <Star className="w-5 h-5" /> },
-  { label: "Sales Entry", path: "/sales-entry", icon: <ShoppingCart className="w-5 h-5" /> },
+  { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" /> },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
   { label: "Expenses", path: "/expenses", icon: <Wallet className="w-5 h-5" />, permission: "manage_expenses" },
