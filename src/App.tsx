@@ -8,9 +8,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import AppLayout from "@/components/AppLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
-import AgentEntryPage from "@/pages/AgentEntryPage";
-import VipEntryPage from "@/pages/VipEntryPage";
-import SalesEntryPage from "@/pages/SalesEntryPage";
+import DataEntryPage from "@/pages/DataEntryPage";
 import RatesPage from "@/pages/RatesPage";
 import InventoryPage from "@/pages/InventoryPage";
 import ExpensesPage from "@/pages/ExpensesPage";
@@ -29,9 +27,7 @@ const AuthenticatedApp = () => {
     <AppLayout>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/agent-entry" element={<AgentEntryPage />} />
-        <Route path="/vip-entry" element={<VipEntryPage />} />
-        <Route path="/sales-entry" element={<SalesEntryPage />} />
+        <Route path="/data-entry" element={<DataEntryPage />} />
         <Route path="/rates" element={<RatesPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />

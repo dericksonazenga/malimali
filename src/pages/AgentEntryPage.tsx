@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Camera, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
@@ -76,8 +77,8 @@ const AgentEntryPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
-              <Button type="button" variant="outline" className="h-12 gap-2"><Camera className="w-4 h-4" /> Weight Image</Button>
-              <Button type="button" variant="outline" className="h-12 gap-2"><Camera className="w-4 h-4" /> Item Image</Button>
+              <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
+              <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
               <div className="flex-1" />
               <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
             </div>

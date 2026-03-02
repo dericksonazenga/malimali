@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, FileText, Star, ShoppingCart, Settings2,
+  LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: "Agent Entry", path: "/agent-entry", icon: <FileText className="w-5 h-5" /> },
-  { label: "VIP Entry", path: "/vip-entry", icon: <Star className="w-5 h-5" /> },
-  { label: "Sales Entry", path: "/sales-entry", icon: <ShoppingCart className="w-5 h-5" /> },
+  { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" /> },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
   { label: "Expenses", path: "/expenses", icon: <Wallet className="w-5 h-5" />, permission: "manage_expenses" },
@@ -72,7 +70,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {filteredNav.map((item) => {
-            const active = location.pathname === item.path;
+            const active = location.pathname === item.path || (item.path === "/data-entry" && location.pathname.startsWith("/data-entry"));
             return (
               <Link
                 key={item.path}
