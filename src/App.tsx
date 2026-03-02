@@ -30,11 +30,15 @@ const AuthenticatedApp = () => {
     <AppLayout>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/accountant" element={<AccountantPage />} />
         <Route path="/data-entry" element={<DataEntryPage />} />
         <Route path="/rates" element={<RatesPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
         <Route path="/workers" element={<WorkersPage />} />
+        <Route path="/salary" element={<SalaryPage />} />
+        <Route path="/financial-report" element={<FinancialReportPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

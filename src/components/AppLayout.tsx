@@ -17,11 +17,15 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_reports" },
   { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" /> },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
   { label: "Expenses", path: "/expenses", icon: <Wallet className="w-5 h-5" />, permission: "manage_expenses" },
   { label: "Workers", path: "/workers", icon: <Users className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "Salary", path: "/salary", icon: <Banknote className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "Financial Report", path: "/financial-report", icon: <BarChart3 className="w-5 h-5" />, permission: "view_reports" },
   { label: "Settings", path: "/settings", icon: <Cog className="w-5 h-5" /> },
 ];
 
