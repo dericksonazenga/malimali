@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, FileText, Star, ShoppingCart, Settings2,
+  LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
