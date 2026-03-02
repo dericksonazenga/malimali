@@ -1,11 +1,12 @@
 import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockExpenses, mockCommodities } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useNavigate } from "react-router-dom";
 
-const StatCard = ({ title, value, subtitle, icon, color }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string }) => (
-  <Card className="animate-fade-in">
+const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
+  <Card className="animate-fade-in cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={onClick}>
     <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div>
@@ -22,6 +23,7 @@ const StatCard = ({ title, value, subtitle, icon, color }: { title: string; valu
 const DashboardPage = () => {
   const { user } = useAuth();
   const { symbol } = useCurrency();
+  const navigate = useNavigate();
 
   const agentTotal = mockAgentEntries.reduce((s, e) => s + e.amount, 0);
   const vipTotal = mockVipEntries.reduce((s, e) => s + e.amount, 0);
@@ -39,14 +41,14 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${mockAgentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" />
-        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${mockVipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" />
-        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${mockSalesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" />
-        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${mockExpenses.length} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" />
+        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${mockAgentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
+        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${mockVipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
+        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${mockSalesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
+        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${mockExpenses.length} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={() => navigate("/expenses")} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/inventory")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Inventory Overview</CardTitle>
           </CardHeader>
@@ -71,9 +73,9 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/rates")}>
           <CardHeader>
-            <CardTitle>Current Rates</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
