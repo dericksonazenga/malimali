@@ -14,8 +14,11 @@ import InventoryPage from "@/pages/InventoryPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import WorkersPage from "@/pages/WorkersPage";
 import SettingsPage from "@/pages/SettingsPage";
+import AdminPage from "@/pages/AdminPage";
+import AccountantPage from "@/pages/AccountantPage";
+import SalaryPage from "@/pages/SalaryPage";
+import FinancialReportPage from "@/pages/FinancialReportPage";
 import NotFound from "@/pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
