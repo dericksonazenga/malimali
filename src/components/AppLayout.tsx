@@ -70,7 +70,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {filteredNav.map((item) => {
-            const active = location.pathname === item.path;
+            const active = location.pathname === item.path || (item.path === "/data-entry" && location.pathname.startsWith("/data-entry"));
             return (
               <Link
                 key={item.path}
