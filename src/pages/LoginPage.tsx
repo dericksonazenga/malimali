@@ -67,9 +67,13 @@ const LoginPage = () => {
             Sign In
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Demo: admin@scrap.com · special@scrap.com · worker@scrap.com
-          </p>
+          <div className="text-xs text-muted-foreground text-center space-y-1">
+            <p className="font-medium">Demo Accounts:</p>
+            <p>Admin: admin@scrap.com</p>
+            <p>Accountant: accountant@scrap.com</p>
+            <p>Data Manager: datamanager@scrap.com</p>
+            <p>Worker: worker@scrap.com</p>
+          </div>
         </form>
       </div>
     </div>
