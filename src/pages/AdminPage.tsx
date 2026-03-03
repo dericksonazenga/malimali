@@ -88,8 +88,9 @@ const AdminPage = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="special">Manager / Accountant</SelectItem>
-                  <SelectItem value="worker">Data Entry / Worker</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="data_manager">Data Manager</SelectItem>
+                  <SelectItem value="worker">Worker</SelectItem>
                 </SelectContent>
               </Select>
             </div>
