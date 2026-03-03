@@ -59,7 +59,10 @@ const AdminPage = () => {
   };
 
   const roleBadge = (r: UserRole) =>
-    r === "admin" ? "bg-destructive/10 text-destructive" : r === "special" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground";
+    r === "admin" ? "bg-destructive/10 text-destructive" : r === "accountant" ? "bg-primary/10 text-primary" : r === "data_manager" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground";
+
+  const roleLabel = (r: UserRole) =>
+    r === "admin" ? "Admin" : r === "accountant" ? "Accountant" : r === "data_manager" ? "Data Manager" : "Worker";
 
   return (
     <div className="space-y-6 max-w-6xl">
