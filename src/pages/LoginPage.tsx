@@ -15,7 +15,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     if (!login(email, password)) {
-      setError("Invalid credentials. Try: admin@scrap.com, special@scrap.com, or worker@scrap.com");
+      setError("Invalid credentials. Try: admin@scrap.com, accountant@scrap.com, datamanager@scrap.com, or worker@scrap.com");
     }
   };
 

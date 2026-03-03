@@ -143,7 +143,7 @@ const AdminPage = () => {
                   <TableCell>{u.email}</TableCell>
                   <TableCell>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(u.role)}`}>
-                      {u.role === "admin" ? "Admin" : u.role === "special" ? "Manager" : "Worker"}
+                      {roleLabel(u.role)}
                     </span>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
