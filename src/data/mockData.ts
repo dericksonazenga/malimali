@@ -2,8 +2,9 @@ import { User, Commodity, AgentEntry, VipEntry, SalesEntry, Expense, Worker } fr
 
 export const mockUsers: User[] = [
   { id: "1", name: "Admin User", email: "admin@scrap.com", role: "admin", permissions: ["update_rates", "delete_entries", "view_reports", "manage_workers", "manage_expenses", "manage_inventory"] },
-  { id: "2", name: "Rate Manager", email: "special@scrap.com", role: "special", permissions: ["update_rates", "delete_entries"] },
-  { id: "3", name: "Data Entry", email: "worker@scrap.com", role: "worker", permissions: [] },
+  { id: "2", name: "Finance Manager", email: "accountant@scrap.com", role: "accountant", permissions: ["view_reports", "manage_expenses", "manage_workers"] },
+  { id: "3", name: "Data Manager", email: "datamanager@scrap.com", role: "data_manager", permissions: ["update_rates", "delete_entries", "manage_inventory"] },
+  { id: "4", name: "Yard Worker", email: "worker@scrap.com", role: "worker", permissions: [] },
 ];
 
 export const mockCommodities: Commodity[] = [

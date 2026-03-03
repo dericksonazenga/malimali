@@ -59,7 +59,10 @@ const AdminPage = () => {
   };
 
   const roleBadge = (r: UserRole) =>
-    r === "admin" ? "bg-destructive/10 text-destructive" : r === "special" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground";
+    r === "admin" ? "bg-destructive/10 text-destructive" : r === "accountant" ? "bg-primary/10 text-primary" : r === "data_manager" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground";
+
+  const roleLabel = (r: UserRole) =>
+    r === "admin" ? "Admin" : r === "accountant" ? "Accountant" : r === "data_manager" ? "Data Manager" : "Worker";
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -85,8 +88,9 @@ const AdminPage = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="special">Manager / Accountant</SelectItem>
-                  <SelectItem value="worker">Data Entry / Worker</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="data_manager">Data Manager</SelectItem>
+                  <SelectItem value="worker">Worker</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -139,7 +143,7 @@ const AdminPage = () => {
                   <TableCell>{u.email}</TableCell>
                   <TableCell>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(u.role)}`}>
-                      {u.role === "admin" ? "Admin" : u.role === "special" ? "Manager" : "Worker"}
+                      {roleLabel(u.role)}
                     </span>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">

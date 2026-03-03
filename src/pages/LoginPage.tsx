@@ -15,7 +15,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     if (!login(email, password)) {
-      setError("Invalid credentials. Try: admin@scrap.com, special@scrap.com, or worker@scrap.com");
+      setError("Invalid credentials. Try: admin@scrap.com, accountant@scrap.com, datamanager@scrap.com, or worker@scrap.com");
     }
   };
 
@@ -67,9 +67,13 @@ const LoginPage = () => {
             Sign In
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Demo: admin@scrap.com · special@scrap.com · worker@scrap.com
-          </p>
+          <div className="text-xs text-muted-foreground text-center space-y-1">
+            <p className="font-medium">Demo Accounts:</p>
+            <p>Admin: admin@scrap.com</p>
+            <p>Accountant: accountant@scrap.com</p>
+            <p>Data Manager: datamanager@scrap.com</p>
+            <p>Worker: worker@scrap.com</p>
+          </div>
         </form>
       </div>
     </div>
