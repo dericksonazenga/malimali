@@ -18,6 +18,7 @@ import AdminPage from "@/pages/AdminPage";
 import AccountantPage from "@/pages/AccountantPage";
 import SalaryPage from "@/pages/SalaryPage";
 import FinancialReportPage from "@/pages/FinancialReportPage";
+import MessagesPage from "@/pages/MessagesPage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const AuthenticatedApp = () => {
         <Route path="/workers" element={<WorkersPage />} />
         <Route path="/salary" element={<SalaryPage />} />
         <Route path="/financial-report" element={<FinancialReportPage />} />
+        <Route path="/messages" element={<MessagesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
