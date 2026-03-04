@@ -19,6 +19,7 @@ import AccountantPage from "@/pages/AccountantPage";
 import SalaryPage from "@/pages/SalaryPage";
 import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
+import AttendancePage from "@/pages/AttendancePage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
