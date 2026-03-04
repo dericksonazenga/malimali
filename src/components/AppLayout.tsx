@@ -134,6 +134,9 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           <h2 className="text-lg font-semibold truncate">
             {filteredNav.find((n) => n.path === location.pathname)?.label || "Dashboard"}
           </h2>
+          <div className="ml-auto">
+            <EndOfDayButton />
+          </div>
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-auto animate-fade-in">{children}</main>
       </div>

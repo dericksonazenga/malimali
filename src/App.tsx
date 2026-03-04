@@ -57,9 +57,11 @@ const App = () => (
       <Sonner />
       <CurrencyProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <AuthenticatedApp />
-          </BrowserRouter>
+          <EndOfDayProvider>
+            <BrowserRouter>
+              <AuthenticatedApp />
+            </BrowserRouter>
+          </EndOfDayProvider>
         </AuthProvider>
       </CurrencyProvider>
     </TooltipProvider>
