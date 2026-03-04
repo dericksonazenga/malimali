@@ -253,7 +253,7 @@ const AttendancePage = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-red-500/20">
+        <Card className="border-2 border-destructive/20">
           <CardContent className="pt-6">
             <Button
               onClick={() => authenticateWorker("sign_out")}
