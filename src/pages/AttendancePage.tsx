@@ -239,7 +239,7 @@ const AttendancePage = () => {
     <div className="space-y-6 max-w-5xl">
       {/* Biometric Sign In/Out Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border-2 border-emerald-500/20">
+        <Card className="border-2 border-primary/20">
           <CardContent className="pt-6">
             <Button
               onClick={() => authenticateWorker("sign_in")}
