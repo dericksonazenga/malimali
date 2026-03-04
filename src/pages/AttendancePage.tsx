@@ -258,7 +258,7 @@ const AttendancePage = () => {
             <Button
               onClick={() => authenticateWorker("sign_out")}
               disabled={isAuthenticating || credentials.length === 0}
-              className="w-full h-20 text-lg font-bold gap-3 bg-red-600 hover:bg-red-700 text-white"
+              className="w-full h-20 text-lg font-bold gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               <Fingerprint className="w-8 h-8" />
               {isAuthenticating && authMode === "sign_out" ? "Scanning..." : "Sign Out with Fingerprint"}
