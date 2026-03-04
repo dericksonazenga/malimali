@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          sign_in_at: string | null
+          sign_out_at: string | null
+          status: string
+          worker_id: string | null
+          worker_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          sign_in_at?: string | null
+          sign_out_at?: string | null
+          status?: string
+          worker_id?: string | null
+          worker_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          sign_in_at?: string | null
+          sign_out_at?: string | null
+          status?: string
+          worker_id?: string | null
+          worker_name?: string
+        }
+        Relationships: []
+      }
+      biometric_credentials: {
+        Row: {
+          created_at: string
+          credential_id: string
+          id: string
+          public_key: string
+          worker_name: string
+        }
+        Insert: {
+          created_at?: string
+          credential_id: string
+          id?: string
+          public_key: string
+          worker_name: string
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string
+          id?: string
+          public_key?: string
+          worker_name?: string
+        }
+        Relationships: []
+      }
       message_recipients: {
         Row: {
           created_at: string
