@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { mockCommodities, mockAgentEntries } from "@/data/mockData";
 import { AgentEntry } from "@/types";
+import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +17,18 @@ import { toast } from "sonner";
 const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
+  const { resetSignal } = useEndOfDay();
   const [entries, setEntries] = useState<AgentEntry[]>(mockAgentEntries);
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
   const [containerWeight, setContainerWeight] = useState("");
   const [rateOverride, setRateOverride] = useState("");
+
+  useEffect(() => {
+    if (resetSignal === 0) return;
+    setEntries([]);
+  }, [resetSignal]);
 
   const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.agentRate || 0);

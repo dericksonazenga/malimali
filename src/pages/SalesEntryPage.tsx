@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { mockSalesEntries } from "@/data/mockData";
 import { SalesEntry } from "@/types";
+import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +16,16 @@ import { toast } from "sonner";
 const SalesEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
+  const { resetSignal } = useEndOfDay();
   const [entries, setEntries] = useState<SalesEntry[]>(mockSalesEntries);
   const [customerName, setCustomerName] = useState("");
   const [weight, setWeight] = useState("");
   const [rate, setRate] = useState("");
+
+  useEffect(() => {
+    if (resetSignal === 0) return;
+    setEntries([]);
+  }, [resetSignal]);
 
   const w = parseFloat(weight) || 0;
   const r = parseFloat(rate) || 0;
