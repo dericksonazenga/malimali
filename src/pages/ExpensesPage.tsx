@@ -218,14 +218,26 @@ const ExpensesPage = () => {
             </DialogTitle>
             <DialogDescription>Choose the worker receiving lunch. Fingerprint verification required.</DialogDescription>
           </DialogHeader>
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={workerSearch}
+              onChange={(e) => setWorkerSearch(e.target.value)}
+              placeholder="Search worker..."
+              className="pl-9 h-10"
+              autoFocus
+            />
+          </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {mockWorkers.map((w) => {
+            {mockWorkers
+              .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
+              .map((w) => {
               const hasFp = credentials.some(c => c.workerName === w.name);
               return (
                 <button
                   key={w.id}
                   type="button"
-                  onClick={() => handleWorkerSelect(w)}
+                  onClick={() => { handleWorkerSelect(w); setWorkerSearch(""); }}
                   className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left"
                 >
                   <div>
