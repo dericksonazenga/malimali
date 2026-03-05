@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { mockCommodities, mockVipEntries } from "@/data/mockData";
+import { mockCommodities } from "@/data/mockData";
 import { VipEntry } from "@/types";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,7 @@ const VipEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
-  const [entries, setEntries] = useState<VipEntry[]>(mockVipEntries);
+  const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
@@ -27,7 +28,7 @@ const VipEntryPage = () => {
 
   useEffect(() => {
     if (resetSignal === 0) return;
-    setEntries([]);
+    clearAll();
   }, [resetSignal]);
 
   const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
@@ -42,7 +43,7 @@ const VipEntryPage = () => {
     e.preventDefault();
     if (!customerName || !commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     const entry: VipEntry = { id: Date.now().toString(), customerName, commodity, grossWeight: gross, containerWeight: container, actualWeight, rate, amount, createdBy: "current", createdAt: new Date().toISOString().split("T")[0] };
-    setEntries((prev) => [entry, ...prev]);
+    addVipEntry(entry);
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     toast.success("VIP entry added!");
   };
@@ -96,7 +97,7 @@ const VipEntryPage = () => {
                   <TableCell className="text-right font-mono font-semibold">{entry.actualWeight}</TableCell>
                   <TableCell className="text-right font-mono">{symbol}{entry.rate}</TableCell>
                   <TableCell className="text-right font-mono font-semibold text-primary">{symbol}{entry.amount.toLocaleString()}</TableCell>
-                  {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => setEntries((p) => p.filter((x) => x.id !== entry.id))}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
+                  {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeVipEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
                 </TableRow>
               ))}
             </TableBody>

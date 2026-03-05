@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { mockSalesEntries } from "@/data/mockData";
 import { SalesEntry } from "@/types";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,14 +17,14 @@ const SalesEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
-  const [entries, setEntries] = useState<SalesEntry[]>(mockSalesEntries);
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [weight, setWeight] = useState("");
   const [rate, setRate] = useState("");
 
   useEffect(() => {
     if (resetSignal === 0) return;
-    setEntries([]);
+    clearAll();
   }, [resetSignal]);
 
   const w = parseFloat(weight) || 0;
@@ -35,7 +35,7 @@ const SalesEntryPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !weight) { toast.error("Fill required fields"); return; }
-    setEntries((prev) => [{ id: Date.now().toString(), customerName, weight: w, rate: r > 0 ? r : undefined, amount, createdBy: "current", createdAt: new Date().toISOString().split("T")[0] }, ...prev]);
+    addSalesEntry({ id: Date.now().toString(), customerName, weight: w, rate: r > 0 ? r : undefined, amount, createdBy: "current", createdAt: new Date().toISOString().split("T")[0] });
     setCustomerName(""); setWeight(""); setRate("");
     toast.success("Sales entry added!");
   };
@@ -78,7 +78,7 @@ const SalesEntryPage = () => {
                   <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
                   <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-warning">Pending</span>}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{entry.createdAt}</TableCell>
-                  {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => setEntries((p) => p.filter((x) => x.id !== entry.id))}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
+                  {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
                 </TableRow>
               ))}
             </TableBody>

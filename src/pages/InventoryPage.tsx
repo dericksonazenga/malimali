@@ -1,19 +1,22 @@
-import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockCommodities } from "@/data/mockData";
+import { useMemo } from "react";
+import { mockCommodities } from "@/data/mockData";
+import { useInventory } from "@/contexts/InventoryContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Package, TrendingUp, TrendingDown } from "lucide-react";
 
 const InventoryPage = () => {
-  const commodityStock = mockCommodities.map((c) => {
-    const agentIn = mockAgentEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
-    const vipIn = mockVipEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
+  const { agentEntries, vipEntries, salesEntries } = useInventory();
+
+  const commodityStock = useMemo(() => mockCommodities.map((c) => {
+    const agentIn = agentEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
+    const vipIn = vipEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
     const totalIn = agentIn + vipIn;
-    // Sales don't track commodity, so we show overall
     return { name: c.name, stockIn: totalIn, stockOut: 0, current: totalIn };
-  });
+  }), [agentEntries, vipEntries]);
 
   const totalIn = commodityStock.reduce((s, c) => s + c.stockIn, 0);
-  const totalOut = mockSalesEntries.reduce((s, e) => s + e.weight, 0);
+  const totalOut = salesEntries.reduce((s, e) => s + e.weight, 0);
 
   return (
     <div className="space-y-6 max-w-4xl">

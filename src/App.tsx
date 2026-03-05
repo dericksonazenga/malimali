@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
 import AppLayout from "@/components/AppLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -58,11 +59,13 @@ const App = () => (
       <Sonner />
       <CurrencyProvider>
         <AuthProvider>
-          <EndOfDayProvider>
-            <BrowserRouter>
-              <AuthenticatedApp />
-            </BrowserRouter>
-          </EndOfDayProvider>
+          <InventoryProvider>
+            <EndOfDayProvider>
+              <BrowserRouter>
+                <AuthenticatedApp />
+              </BrowserRouter>
+            </EndOfDayProvider>
+          </InventoryProvider>
         </AuthProvider>
       </CurrencyProvider>
     </TooltipProvider>
