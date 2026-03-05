@@ -1,26 +1,19 @@
-import { useState } from "react";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Moon, Clock } from "lucide-react";
+import { Moon } from "lucide-react";
 import { toast } from "sonner";
 
 const EndOfDayButton = () => {
-  const { triggerEndOfDay, canTrigger, remainingTime } = useEndOfDay();
+  const { triggerEndOfDay, canTrigger } = useEndOfDay();
 
   const handleConfirm = () => {
     triggerEndOfDay();
     toast.success("End of Day completed! All displayed records cleared. Data is safely stored in the database.");
   };
 
-  if (!canTrigger) {
-    return (
-      <Button variant="outline" disabled className="gap-2 text-muted-foreground">
-        <Clock className="w-4 h-4" />
-        <span className="hidden sm:inline">Next reset in</span> {remainingTime}
-      </Button>
-    );
-  }
+  // Hide entirely during cooldown
+  if (!canTrigger) return null;
 
   return (
     <AlertDialog>
