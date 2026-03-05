@@ -47,6 +47,7 @@ const ExpensesPage = () => {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [credentials, setCredentials] = useState<StoredCredential[]>([]);
+  const [workerSearch, setWorkerSearch] = useState("");
 
   // Load biometric credentials
   useEffect(() => {
