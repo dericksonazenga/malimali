@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
 import AppLayout from "@/components/AppLayout";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
