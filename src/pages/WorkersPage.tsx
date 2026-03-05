@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Fingerprint, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
+import { playSuccessSound, playRejectionAlarm } from "@/utils/alarmSound";
 
 interface StoredCredential {
   workerName: string;
@@ -31,7 +32,8 @@ const WorkersPage = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [salary, setSalary] = useState("");
-  const [registering, setRegistering] = useState<string | null>(null);
+  const [registerFp, setRegisterFp] = useState(false);
+  const [registering, setRegistering] = useState(false);
   const [credentials, setCredentials] = useState<StoredCredential[]>(() => {
     const stored = localStorage.getItem("biometric_credentials");
     return stored ? JSON.parse(stored) : [];
@@ -44,36 +46,17 @@ const WorkersPage = () => {
     localStorage.setItem("biometric_credentials", JSON.stringify(creds));
   };
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !salary) { toast.error("Fill required fields"); return; }
-    setWorkers((prev) => [...prev, { id: Date.now().toString(), name, role, salary: parseFloat(salary), paid: 0, balance: parseFloat(salary) }]);
-    setName(""); setRole(""); setSalary("");
-    toast.success("Worker added!");
-  };
-
-  const recordPayment = (id: string) => {
-    const amt = prompt("Enter payment amount:");
-    if (!amt) return;
-    const payment = parseFloat(amt);
-    if (isNaN(payment) || payment <= 0) return;
-    setWorkers((prev) =>
-      prev.map((w) => w.id === id ? { ...w, paid: w.paid + payment, balance: Math.max(0, w.salary - (w.paid + payment)) } : w)
-    );
-    toast.success("Payment recorded!");
-  };
-
-  const registerFingerprint = async (workerName: string) => {
+  const doFingerprintRegistration = async (workerName: string): Promise<boolean> => {
     if (!isWebAuthnSupported()) {
+      playRejectionAlarm();
       toast.error("Biometric authentication is not supported on this device/browser");
-      return;
+      return false;
     }
     if (credentials.find((c) => c.workerName === workerName)) {
       toast.error(`${workerName} already has a registered fingerprint`);
-      return;
+      return false;
     }
 
-    setRegistering(workerName);
     try {
       const challenge = crypto.getRandomValues(new Uint8Array(32));
       const userId = crypto.getRandomValues(new Uint8Array(16));
@@ -82,11 +65,7 @@ const WorkersPage = () => {
         publicKey: {
           challenge,
           rp: { name: "ScrapFlow Attendance", id: window.location.hostname },
-          user: {
-            id: userId,
-            name: workerName,
-            displayName: workerName,
-          },
+          user: { id: userId, name: workerName, displayName: workerName },
           pubKeyCredParams: [
             { alg: -7, type: "public-key" },
             { alg: -257, type: "public-key" },
@@ -102,8 +81,9 @@ const WorkersPage = () => {
       })) as PublicKeyCredential;
 
       if (!credential) {
+        playRejectionAlarm();
         toast.error("Registration cancelled");
-        return;
+        return false;
       }
 
       const response = credential.response as AuthenticatorAttestationResponse;
@@ -114,16 +94,52 @@ const WorkersPage = () => {
       };
 
       saveCredentials([...credentials, newCred]);
+      playSuccessSound();
       toast.success(`✅ Fingerprint registered for ${workerName}!`);
+      return true;
     } catch (err: any) {
+      playRejectionAlarm();
       if (err.name === "NotAllowedError") {
         toast.error("Biometric registration was cancelled or denied");
       } else {
         toast.error(`Registration failed: ${err.message}`);
       }
-    } finally {
-      setRegistering(null);
+      return false;
     }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !salary) { toast.error("Fill required fields"); return; }
+
+    const workerName = name;
+    setWorkers((prev) => [...prev, { id: Date.now().toString(), name, role, salary: parseFloat(salary), paid: 0, balance: parseFloat(salary) }]);
+
+    if (registerFp) {
+      setRegistering(true);
+      await doFingerprintRegistration(workerName);
+      setRegistering(false);
+    }
+
+    setName(""); setRole(""); setSalary(""); setRegisterFp(false);
+    toast.success("Worker added!");
+  };
+
+  const recordPayment = (id: string) => {
+    const amt = prompt("Enter payment amount:");
+    if (!amt) return;
+    const payment = parseFloat(amt);
+    if (isNaN(payment) || payment <= 0) return;
+    setWorkers((prev) =>
+      prev.map((w) => w.id === id ? { ...w, paid: w.paid + payment, balance: Math.max(0, w.salary - (w.paid + payment)) } : w)
+    );
+    toast.success("Payment recorded!");
+  };
+
+  const registerFingerprint = async (workerName: string) => {
+    setRegistering(true);
+    await doFingerprintRegistration(workerName);
+    setRegistering(false);
   };
 
   const removeFingerprint = (workerName: string) => {
@@ -142,7 +158,31 @@ const WorkersPage = () => {
             <div className="space-y-2"><Label>Name *</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Worker name" className="h-12" /></div>
             <div className="space-y-2"><Label>Role</Label><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Loader, Driver..." className="h-12" /></div>
             <div className="space-y-2"><Label>Salary ({symbol}) *</Label><Input type="number" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="0" className="h-12" /></div>
-            <div className="md:col-span-3"><Button type="submit" className="h-12 px-8">Add Worker</Button></div>
+            <div className="md:col-span-3 flex items-center gap-4 flex-wrap">
+              <Button
+                type="button"
+                variant={registerFp ? "default" : "outline"}
+                className="h-12 gap-2"
+                disabled={registering || !name}
+                onClick={() => {
+                  if (!registerFp) {
+                    setRegisterFp(true);
+                  } else {
+                    setRegisterFp(false);
+                  }
+                }}
+              >
+                <Fingerprint className="w-4 h-4" />
+                {registerFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
+              </Button>
+              {registerFp && (
+                <p className="text-xs text-primary">Fingerprint will be captured when you click "Add Worker"</p>
+              )}
+              <div className="flex-1" />
+              <Button type="submit" className="h-12 px-8" disabled={registering}>
+                {registering ? "Scanning Fingerprint..." : "Add Worker"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -185,11 +225,11 @@ const WorkersPage = () => {
                         variant="outline"
                         size="sm"
                         className="gap-1"
-                        disabled={registering === w.name}
+                        disabled={registering}
                         onClick={() => registerFingerprint(w.name)}
                       >
                         <Fingerprint className="w-3 h-3" />
-                        {registering === w.name ? "Scanning..." : "Register"}
+                        Register
                       </Button>
                     )}
                   </TableCell>
