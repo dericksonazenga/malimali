@@ -113,7 +113,7 @@ const ExpensesPage = () => {
       const matched = workerCreds.some(c => c.credentialId === matchedId);
 
       if (matched) {
-        playSuccessChime();
+        playSuccessSound();
         return true;
       } else {
         playRejectionAlarm();
