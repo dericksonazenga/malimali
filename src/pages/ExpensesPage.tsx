@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Plus, Trash2, Fingerprint, UtensilsCrossed } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { playRejectionAlarm, playSuccessChime } from "@/utils/alarmSound";
+import { playRejectionAlarm, playSuccessSound } from "@/utils/alarmSound";
 
 const isWebAuthnSupported = () =>
   typeof window !== "undefined" &&
