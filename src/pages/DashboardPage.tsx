@@ -1,9 +1,12 @@
-import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockExpenses, mockCommodities } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { mockCommodities } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
   <Card className="animate-fade-in cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={onClick}>
@@ -23,15 +26,34 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
 const DashboardPage = () => {
   const { user } = useAuth();
   const { symbol } = useCurrency();
+  const { agentEntries, vipEntries, salesEntries } = useInventory();
   const navigate = useNavigate();
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [expenseCount, setExpenseCount] = useState(0);
 
-  const agentTotal = mockAgentEntries.reduce((s, e) => s + e.amount, 0);
-  const vipTotal = mockVipEntries.reduce((s, e) => s + e.amount, 0);
-  const salesTotalAmount = mockSalesEntries.reduce((s, e) => s + (e.amount || 0), 0);
-  const expenseTotal = mockExpenses.reduce((s, e) => s + e.amount, 0);
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("expenses")
+        .select("amount")
+        .eq("date", today);
+      if (data) {
+        setExpenseTotal(data.reduce((s: number, e: any) => s + Number(e.amount), 0));
+        setExpenseCount(data.length);
+      }
+    };
+    fetchExpenses();
+    const interval = setInterval(fetchExpenses, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const stockIn = mockAgentEntries.reduce((s, e) => s + e.actualWeight, 0) + mockVipEntries.reduce((s, e) => s + e.actualWeight, 0);
-  const stockOut = mockSalesEntries.reduce((s, e) => s + e.weight, 0);
+  const agentTotal = agentEntries.reduce((s, e) => s + e.amount, 0);
+  const vipTotal = vipEntries.reduce((s, e) => s + e.amount, 0);
+  const salesTotalAmount = salesEntries.reduce((s, e) => s + (e.amount || 0), 0);
+
+  const stockIn = agentEntries.reduce((s, e) => s + e.actualWeight, 0) + vipEntries.reduce((s, e) => s + e.actualWeight, 0);
+  const stockOut = salesEntries.reduce((s, e) => s + e.weight, 0);
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -41,10 +63,10 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${mockAgentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
-        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${mockVipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
-        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${mockSalesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
-        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${mockExpenses.length} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={() => navigate("/expenses")} />
+        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
+        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
+        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
+        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={() => navigate("/expenses")} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
