@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { mockCommodities } from "@/data/mockData";
+import { useCommodities } from "@/contexts/CommodityContext";
 import { VipEntry } from "@/types";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";

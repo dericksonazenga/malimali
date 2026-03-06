@@ -59,15 +59,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <CurrencyProvider>
-        <AuthProvider>
-          <InventoryProvider>
-            <EndOfDayProvider>
-              <BrowserRouter>
-                <AuthenticatedApp />
-              </BrowserRouter>
-            </EndOfDayProvider>
-          </InventoryProvider>
-        </AuthProvider>
+        <CommodityProvider>
+          <AuthProvider>
+            <InventoryProvider>
+              <EndOfDayProvider>
+                <BrowserRouter>
+                  <AuthenticatedApp />
+                </BrowserRouter>
+              </EndOfDayProvider>
+            </InventoryProvider>
+          </AuthProvider>
+        </CommodityProvider>
       </CurrencyProvider>
     </TooltipProvider>
   </QueryClientProvider>

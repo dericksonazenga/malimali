@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { mockCommodities } from "@/data/mockData";
 import { Commodity } from "@/types";
+import { useCommodities } from "@/contexts/CommodityContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 const RatesPage = () => {
   const { symbol } = useCurrency();
-  const [commodities, setCommodities] = useState<Commodity[]>(mockCommodities);
+  const { commodities, addCommodity, updateCommodity } = useCommodities();
   const [editing, setEditing] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ agentRate: 0, vipRate: 0, salesRate: 0 });
   const [showAdd, setShowAdd] = useState(false);
@@ -22,7 +22,7 @@ const RatesPage = () => {
   const [newSales, setNewSales] = useState("");
 
   const startEdit = (c: Commodity) => { setEditing(c.id); setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate }); };
-  const saveEdit = (id: string) => { setCommodities((prev) => prev.map((c) => c.id === id ? { ...c, ...editValues } : c)); setEditing(null); toast.success("Rates updated!"); };
+  const saveEdit = (id: string) => { updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
 
   const handleAdd = () => {
     if (!newName.trim()) { toast.error("Enter commodity name"); return; }
@@ -34,7 +34,7 @@ const RatesPage = () => {
       vipRate: parseFloat(newVip) || 0,
       salesRate: parseFloat(newSales) || 0,
     };
-    setCommodities((prev) => [...prev, newCommodity]);
+    addCommodity(newCommodity);
     setNewName(""); setNewAgent(""); setNewVip(""); setNewSales(""); setShowAdd(false);
     toast.success(`${newCommodity.name} added!`);
   };
