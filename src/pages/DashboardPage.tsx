@@ -102,7 +102,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {mockCommodities.slice(0, 5).map((c) => (
+              {commodities.slice(0, 5).map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
                   <div className="flex gap-4 text-sm font-mono">
