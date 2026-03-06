@@ -57,6 +57,7 @@ export interface VipEntry {
 export interface SalesEntry {
   id: string;
   customerName: string;
+  commodity?: string;
   weight: number;
   rate?: number;
   amount?: number;

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { mockCommodities } from "@/data/mockData";
+import { useCommodities } from "@/contexts/CommodityContext";
 import { AgentEntry } from "@/types";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
+  const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
   const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll } = useInventory();

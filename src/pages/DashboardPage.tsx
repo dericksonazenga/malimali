@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { mockCommodities } from "@/data/mockData";
+import { useCommodities } from "@/contexts/CommodityContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,8 +25,9 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { commodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { agentEntries, vipEntries, salesEntries } = useInventory();
+  const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
   const navigate = useNavigate();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
@@ -54,6 +55,8 @@ const DashboardPage = () => {
 
   const stockIn = agentEntries.reduce((s, e) => s + e.actualWeight, 0) + vipEntries.reduce((s, e) => s + e.actualWeight, 0);
   const stockOut = salesEntries.reduce((s, e) => s + e.weight, 0);
+  const persistentTotal = Object.values(persistentStock).reduce((s, v) => s + v, 0);
+  const currentStock = persistentTotal + stockIn - stockOut;
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -89,7 +92,7 @@ const DashboardPage = () => {
               <div className="text-center p-4 rounded-lg bg-primary/10">
                 <Package className="w-5 h-5 mx-auto text-primary mb-1" />
                 <p className="text-xs text-muted-foreground">Current</p>
-                <p className="text-lg font-bold font-mono text-primary">{(stockIn - stockOut).toLocaleString()} kg</p>
+                <p className="text-lg font-bold font-mono text-primary">{currentStock.toLocaleString()} kg</p>
               </div>
             </div>
           </CardContent>
@@ -101,7 +104,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {mockCommodities.slice(0, 5).map((c) => (
+              {commodities.slice(0, 5).map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
                   <div className="flex gap-4 text-sm font-mono">
