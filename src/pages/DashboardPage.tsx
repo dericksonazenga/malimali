@@ -92,7 +92,7 @@ const DashboardPage = () => {
               <div className="text-center p-4 rounded-lg bg-primary/10">
                 <Package className="w-5 h-5 mx-auto text-primary mb-1" />
                 <p className="text-xs text-muted-foreground">Current</p>
-                <p className="text-lg font-bold font-mono text-primary">{(stockIn - stockOut).toLocaleString()} kg</p>
+                <p className="text-lg font-bold font-mono text-primary">{currentStock.toLocaleString()} kg</p>
               </div>
             </div>
           </CardContent>
