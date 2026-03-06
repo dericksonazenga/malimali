@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 const VipEntryPage = () => {
   const { hasPermission } = useAuth();
+  const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
   const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll } = useInventory();

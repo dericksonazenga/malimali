@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
+  const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
   const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll } = useInventory();
