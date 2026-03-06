@@ -55,6 +55,8 @@ const DashboardPage = () => {
 
   const stockIn = agentEntries.reduce((s, e) => s + e.actualWeight, 0) + vipEntries.reduce((s, e) => s + e.actualWeight, 0);
   const stockOut = salesEntries.reduce((s, e) => s + e.weight, 0);
+  const persistentTotal = Object.values(persistentStock).reduce((s, v) => s + v, 0);
+  const currentStock = persistentTotal + stockIn - stockOut;
 
   return (
     <div className="space-y-6 max-w-6xl">
