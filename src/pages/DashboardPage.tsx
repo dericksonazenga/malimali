@@ -25,6 +25,7 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
 
 const DashboardPage = () => {
   const { user } = useAuth();
+  const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { agentEntries, vipEntries, salesEntries } = useInventory();
   const navigate = useNavigate();
