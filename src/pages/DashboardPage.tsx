@@ -27,7 +27,7 @@ const DashboardPage = () => {
   const { user } = useAuth();
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { agentEntries, vipEntries, salesEntries } = useInventory();
+  const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
   const navigate = useNavigate();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
