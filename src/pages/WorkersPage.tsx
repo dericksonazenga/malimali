@@ -36,7 +36,7 @@ const WorkersPage = () => {
   const [salary, setSalary] = useState("");
   const [fpDialogOpen, setFpDialogOpen] = useState(false);
   const [fpDialogWorker, setFpDialogWorker] = useState("");
-  const [pendingAddFp, setPendingAddFp] = useState(false);
+  const [pendingCreds, setPendingCreds] = useState<{ credentialId: string; publicKey: string }[]>([]);
   const [credentials, setCredentials] = useState<StoredCredential[]>(() => {
     const stored = localStorage.getItem("biometric_credentials");
     return stored ? JSON.parse(stored) : [];
@@ -74,8 +74,8 @@ const WorkersPage = () => {
   };
 
   const handleFpComplete = (workerName: string, creds: { credentialId: string; publicKey: string }[]) => {
-    const newCreds: StoredCredential[] = creds.map((c) => ({ workerName, ...c }));
-    saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
+    setPendingCreds(creds);
+    toast.success(`Fingerprints captured for ${workerName}! Now click Add Worker.`);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -99,10 +99,11 @@ const WorkersPage = () => {
       return;
     }
 
-    if (pendingAddFp) {
-      setFpDialogWorker(workerName);
-      setFpDialogOpen(true);
-      setPendingAddFp(false);
+    // Save fingerprint credentials if captured
+    if (pendingCreds.length > 0) {
+      const newCreds: StoredCredential[] = pendingCreds.map((c) => ({ workerName, ...c }));
+      saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
+      setPendingCreds([]);
     }
 
     setName(""); setRole(""); setSalary("");
@@ -155,16 +156,19 @@ const WorkersPage = () => {
             <div className="md:col-span-3 flex items-center gap-4 flex-wrap">
               <Button
                 type="button"
-                variant={pendingAddFp ? "default" : "outline"}
+                variant={pendingCreds.length > 0 ? "default" : "outline"}
                 className="h-12 gap-2"
                 disabled={!name}
-                onClick={() => setPendingAddFp(!pendingAddFp)}
+                onClick={() => {
+                  setFpDialogWorker(name);
+                  setFpDialogOpen(true);
+                }}
               >
                 <Fingerprint className="w-4 h-4" />
-                {pendingAddFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
+                {pendingCreds.length > 0 ? `Fingerprint: ${pendingCreds.length} scans ✓` : "Register Fingerprint"}
               </Button>
-              {pendingAddFp && (
-                <p className="text-xs text-primary">Fingerprint dialog will open after adding the worker</p>
+              {pendingCreds.length > 0 && (
+                <p className="text-xs text-primary">Fingerprints captured — click Add Worker to save</p>
               )}
               <div className="flex-1" />
               <Button type="submit" className="h-12 px-8">Add Worker</Button>
