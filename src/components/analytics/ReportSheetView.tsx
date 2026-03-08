@@ -299,10 +299,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stockData.length === 0 && (
+                  {filteredStock.length === 0 && (
                     <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No stock</TableCell></TableRow>
                   )}
-                  {stockData.map((s: any) => (
+                  {filteredStock.map((s: any) => (
                     <TableRow key={s.id}>
                       <TableCell className="font-medium">{s.commodity}</TableCell>
                       <TableCell className="text-right font-mono font-bold">{fmt(Number(s.weight))}</TableCell>
