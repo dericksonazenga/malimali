@@ -7,13 +7,27 @@ import {
 
 export type DateRange =
   | "today" | "yesterday" | "this_week" | "last_week"
-  | "this_month" | "last_month" | "this_year" | "last_year" | "all_time";
+  | "this_month" | "last_month" | "this_year" | "last_year" | "all_time"
+  | "custom";
 
-function getDateBounds(range: DateRange): { from: string | null; to: string | null } {
+export interface DateRangeValue {
+  preset: DateRange;
+  customFrom?: Date;
+  customTo?: Date;
+}
+
+function getDateBounds(range: DateRangeValue): { from: string | null; to: string | null } {
+  if (range.preset === "custom" && range.customFrom) {
+    return {
+      from: startOfDay(range.customFrom).toISOString(),
+      to: range.customTo ? endOfDay(range.customTo).toISOString() : endOfDay(range.customFrom).toISOString(),
+    };
+  }
+
   const now = new Date();
   const fmt = (d: Date) => d.toISOString();
 
-  switch (range) {
+  switch (range.preset) {
     case "today":
       return { from: fmt(startOfDay(now)), to: fmt(endOfDay(now)) };
     case "yesterday": {
@@ -39,6 +53,7 @@ function getDateBounds(range: DateRange): { from: string | null; to: string | nu
       return { from: fmt(startOfYear(ly)), to: fmt(endOfYear(ly)) };
     }
     case "all_time":
+    default:
       return { from: null, to: null };
   }
 }
@@ -82,7 +97,7 @@ export interface AnalyticsData {
   commodityProfitBreakdown: CommodityProfit[];
 }
 
-export function useAnalyticsData(range: DateRange) {
+export function useAnalyticsData(range: DateRangeValue) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -214,7 +229,7 @@ export function useAnalyticsData(range: DateRange) {
       dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);
-  }, [range]);
+  }, [range.preset, range.customFrom?.getTime(), range.customTo?.getTime()]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

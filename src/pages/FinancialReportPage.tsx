@@ -6,7 +6,7 @@ import {
   BarChart3, Package, Users, Receipt, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
+import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
@@ -16,7 +16,7 @@ const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 
 
 const FinancialReportPage = () => {
   const { symbol, currency } = useCurrency();
-  const [range, setRange] = useState<DateRange>("today");
+  const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
   if (loading || !data) {
@@ -35,7 +35,9 @@ const FinancialReportPage = () => {
     commodityProfitBreakdown,
   } = data;
 
-  const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const rangeLabel = range.preset === "custom" 
+    ? "Custom" 
+    : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
   // Full report CSV
