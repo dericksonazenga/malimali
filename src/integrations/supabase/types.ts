@@ -544,6 +544,39 @@ export type Database = {
         }
         Relationships: []
       }
+      workers: {
+        Row: {
+          balance: number
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          paid: number
+          role: string
+          salary: number
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          paid?: number
+          role?: string
+          salary?: number
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          paid?: number
+          role?: string
+          salary?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
