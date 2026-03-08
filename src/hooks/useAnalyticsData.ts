@@ -111,7 +111,41 @@ export function useAnalyticsData(range: DateRange) {
     const salaryBalance = workerRows.reduce((s: number, x: any) => s + Number(x.balance), 0);
 
     const totalPurchases = agentTotal + vipTotal;
-    const grossProfit = salesTotal - totalPurchases;
+
+    // Calculate weighted average purchase rate per commodity
+    const purchaseWeights: Record<string, { totalWeight: number; totalCost: number }> = {};
+    const ensurePW = (c: string) => { if (!purchaseWeights[c]) purchaseWeights[c] = { totalWeight: 0, totalCost: 0 }; };
+    agentRows.forEach((e: any) => {
+      ensurePW(e.commodity);
+      purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight);
+      purchaseWeights[e.commodity].totalCost += Number(e.amount);
+    });
+    vipRows.forEach((e: any) => {
+      ensurePW(e.commodity);
+      purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight);
+      purchaseWeights[e.commodity].totalCost += Number(e.amount);
+    });
+
+    // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
+    // For exchanges (no rate/weight), just count the exchange fee as revenue
+    let grossProfit = 0;
+    salesRows.forEach((e: any) => {
+      const commodity = e.commodity;
+      const saleRate = Number(e.rate || 0);
+      const saleWeight = Number(e.weight || 0);
+      const saleAmount = Number(e.amount || 0);
+
+      if (e.is_exchange || !commodity || saleWeight === 0) {
+        // Exchange entries: fee is pure revenue (no commodity cost)
+        grossProfit += saleAmount;
+      } else {
+        // Regular sale: profit = (sell_rate - avg_buy_rate) × weight
+        const pw = purchaseWeights[commodity];
+        const avgBuyRate = pw && pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
+        grossProfit += (saleRate - avgBuyRate) * saleWeight;
+      }
+    });
+
     const netProfit = grossProfit - expenseTotal - salaryPaid;
 
     // Commodity breakdown
