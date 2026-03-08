@@ -74,6 +74,19 @@ const MessagesPage = () => {
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
+  const [allUsers, setAllUsers] = useState<ProfileUser[]>([]);
+
+  // Load profiles from DB
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data } = await supabase.from("profiles").select("user_id, display_name, role");
+      if (data) {
+        setAllUsers(data.map((p: any) => ({ id: p.user_id, name: p.display_name, role: p.role })));
+      }
+    };
+    fetchProfiles();
+  }, []);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
