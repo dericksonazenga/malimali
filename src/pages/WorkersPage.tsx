@@ -74,8 +74,8 @@ const WorkersPage = () => {
   };
 
   const handleFpComplete = (workerName: string, creds: { credentialId: string; publicKey: string }[]) => {
-    const newCreds: StoredCredential[] = creds.map((c) => ({ workerName, ...c }));
-    saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
+    setPendingCreds(creds);
+    toast.success(`Fingerprints captured for ${workerName}! Now click Add Worker.`);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
