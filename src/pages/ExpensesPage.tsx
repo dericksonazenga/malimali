@@ -73,10 +73,17 @@ const ExpensesPage = () => {
     fetchExpenses();
   }, []);
 
-  // Load biometric credentials
+  // Load biometric credentials + workers from DB
   useEffect(() => {
     const stored = localStorage.getItem("biometric_credentials");
     if (stored) setCredentials(JSON.parse(stored));
+    const fetchWorkers = async () => {
+      const { data } = await supabase.from("workers").select("*").order("name");
+      if (data) {
+        setDbWorkers(data.map((w: any) => ({ id: w.id, name: w.name, role: w.role, salary: Number(w.salary), paid: Number(w.paid), balance: Number(w.balance) })));
+      }
+    };
+    fetchWorkers();
   }, []);
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
