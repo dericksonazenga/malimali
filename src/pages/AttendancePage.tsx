@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck } from "lucide-react";
+import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck, QrCode, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { QRCodeSVG } from "qrcode.react";
+import QRScanner from "@/components/QRScanner";
 
 interface AttendanceRecord {
   id: string;
@@ -44,11 +46,17 @@ const AttendancePage = () => {
   const [activeTab, setActiveTab] = useState("today");
   const [signInWorker, setSignInWorker] = useState<string>("");
   const [signOutWorker, setSignOutWorker] = useState<string>("");
+  const [showQR, setShowQR] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const [dateRange, setDateRange] = useState<DateRange>({ from: today, to: today });
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // QR code URL - workers scan this to sign in
+  const qrToken = useMemo(() => `${todayStr}-attendance`, [todayStr]);
+  const qrUrl = `${window.location.origin}/attendance-scan?date=${todayStr}&token=${qrToken}`;
 
   const fetchRecords = useCallback(async () => {
     const { data } = await supabase
@@ -85,6 +93,7 @@ const AttendancePage = () => {
   }, [fetchRecords, fetchWorkers]);
 
   const todayRecords = useMemo(() => records.filter((r) => r.date === todayStr), [records, todayStr]);
+  const activeWorkers = useMemo(() => todayRecords.filter((r) => r.signInAt && !r.signOutAt), [todayRecords]);
 
   const historyRecords = useMemo(() => {
     const fromStr = format(dateRange.from, "yyyy-MM-dd");
@@ -168,6 +177,43 @@ const AttendancePage = () => {
     await fetchRecords();
   };
 
+  const handleSignOutAll = async () => {
+    if (activeWorkers.length === 0) {
+      toast.error("No workers to sign out");
+      return;
+    }
+    const now = new Date().toISOString();
+    const ids = activeWorkers.map((r) => r.id);
+    const { error } = await supabase
+      .from("attendance")
+      .update({ sign_out_at: now })
+      .in("id", ids);
+    if (error) {
+      toast.error("Failed to sign out all workers");
+      return;
+    }
+    toast.success(`✅ ${activeWorkers.length} worker(s) signed out`);
+    await fetchRecords();
+  };
+
+  const handleQRScan = async (decodedText: string) => {
+    setScanning(false);
+    // If scanned text is a URL with worker info, or just a worker name
+    try {
+      const url = new URL(decodedText);
+      // It's our attendance URL - redirect or handle
+      window.location.href = decodedText;
+    } catch {
+      // Treat as worker name
+      const worker = workers.find(w => w.name.toLowerCase() === decodedText.toLowerCase());
+      if (worker) {
+        await handleSignIn(worker.name);
+      } else {
+        toast.error(`Worker "${decodedText}" not found`);
+      }
+    }
+  };
+
   const formatTime = (iso: string | null) => {
     if (!iso) return "—";
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -175,10 +221,11 @@ const AttendancePage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Sign In/Out with Dropdowns */}
+      {/* Sign In Methods */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Sign In Card */}
         <Card className="border-2 border-primary/20">
-          <CardContent className="pt-6 space-y-3">
+          <CardContent className="pt-6 space-y-4">
             <div className="flex items-center gap-2 text-primary font-bold text-lg">
               <UserCheck className="w-6 h-6" />
               Sign In Worker
@@ -196,27 +243,68 @@ const AttendancePage = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* QR Section */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <QrCode className="w-4 h-4" /> QR Code Options
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowQR(!showQR)} className="gap-2">
+                  <QrCode className="w-4 h-4" /> {showQR ? "Hide QR" : "Show QR for Workers"}
+                </Button>
+              </div>
+              {showQR && (
+                <div className="flex flex-col items-center gap-2 p-4 bg-card rounded-lg border border-border">
+                  <QRCodeSVG value={qrUrl} size={200} />
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Workers scan this with their phone to sign in automatically
+                  </p>
+                </div>
+              )}
+              <QRScanner onScan={handleQRScan} scanning={scanning} onToggle={() => setScanning(!scanning)} />
+            </div>
           </CardContent>
         </Card>
+
+        {/* Sign Out Card */}
         <Card className="border-2 border-destructive/20">
-          <CardContent className="pt-6 space-y-3">
+          <CardContent className="pt-6 space-y-4">
             <div className="flex items-center gap-2 text-destructive font-bold text-lg">
               <UserCheck className="w-6 h-6" />
               Sign Out Worker
               <LogOut className="w-5 h-5" />
             </div>
-            <Select value={signOutWorker} onValueChange={(val) => { setSignOutWorker(val); handleSignOut(val); }}>
-              <SelectTrigger className="h-12 text-base">
-                <SelectValue placeholder="Select worker to sign out..." />
-              </SelectTrigger>
-              <SelectContent>
-                {workers.filter((w) => todayRecords.some((r) => r.workerName === w.name && r.signInAt && !r.signOutAt)).map((w) => (
-                  <SelectItem key={w.id} value={w.name}>
-                    {w.name} — <span className="text-muted-foreground">{w.role}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {/* Sign Out All */}
+            <Button
+              variant="destructive"
+              className="w-full h-12 gap-2 text-base"
+              onClick={handleSignOutAll}
+              disabled={activeWorkers.length === 0}
+            >
+              <Users className="w-5 h-5" />
+              Sign Out All ({activeWorkers.length})
+            </Button>
+
+            {/* Single Worker Sign Out */}
+            <div className="border-t border-border pt-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <UserMinus className="w-4 h-4" /> Sign Out Individual Worker
+              </div>
+              <Select value={signOutWorker} onValueChange={(val) => { setSignOutWorker(val); handleSignOut(val); }}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="Select worker to sign out..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {workers.filter((w) => todayRecords.some((r) => r.workerName === w.name && r.signInAt && !r.signOutAt)).map((w) => (
+                    <SelectItem key={w.id} value={w.name}>
+                      {w.name} — <span className="text-muted-foreground">{w.role}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardContent>
         </Card>
       </div>
