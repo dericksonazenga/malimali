@@ -325,10 +325,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {workers.length === 0 && (
+                  {filteredWorkers.length === 0 && (
                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No workers</TableCell></TableRow>
                   )}
-                  {workers.map((w: any) => (
+                  {filteredWorkers.map((w: any) => (
                     <TableRow key={w.id}>
                       <TableCell className="font-medium">{w.name}</TableCell>
                       <TableCell className="text-muted-foreground">{w.role}</TableCell>
