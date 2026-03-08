@@ -1,23 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Package, TrendingUp, TrendingDown, Wrench } from "lucide-react";
+import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
 
 const InventoryPage = () => {
   const { commodities } = useCommodities();
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
+  const [adjustOpen, setAdjustOpen] = useState(false);
 
   const commodityStock = useMemo(() => commodities.map((c) => {
-    // Daily stock in (today's agent + vip entries)
     const dailyIn = agentEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0)
       + vipEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
-    // Daily stock out (today's sales)
     const dailyOut = salesEntries.filter((e) => e.commodity === c.name && !e.isExchange).reduce((s, e) => s + e.weight, 0);
-    // Persistent = all previous days accumulated
     const persistent = persistentStock[c.name] || 0;
-    // Current = persistent + today's in - today's out
     const current = persistent + dailyIn - dailyOut;
     return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
   }), [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
@@ -25,6 +24,7 @@ const InventoryPage = () => {
   const totalDailyIn = commodityStock.reduce((s, c) => s + c.stockIn, 0);
   const totalDailyOut = commodityStock.reduce((s, c) => s + c.stockOut, 0);
   const totalCurrent = commodityStock.reduce((s, c) => s + c.current, 0);
+  const hasData = commodityStock.some((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -35,7 +35,14 @@ const InventoryPage = () => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Stock by Commodity</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Stock by Commodity</span>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setAdjustOpen(true)}>
+              <Wrench className="w-4 h-4" /> Adjust Stock
+            </Button>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -57,12 +64,12 @@ const InventoryPage = () => {
                   <TableCell className="text-right font-mono font-bold text-primary">{c.current.toLocaleString()} kg</TableCell>
                 </TableRow>
               ))}
-              {commodityStock.filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0).length === 0 && (
+              {!hasData && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stock data yet. Add entries to see commodity breakdown.</TableCell>
                 </TableRow>
               )}
-              {commodityStock.filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0).length > 0 && (
+              {hasData && (
                 <TableRow className="border-t-2 border-primary/20 bg-accent/50">
                   <TableCell className="font-bold">Total</TableCell>
                   <TableCell className="text-right font-mono font-semibold text-muted-foreground">{commodityStock.reduce((s, c) => s + c.persistent, 0).toLocaleString()}</TableCell>
@@ -75,6 +82,13 @@ const InventoryPage = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <StockAdjustmentDialog
+        open={adjustOpen}
+        onOpenChange={setAdjustOpen}
+        commodities={commodities}
+        persistentStock={persistentStock}
+      />
     </div>
   );
 };
