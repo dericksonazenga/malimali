@@ -437,10 +437,22 @@ const AttendancePage = () => {
                         const duration = r.signInAt && r.signOutAt
                           ? ((new Date(r.signOutAt).getTime() - new Date(r.signInAt).getTime()) / (1000 * 60 * 60)).toFixed(1)
                           : null;
+                        const late = isLate(r.signInAt);
                         return (
-                          <TableRow key={r.id}>
-                            <TableCell className="font-medium">{r.workerName}</TableCell>
-                            <TableCell><span className="flex items-center gap-1"><Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signInAt)}</span></TableCell>
+                          <TableRow key={r.id} className={late ? "bg-destructive/5" : ""}>
+                            <TableCell className="font-medium">
+                              {r.workerName}
+                              {late && (
+                                <Badge variant="destructive" className="ml-2 text-[10px] px-1.5 py-0 gap-0.5">
+                                  <AlertTriangle className="w-2.5 h-2.5" /> Late
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className={cn("flex items-center gap-1", late && "text-destructive font-semibold")}>
+                                <Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signInAt)}
+                              </span>
+                            </TableCell>
                             <TableCell><span className="flex items-center gap-1"><Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signOutAt)}</span></TableCell>
                             <TableCell className="font-mono text-sm">{duration ? `${duration}h` : "—"}</TableCell>
                             <TableCell>
