@@ -224,8 +224,8 @@ const FinancialReportPage = () => {
             <StatRow label="VIP Purchases" value={vipTotal} negative />
             <StatRow label="Expenses" value={expenseTotal} negative />
             <StatRow label="Salary Paid" value={salaryPaid} negative />
-            <StatRow label="Gross Profit" value={grossProfit} bold />
-            <StatRow label="Net Profit" value={netProfit} bold />
+            <StatRow label="Gross Profit (Sales Margin)" value={grossProfit} bold />
+            <StatRow label="Net Profit (Gross - Expenses - Salary)" value={netProfit} bold />
           </div>
         </AnalyticsSection>
 
