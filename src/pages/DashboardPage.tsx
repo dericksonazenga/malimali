@@ -34,19 +34,18 @@ const DashboardPage = () => {
 
   useEffect(() => {
     const fetchExpenses = async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0];
 
-      // Check last EOD trigger for today
       const { data: eodData } = await supabase
         .from("end_of_day_log")
         .select("triggered_at")
-        .eq("date", today)
+        .eq("date", todayStr)
         .order("triggered_at", { ascending: false })
         .limit(1);
 
       const lastEod = eodData?.[0]?.triggered_at;
 
-      let query = supabase.from("expenses").select("amount").eq("date", today);
+      let query = supabase.from("expenses").select("amount").eq("date", todayStr);
       if (lastEod) {
         query = query.gt("created_at", lastEod);
       }
@@ -58,8 +57,14 @@ const DashboardPage = () => {
       }
     };
     fetchExpenses();
-    const interval = setInterval(fetchExpenses, 10000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel("dashboard-expenses-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
+      .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, () => fetchExpenses())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const agentTotal = agentEntries.reduce((s, e) => s + e.amount, 0);
