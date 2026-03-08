@@ -339,7 +339,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {workers.length > 0 && (
+              {filteredWorkers.length > 0 && (
                 <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-border text-sm font-bold text-right">
                   <span className="font-mono">{symbol}{fmt(salaryTotal)}</span>
                   <span className="font-mono text-success">{symbol}{fmt(salaryPaid)}</span>
