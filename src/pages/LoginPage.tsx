@@ -15,6 +15,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("boss");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
