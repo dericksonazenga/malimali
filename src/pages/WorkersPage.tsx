@@ -10,6 +10,7 @@ import { Users, Plus, Fingerprint, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { playSuccessSound, playRejectionAlarm } from "@/utils/alarmSound";
+import FingerprintRegistrationDialog from "@/components/FingerprintRegistrationDialog";
 
 interface WorkerRow {
   id: string;
@@ -25,14 +26,6 @@ interface StoredCredential {
   credentialId: string;
   publicKey: string;
 }
-
-const isWebAuthnSupported = () =>
-  typeof window !== "undefined" &&
-  window.PublicKeyCredential !== undefined &&
-  typeof window.PublicKeyCredential === "function";
-
-const bufferToBase64 = (buffer: ArrayBuffer): string =>
-  btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
 const WorkersPage = () => {
   const { symbol } = useCurrency();
