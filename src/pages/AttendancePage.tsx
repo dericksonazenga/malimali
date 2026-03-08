@@ -278,15 +278,32 @@ const AttendancePage = () => {
             </div>
 
             {/* Sign Out All */}
-            <Button
-              variant="destructive"
-              className="w-full h-12 gap-2 text-base"
-              onClick={handleSignOutAll}
-              disabled={activeWorkers.length === 0}
-            >
-              <Users className="w-5 h-5" />
-              Sign Out All ({activeWorkers.length})
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full h-12 gap-2 text-base"
+                  disabled={activeWorkers.length === 0}
+                >
+                  <Users className="w-5 h-5" />
+                  Sign Out All ({activeWorkers.length})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Sign out all workers?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will sign out <span className="font-semibold">{activeWorkers.length} worker(s)</span> currently on shift: {activeWorkers.map(w => w.workerName).join(", ")}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOutAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Sign Out All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             {/* Single Worker Sign Out */}
             <div className="border-t border-border pt-4 space-y-2">
