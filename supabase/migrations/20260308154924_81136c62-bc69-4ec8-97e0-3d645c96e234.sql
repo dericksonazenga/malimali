@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_entries ADD COLUMN exchange_fee numeric DEFAULT 0;

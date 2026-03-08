@@ -422,6 +422,7 @@ export type Database = {
           customer_name: string | null
           date: string
           exchange_commodity: string | null
+          exchange_fee: number | null
           exchange_weight: number | null
           gross_weight: number
           id: string
@@ -440,6 +441,7 @@ export type Database = {
           customer_name?: string | null
           date?: string
           exchange_commodity?: string | null
+          exchange_fee?: number | null
           exchange_weight?: number | null
           gross_weight?: number
           id?: string
@@ -458,6 +460,7 @@ export type Database = {
           customer_name?: string | null
           date?: string
           exchange_commodity?: string | null
+          exchange_fee?: number | null
           exchange_weight?: number | null
           gross_weight?: number
           id?: string
