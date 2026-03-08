@@ -203,6 +203,30 @@ export type Database = {
         }
         Relationships: []
       }
+      end_of_day_log: {
+        Row: {
+          date: string
+          id: string
+          notes: string | null
+          triggered_at: string
+          triggered_by: string | null
+        }
+        Insert: {
+          date?: string
+          id?: string
+          notes?: string | null
+          triggered_at?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          date?: string
+          id?: string
+          notes?: string | null
+          triggered_at?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
