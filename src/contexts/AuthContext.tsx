@@ -86,13 +86,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
-  const signup = async (email: string, password: string, displayName: string): Promise<string | null> => {
+  const signup = async (email: string, password: string, displayName: string, role: UserRole = "boss"): Promise<string | null> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { display_name: displayName },
+        data: { display_name: displayName, role },
       },
     });
     if (error) return error.message;
