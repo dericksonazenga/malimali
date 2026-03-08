@@ -48,6 +48,31 @@ const PermissionsManager = () => {
     fetchPermissions();
   }, [fetchPermissions]);
 
+  const toggleAll = async (role: string) => {
+    const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+    if (allSelected) {
+      // Remove all
+      for (const perm of ALL_PERMISSIONS) {
+        if (matrix[role]?.has(perm.key)) {
+          await supabase.from("role_permissions").delete().eq("role", role).eq("permission", perm.key);
+        }
+      }
+    } else {
+      // Add missing
+      for (const perm of ALL_PERMISSIONS) {
+        if (!matrix[role]?.has(perm.key)) {
+          await supabase.from("role_permissions").insert({ role, permission: perm.key });
+        }
+      }
+    }
+    setMatrix((prev) => {
+      const next = { ...prev };
+      next[role] = new Set(allSelected ? [] : ALL_PERMISSIONS.map((p) => p.key));
+      return next;
+    });
+    toast.success(allSelected ? "All permissions removed" : "All permissions granted");
+  };
+
   const toggle = async (role: string, permission: string) => {
 
     const has = matrix[role]?.has(permission);
@@ -118,6 +143,21 @@ const PermissionsManager = () => {
                 ))}
               </tr>
             ))}
+            <tr className="border-t-2 border-border">
+              <td className="py-3 pr-4 font-semibold text-muted-foreground">Select All</td>
+              {ALL_ROLES.map((role) => {
+                const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+                return (
+                  <td key={role} className="text-center py-3 px-2">
+                    <Switch
+                      checked={allSelected}
+                      onCheckedChange={() => toggleAll(role)}
+                      className="mx-auto"
+                    />
+                  </td>
+                );
+              })}
+            </tr>
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground mt-4">
