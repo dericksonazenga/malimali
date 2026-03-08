@@ -86,15 +86,44 @@ const AttendancePage = () => {
     if (data) setWorkers(data);
   }, []);
 
+  const fetchShiftStartTime = useCallback(async () => {
+    const { data } = await supabase
+      .from("attendance_settings")
+      .select("value")
+      .eq("key", "shift_start_time")
+      .single();
+    if (data) setShiftStartTime(data.value);
+  }, []);
+
+  const updateShiftStartTime = async (time: string) => {
+    setShiftStartTime(time);
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    await supabase
+      .from("attendance_settings")
+      .update({ value: time, updated_at: new Date().toISOString(), updated_by: userId })
+      .eq("key", "shift_start_time");
+    toast.success(`Shift start time updated to ${time}`);
+  };
+
+  const isLate = useCallback((signInAt: string | null) => {
+    if (!signInAt || !shiftStartTime) return false;
+    const signInDate = new Date(signInAt);
+    const [hours, minutes] = shiftStartTime.split(":").map(Number);
+    const startThreshold = new Date(signInDate);
+    startThreshold.setHours(hours, minutes, 0, 0);
+    return signInDate > startThreshold;
+  }, [shiftStartTime]);
+
   useEffect(() => {
     fetchRecords();
     fetchWorkers();
+    fetchShiftStartTime();
     const channel = supabase
       .channel("attendance-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchRecords())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchRecords, fetchWorkers]);
+  }, [fetchRecords, fetchWorkers, fetchShiftStartTime]);
 
   const todayRecords = useMemo(() => records.filter((r) => r.date === todayStr), [records, todayStr]);
   const activeWorkers = useMemo(() => todayRecords.filter((r) => r.signInAt && !r.signOutAt), [todayRecords]);
