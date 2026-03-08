@@ -22,7 +22,7 @@ const RatesPage = () => {
   const [newSales, setNewSales] = useState("");
 
   const startEdit = (c: Commodity) => { setEditing(c.id); setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate }); };
-  const saveEdit = (id: string) => { updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
+  const saveEdit = async (id: string) => { await updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
 
   const handleAdd = () => {
     if (!newName.trim()) { toast.error("Enter commodity name"); return; }
