@@ -151,7 +151,7 @@ const SalesEntryPage = () => {
               <TableHead>Customer</TableHead><TableHead>Commodity</TableHead>
               <TableHead className="text-right">Gross</TableHead><TableHead className="text-right">Container</TableHead>
               <TableHead className="text-right">Actual Wt</TableHead><TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Ex. Fee</TableHead><TableHead>Exchange</TableHead>
+              <TableHead className="text-right">Amount</TableHead><TableHead>Exchange</TableHead>
               <TableHead>Date</TableHead>{hasPermission("delete_entries") && <TableHead />}
             </TableRow></TableHeader>
             <TableBody>
