@@ -42,7 +42,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
     (item) => !item.permission || hasPermission(item.permission)
   );
 
-  const roleBadge = user?.role === "admin" ? "Admin" : user?.role === "accountant" ? "Accountant" : user?.role === "data_manager" ? "Data Manager" : "Worker";
+  const roleBadge = user?.role === "admin" ? "Admin" : user?.role === "accountant" ? "Accountant" : user?.role === "data_manager" ? "Data Manager" : user?.role === "human_resource" ? "Human Resource" : user?.role === "cashier" ? "Cashier" : "Boss";
 
   return (
     <div className="min-h-screen flex bg-background">

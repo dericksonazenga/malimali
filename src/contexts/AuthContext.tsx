@@ -7,7 +7,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: ["update_rates", "delete_entries", "view_reports", "manage_workers", "manage_expenses", "manage_inventory"],
   accountant: ["view_reports", "manage_expenses", "manage_workers"],
   data_manager: ["update_rates", "delete_entries", "manage_inventory"],
-  worker: [],
+  human_resource: ["manage_workers"],
+  cashier: ["manage_expenses", "view_reports"],
+  boss: [],
 };
 
 interface AuthContextType {
@@ -22,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const buildUser = (profile: { user_id: string; display_name: string; role: string }): User => {
-  const role = (profile.role || "worker") as UserRole;
+  const role = (profile.role || "boss") as UserRole;
   return {
     id: profile.user_id,
     name: profile.display_name || "User",
