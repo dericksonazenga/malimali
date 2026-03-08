@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ALTER COLUMN role SET DEFAULT 'boss';
