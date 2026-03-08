@@ -220,10 +220,11 @@ export function useAnalyticsData(range: DateRangeValue) {
 
     const allCommodities = new Set([...Object.keys(purchaseWeights), ...Object.keys(sellAgg)]);
     const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
-      const pw = purchaseWeights[commodity] || { totalWeight: 0, totalCost: 0 };
       const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
-      const avgBuyRate = pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
-      const avgSellRate = sa.totalWeight > 0 ? sa.totalAmount / sa.totalWeight : 0;
+      const rates = commodityRates[commodity];
+      // Use the average of agent and vip rates as the buy rate from the rates table
+      const avgBuyRate = rates ? ((rates.agentRate + rates.vipRate) / 2) : 0;
+      const avgSellRate = rates ? rates.salesRate : 0;
       const marginPerKg = avgSellRate - avgBuyRate;
       const totalProfit = sa.totalWeight > 0 ? marginPerKg * sa.totalWeight : 0;
       return { commodity, avgBuyRate, avgSellRate, marginPerKg, totalWeightSold: sa.totalWeight, totalProfit };
