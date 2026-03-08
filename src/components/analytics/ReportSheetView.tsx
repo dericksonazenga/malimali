@@ -135,10 +135,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {agentEntries.length === 0 && (
+                  {filteredAgents.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
                   )}
-                  {agentEntries.map((e: any) => (
+                  {filteredAgents.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell>{e.customer_name}</TableCell>
                       <TableCell>{e.commodity}</TableCell>
