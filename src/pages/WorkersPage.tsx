@@ -10,6 +10,7 @@ import { Users, Plus, Fingerprint, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { playSuccessSound, playRejectionAlarm } from "@/utils/alarmSound";
+import FingerprintRegistrationDialog from "@/components/FingerprintRegistrationDialog";
 
 interface WorkerRow {
   id: string;
@@ -26,14 +27,6 @@ interface StoredCredential {
   publicKey: string;
 }
 
-const isWebAuthnSupported = () =>
-  typeof window !== "undefined" &&
-  window.PublicKeyCredential !== undefined &&
-  typeof window.PublicKeyCredential === "function";
-
-const bufferToBase64 = (buffer: ArrayBuffer): string =>
-  btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
 const WorkersPage = () => {
   const { symbol } = useCurrency();
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
@@ -41,8 +34,9 @@ const WorkersPage = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [salary, setSalary] = useState("");
-  const [registerFp, setRegisterFp] = useState(false);
-  const [registering, setRegistering] = useState(false);
+  const [fpDialogOpen, setFpDialogOpen] = useState(false);
+  const [fpDialogWorker, setFpDialogWorker] = useState("");
+  const [pendingAddFp, setPendingAddFp] = useState(false);
   const [credentials, setCredentials] = useState<StoredCredential[]>(() => {
     const stored = localStorage.getItem("biometric_credentials");
     return stored ? JSON.parse(stored) : [];
@@ -79,66 +73,9 @@ const WorkersPage = () => {
     localStorage.setItem("biometric_credentials", JSON.stringify(creds));
   };
 
-  const doFingerprintRegistration = async (workerName: string): Promise<boolean> => {
-    if (!isWebAuthnSupported()) {
-      playRejectionAlarm();
-      toast.error("Biometric authentication is not supported on this device/browser");
-      return false;
-    }
-    if (credentials.find((c) => c.workerName === workerName)) {
-      toast.error(`${workerName} already has a registered fingerprint`);
-      return false;
-    }
-
-    try {
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const userId = crypto.getRandomValues(new Uint8Array(16));
-
-      const credential = (await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: { name: "ScrapFlow Attendance", id: window.location.hostname },
-          user: { id: userId, name: workerName, displayName: workerName },
-          pubKeyCredParams: [
-            { alg: -7, type: "public-key" },
-            { alg: -257, type: "public-key" },
-          ],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
-            userVerification: "required",
-            residentKey: "preferred",
-          },
-          timeout: 60000,
-          attestation: "none",
-        },
-      })) as PublicKeyCredential;
-
-      if (!credential) {
-        playRejectionAlarm();
-        toast.error("Registration cancelled");
-        return false;
-      }
-
-      const response = credential.response as AuthenticatorAttestationResponse;
-      const newCred: StoredCredential = {
-        workerName,
-        credentialId: bufferToBase64(credential.rawId),
-        publicKey: bufferToBase64(response.getPublicKey?.() || new ArrayBuffer(0)),
-      };
-
-      saveCredentials([...credentials, newCred]);
-      playSuccessSound();
-      toast.success(`✅ Fingerprint registered for ${workerName}!`);
-      return true;
-    } catch (err: any) {
-      playRejectionAlarm();
-      if (err.name === "NotAllowedError") {
-        toast.error("Biometric registration was cancelled or denied");
-      } else {
-        toast.error(`Registration failed: ${err.message}`);
-      }
-      return false;
-    }
+  const handleFpComplete = (workerName: string, creds: { credentialId: string; publicKey: string }[]) => {
+    const newCreds: StoredCredential[] = creds.map((c) => ({ workerName, ...c }));
+    saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -162,13 +99,13 @@ const WorkersPage = () => {
       return;
     }
 
-    if (registerFp) {
-      setRegistering(true);
-      await doFingerprintRegistration(workerName);
-      setRegistering(false);
+    if (pendingAddFp) {
+      setFpDialogWorker(workerName);
+      setFpDialogOpen(true);
+      setPendingAddFp(false);
     }
 
-    setName(""); setRole(""); setSalary(""); setRegisterFp(false);
+    setName(""); setRole(""); setSalary("");
     toast.success("Worker added!");
   };
 
@@ -192,10 +129,9 @@ const WorkersPage = () => {
     toast.success("Worker removed");
   };
 
-  const registerFingerprint = async (workerName: string) => {
-    setRegistering(true);
-    await doFingerprintRegistration(workerName);
-    setRegistering(false);
+  const openFpDialog = (workerName: string) => {
+    setFpDialogWorker(workerName);
+    setFpDialogOpen(true);
   };
 
   const removeFingerprint = (workerName: string) => {
@@ -219,21 +155,19 @@ const WorkersPage = () => {
             <div className="md:col-span-3 flex items-center gap-4 flex-wrap">
               <Button
                 type="button"
-                variant={registerFp ? "default" : "outline"}
+                variant={pendingAddFp ? "default" : "outline"}
                 className="h-12 gap-2"
-                disabled={registering || !name}
-                onClick={() => setRegisterFp(!registerFp)}
+                disabled={!name}
+                onClick={() => setPendingAddFp(!pendingAddFp)}
               >
                 <Fingerprint className="w-4 h-4" />
-                {registerFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
+                {pendingAddFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
               </Button>
-              {registerFp && (
-                <p className="text-xs text-primary">Fingerprint will be captured when you click "Add Worker"</p>
+              {pendingAddFp && (
+                <p className="text-xs text-primary">Fingerprint dialog will open after adding the worker</p>
               )}
               <div className="flex-1" />
-              <Button type="submit" className="h-12 px-8" disabled={registering}>
-                {registering ? "Scanning Fingerprint..." : "Add Worker"}
-              </Button>
+              <Button type="submit" className="h-12 px-8">Add Worker</Button>
             </div>
           </form>
         </CardContent>
@@ -277,8 +211,7 @@ const WorkersPage = () => {
                         variant="outline"
                         size="sm"
                         className="gap-1"
-                        disabled={registering}
-                        onClick={() => registerFingerprint(w.name)}
+                        onClick={() => openFpDialog(w.name)}
                       >
                         <Fingerprint className="w-3 h-3" />
                         Register
@@ -302,6 +235,13 @@ const WorkersPage = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <FingerprintRegistrationDialog
+        open={fpDialogOpen}
+        onOpenChange={setFpDialogOpen}
+        workerName={fpDialogWorker}
+        onComplete={(creds) => handleFpComplete(fpDialogWorker, creds)}
+      />
     </div>
   );
 };
