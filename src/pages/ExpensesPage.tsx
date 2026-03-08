@@ -11,6 +11,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { playRejectionAlarm, playSuccessSound } from "@/utils/alarmSound";
 import { supabase } from "@/integrations/supabase/client";
+import { useBiometricCredentials } from "@/hooks/useBiometricCredentials";
 
 const isWebAuthnSupported = () =>
   typeof window !== "undefined" &&
@@ -27,12 +28,6 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
 const bufferToBase64 = (buffer: ArrayBuffer): string =>
   btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
-interface StoredCredential {
-  workerName: string;
-  credentialId: string;
-  publicKey: string;
-}
-
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -42,19 +37,18 @@ const ExpensesPage = () => {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Worker picker for fingerprint verification
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [credentials, setCredentials] = useState<StoredCredential[]>([]);
   const [workerSearch, setWorkerSearch] = useState("");
   const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
 
-  // Load expenses from DB
+  const { credentials, hasFingerprint } = useBiometricCredentials();
+
   useEffect(() => {
     const fetchExpenses = async () => {
       const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("expenses")
         .select("*")
         .eq("date", today)
@@ -73,10 +67,7 @@ const ExpensesPage = () => {
     fetchExpenses();
   }, []);
 
-  // Load biometric credentials + workers from DB
   useEffect(() => {
-    const stored = localStorage.getItem("biometric_credentials");
-    if (stored) setCredentials(JSON.parse(stored));
     const fetchWorkers = async () => {
       const { data } = await supabase.from("workers").select("*").order("name");
       if (data) {
@@ -161,7 +152,6 @@ const ExpensesPage = () => {
     e.preventDefault();
     if (!category || !amount) { toast.error("Fill required fields"); return; }
 
-    // All expenses require a responsible person + fingerprint
     if (!selectedWorker) {
       setShowWorkerPicker(true);
       toast.error("Select the responsible person and verify fingerprint");
@@ -174,7 +164,6 @@ const ExpensesPage = () => {
     const isLunch = category.toLowerCase() === "lunch";
     const expenseNotes = isLunch ? `Lunch for ${selectedWorker.name} (${selectedWorker.role})` : (notes || `Verified by ${selectedWorker.name}`);
 
-    // Save to database
     const { data, error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
@@ -248,7 +237,6 @@ const ExpensesPage = () => {
         </CardContent>
       </Card>
 
-      {/* Worker Picker Dialog */}
       <Dialog open={showWorkerPicker} onOpenChange={setShowWorkerPicker}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -265,7 +253,7 @@ const ExpensesPage = () => {
             {dbWorkers
               .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
               .map((w) => {
-              const hasFp = credentials.some(c => c.workerName === w.name);
+              const hasFp = hasFingerprint(w.name);
               return (
                 <button key={w.id} type="button" onClick={() => { handleWorkerSelect(w); setWorkerSearch(""); }}
                   className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">

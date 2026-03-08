@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Fingerprint, LogIn, LogOut, Clock, CalendarDays, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { playRejectionAlarm, playSuccessSound } from "@/utils/alarmSound";
-
-interface StoredCredential {
-  workerName: string;
-  credentialId: string;
-  publicKey: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { useBiometricCredentials } from "@/hooks/useBiometricCredentials";
 
 interface AttendanceRecord {
   id: string;
@@ -36,51 +31,39 @@ const base64ToBuffer = (base64: string): ArrayBuffer =>
   Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
 
 const AttendancePage = () => {
-  const { resetSignal } = useEndOfDay();
-  const [credentials, setCredentials] = useState<StoredCredential[]>([]);
+  const { credentials } = useBiometricCredentials();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authMode, setAuthMode] = useState<"sign_in" | "sign_out">("sign_in");
 
-  // Load credentials from localStorage (registered on Workers page)
-  useEffect(() => {
-    const stored = localStorage.getItem("biometric_credentials");
-    if (stored) setCredentials(JSON.parse(stored));
-    const storedRecords = localStorage.getItem("attendance_records");
-    if (storedRecords) setRecords(JSON.parse(storedRecords));
+  const fetchRecords = useCallback(async () => {
+    const { data } = await supabase
+      .from("attendance")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      setRecords(data.map((d: any) => ({
+        id: d.id,
+        workerName: d.worker_name,
+        signInAt: d.sign_in_at,
+        signOutAt: d.sign_out_at,
+        date: d.date,
+        status: d.status,
+      })));
+    }
   }, []);
 
-  // Listen for credential changes from Workers page
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === "biometric_credentials" && e.newValue) {
-        setCredentials(JSON.parse(e.newValue));
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+    fetchRecords();
+    const channel = supabase
+      .channel("attendance-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchRecords())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchRecords]);
 
-  // End of Day: clear displayed records (keep in localStorage as "archived")
-  useEffect(() => {
-    if (resetSignal === 0) return;
-    // Archive current records
-    const existing = localStorage.getItem("attendance_archive");
-    const archive: AttendanceRecord[] = existing ? JSON.parse(existing) : [];
-    const merged = [...archive, ...records];
-    localStorage.setItem("attendance_archive", JSON.stringify(merged));
-    // Clear displayed
-    setRecords([]);
-    localStorage.setItem("attendance_records", JSON.stringify([]));
-  }, [resetSignal]);
-
-  const saveRecords = (recs: AttendanceRecord[]) => {
-    setRecords(recs);
-    localStorage.setItem("attendance_records", JSON.stringify(recs));
-  };
-
-  // Authenticate a worker using their fingerprint
   const authenticateWorker = async (mode: "sign_in" | "sign_out") => {
     if (!isWebAuthnSupported()) {
       playRejectionAlarm();
@@ -129,9 +112,9 @@ const AttendancePage = () => {
 
       const today = new Date().toISOString().split("T")[0];
       const now = new Date().toISOString();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
 
       if (mode === "sign_in") {
-        // Check for duplicate attendance
         const existing = records.find(
           (r) => r.workerName === worker.workerName && r.date === today && r.signInAt
         );
@@ -141,15 +124,15 @@ const AttendancePage = () => {
           return;
         }
 
-        const newRecord: AttendanceRecord = {
-          id: crypto.randomUUID(),
-          workerName: worker.workerName,
-          signInAt: now,
-          signOutAt: null,
+        const { error } = await supabase.from("attendance").insert({
+          worker_name: worker.workerName,
+          sign_in_at: now,
           date: today,
           status: "present",
-        };
-        saveRecords([...records, newRecord]);
+          created_by: userId,
+        });
+
+        if (error) { toast.error("Failed to save attendance"); return; }
         playSuccessSound();
         toast.success(`✅ ${worker.workerName} signed in at ${new Date().toLocaleTimeString()}`);
       } else {
@@ -162,13 +145,13 @@ const AttendancePage = () => {
           return;
         }
 
-        const updated = records.map((r) =>
-          r.id === todayRecord.id ? { ...r, signOutAt: now } : r
-        );
-        saveRecords(updated);
+        const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
+        if (error) { toast.error("Failed to save sign-out"); return; }
         playSuccessSound();
         toast.success(`✅ ${worker.workerName} signed out at ${new Date().toLocaleTimeString()}`);
       }
+
+      await fetchRecords();
     } catch (err: any) {
       playRejectionAlarm();
       if (err.name === "NotAllowedError") {
@@ -188,9 +171,11 @@ const AttendancePage = () => {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Get unique registered worker names
+  const uniqueWorkerNames = [...new Set(credentials.map((c) => c.workerName))];
+
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Biometric Sign In/Out Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-2 border-primary/20">
           <CardContent className="pt-6">
@@ -221,31 +206,29 @@ const AttendancePage = () => {
         </Card>
       </div>
 
-      {/* Info about registration */}
       {credentials.length === 0 && (
         <Card className="border-warning/30 bg-warning/5">
           <CardContent className="pt-6 flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
             <p className="text-sm text-muted-foreground">
-              No fingerprints registered. Go to the <strong>Workers</strong> page to register fingerprints for each worker during recruitment.
+              No fingerprints registered. Go to the <strong>Workers</strong> page to register fingerprints for each worker.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Registered Workers Summary */}
-      {credentials.length > 0 && (
+      {uniqueWorkerNames.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Fingerprint className="w-5 h-5" /> Registered Workers ({credentials.length})
+              <Fingerprint className="w-5 h-5" /> Registered Workers ({uniqueWorkerNames.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {credentials.map((c) => (
-                <Badge key={c.credentialId} variant="secondary" className="px-3 py-1.5 text-sm">
-                  {c.workerName}
+              {uniqueWorkerNames.map((name) => (
+                <Badge key={name} variant="secondary" className="px-3 py-1.5 text-sm">
+                  {name}
                 </Badge>
               ))}
             </div>
@@ -253,7 +236,6 @@ const AttendancePage = () => {
         </Card>
       )}
 
-      {/* Attendance Records */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

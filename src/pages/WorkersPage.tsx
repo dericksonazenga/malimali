@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Fingerprint, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { playSuccessSound, playRejectionAlarm } from "@/utils/alarmSound";
 import FingerprintRegistrationDialog from "@/components/FingerprintRegistrationDialog";
+import { useBiometricCredentials } from "@/hooks/useBiometricCredentials";
 
 interface WorkerRow {
   id: string;
@@ -19,12 +19,6 @@ interface WorkerRow {
   salary: number;
   paid: number;
   balance: number;
-}
-
-interface StoredCredential {
-  workerName: string;
-  credentialId: string;
-  publicKey: string;
 }
 
 const WorkersPage = () => {
@@ -37,10 +31,8 @@ const WorkersPage = () => {
   const [fpDialogOpen, setFpDialogOpen] = useState(false);
   const [fpDialogWorker, setFpDialogWorker] = useState("");
   const [pendingCreds, setPendingCreds] = useState<{ credentialId: string; publicKey: string }[]>([]);
-  const [credentials, setCredentials] = useState<StoredCredential[]>(() => {
-    const stored = localStorage.getItem("biometric_credentials");
-    return stored ? JSON.parse(stored) : [];
-  });
+
+  const { credentials, saveCredentials, removeCredentials, hasFingerprint } = useBiometricCredentials();
 
   const fetchWorkers = useCallback(async () => {
     const { data } = await supabase.from("workers").select("*").order("created_at", { ascending: true });
@@ -68,11 +60,6 @@ const WorkersPage = () => {
 
   const totalBalance = workers.reduce((s, w) => s + w.balance, 0);
 
-  const saveCredentials = (creds: StoredCredential[]) => {
-    setCredentials(creds);
-    localStorage.setItem("biometric_credentials", JSON.stringify(creds));
-  };
-
   const handleFpComplete = (workerName: string, creds: { credentialId: string; publicKey: string }[]) => {
     setPendingCreds(creds);
     toast.success(`Fingerprints captured for ${workerName}! Now click Add Worker.`);
@@ -99,10 +86,10 @@ const WorkersPage = () => {
       return;
     }
 
-    // Save fingerprint credentials if captured
+    // Save fingerprint credentials to database
     if (pendingCreds.length > 0) {
-      const newCreds: StoredCredential[] = pendingCreds.map((c) => ({ workerName, ...c }));
-      saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
+      const saved = await saveCredentials(workerName, pendingCreds);
+      if (!saved) toast.error("Failed to save fingerprints to database");
       setPendingCreds([]);
     }
 
@@ -135,12 +122,11 @@ const WorkersPage = () => {
     setFpDialogOpen(true);
   };
 
-  const removeFingerprint = (workerName: string) => {
-    saveCredentials(credentials.filter((c) => c.workerName !== workerName));
-    toast.success(`Removed fingerprint for ${workerName}`);
+  const handleRemoveFingerprint = async (workerName: string) => {
+    const success = await removeCredentials(workerName);
+    if (success) toast.success(`Removed fingerprint for ${workerName}`);
+    else toast.error("Failed to remove fingerprint");
   };
-
-  const hasFingerprint = (workerName: string) => credentials.some((c) => c.workerName === workerName);
 
   if (loading) return <p className="text-muted-foreground p-4">Loading workers…</p>;
 
@@ -206,19 +192,13 @@ const WorkersPage = () => {
                         <Badge variant="default" className="gap-1">
                           <Fingerprint className="w-3 h-3" /> Registered
                         </Badge>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeFingerprint(w.name)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveFingerprint(w.name)}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => openFpDialog(w.name)}
-                      >
-                        <Fingerprint className="w-3 h-3" />
-                        Register
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => openFpDialog(w.name)}>
+                        <Fingerprint className="w-3 h-3" /> Register
                       </Button>
                     )}
                   </TableCell>
