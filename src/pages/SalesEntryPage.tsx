@@ -30,6 +30,7 @@ const SalesEntryPage = () => {
   const [isExchange, setIsExchange] = useState(false);
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
+  const [exchangeFee, setExchangeFee] = useState("");
 
   useEffect(() => {
     if (resetSignal === 0) return;
