@@ -186,7 +186,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {vipEntries.length > 0 && (
+              {filteredVip.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono">{symbol}{fmt(vipTotal)}</span></span>
                 </div>
