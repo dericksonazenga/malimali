@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck, QrCode, UserMinus } from "lucide-react";
+import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck, QrCode, UserMinus, AlertTriangle, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import QRScanner from "@/components/QRScanner";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 interface AttendanceRecord {
   id: string;
   workerName: string;
@@ -49,6 +50,8 @@ const AttendancePage = () => {
   const [signOutWorker, setSignOutWorker] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [shiftStartTime, setShiftStartTime] = useState("08:00");
+  const [showStartTimeSetting, setShowStartTimeSetting] = useState(false);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -83,15 +86,44 @@ const AttendancePage = () => {
     if (data) setWorkers(data);
   }, []);
 
+  const fetchShiftStartTime = useCallback(async () => {
+    const { data } = await supabase
+      .from("attendance_settings")
+      .select("value")
+      .eq("key", "shift_start_time")
+      .single();
+    if (data) setShiftStartTime(data.value);
+  }, []);
+
+  const updateShiftStartTime = async (time: string) => {
+    setShiftStartTime(time);
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    await supabase
+      .from("attendance_settings")
+      .update({ value: time, updated_at: new Date().toISOString(), updated_by: userId })
+      .eq("key", "shift_start_time");
+    toast.success(`Shift start time updated to ${time}`);
+  };
+
+  const isLate = useCallback((signInAt: string | null) => {
+    if (!signInAt || !shiftStartTime) return false;
+    const signInDate = new Date(signInAt);
+    const [hours, minutes] = shiftStartTime.split(":").map(Number);
+    const startThreshold = new Date(signInDate);
+    startThreshold.setHours(hours, minutes, 0, 0);
+    return signInDate > startThreshold;
+  }, [shiftStartTime]);
+
   useEffect(() => {
     fetchRecords();
     fetchWorkers();
+    fetchShiftStartTime();
     const channel = supabase
       .channel("attendance-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchRecords())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchRecords, fetchWorkers]);
+  }, [fetchRecords, fetchWorkers, fetchShiftStartTime]);
 
   const todayRecords = useMemo(() => records.filter((r) => r.date === todayStr), [records, todayStr]);
   const activeWorkers = useMemo(() => todayRecords.filter((r) => r.signInAt && !r.signOutAt), [todayRecords]);
@@ -160,7 +192,11 @@ const AttendancePage = () => {
       worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
     });
     if (error) { toast.error("Failed to save attendance"); return; }
-    toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    if (isLate(now)) {
+      toast.warning(`⚠️ ${worker.name} signed in LATE (after ${shiftStartTime})`, { duration: 5000 });
+    } else {
+      toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    }
     setSignInWorker("");
     await fetchRecords();
   };
@@ -220,8 +256,36 @@ const AttendancePage = () => {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const lateCount = useMemo(() => todayRecords.filter(r => isLate(r.signInAt)).length, [todayRecords, isLate]);
+
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Shift Start Time Setting */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => setShowStartTimeSetting(!showStartTimeSetting)}>
+            <Settings className="w-4 h-4" /> Shift starts at <span className="font-mono font-semibold text-foreground">{shiftStartTime}</span>
+          </Button>
+          {lateCount > 0 && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle className="w-3 h-3" /> {lateCount} late today
+            </Badge>
+          )}
+        </div>
+        {showStartTimeSetting && (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="shift-start" className="text-sm">Start time:</Label>
+            <Input
+              id="shift-start"
+              type="time"
+              value={shiftStartTime}
+              onChange={(e) => updateShiftStartTime(e.target.value)}
+              className="w-32 h-8"
+            />
+          </div>
+        )}
+      </div>
+
       {/* Sign In Methods */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Sign In Card */}
@@ -357,6 +421,11 @@ const AttendancePage = () => {
                     <Badge variant="outline" className="px-3 py-1.5">
                       {todayRecords.filter((r) => !r.signOutAt).length} still in
                     </Badge>
+                    {lateCount > 0 && (
+                      <Badge variant="destructive" className="px-3 py-1.5 gap-1">
+                        <AlertTriangle className="w-3 h-3" /> {lateCount} late
+                      </Badge>
+                    )}
                   </div>
                   <Table>
                     <TableHeader>
@@ -373,10 +442,22 @@ const AttendancePage = () => {
                         const duration = r.signInAt && r.signOutAt
                           ? ((new Date(r.signOutAt).getTime() - new Date(r.signInAt).getTime()) / (1000 * 60 * 60)).toFixed(1)
                           : null;
+                        const late = isLate(r.signInAt);
                         return (
-                          <TableRow key={r.id}>
-                            <TableCell className="font-medium">{r.workerName}</TableCell>
-                            <TableCell><span className="flex items-center gap-1"><Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signInAt)}</span></TableCell>
+                          <TableRow key={r.id} className={late ? "bg-destructive/5" : ""}>
+                            <TableCell className="font-medium">
+                              {r.workerName}
+                              {late && (
+                                <Badge variant="destructive" className="ml-2 text-[10px] px-1.5 py-0 gap-0.5">
+                                  <AlertTriangle className="w-2.5 h-2.5" /> Late
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className={cn("flex items-center gap-1", late && "text-destructive font-semibold")}>
+                                <Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signInAt)}
+                              </span>
+                            </TableCell>
                             <TableCell><span className="flex items-center gap-1"><Clock className="w-3 h-3 text-muted-foreground" />{formatTime(r.signOutAt)}</span></TableCell>
                             <TableCell className="font-mono text-sm">{duration ? `${duration}h` : "—"}</TableCell>
                             <TableCell>
