@@ -256,8 +256,36 @@ const AttendancePage = () => {
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const lateCount = useMemo(() => todayRecords.filter(r => isLate(r.signInAt)).length, [todayRecords, isLate]);
+
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Shift Start Time Setting */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => setShowStartTimeSetting(!showStartTimeSetting)}>
+            <Settings className="w-4 h-4" /> Shift starts at <span className="font-mono font-semibold text-foreground">{shiftStartTime}</span>
+          </Button>
+          {lateCount > 0 && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle className="w-3 h-3" /> {lateCount} late today
+            </Badge>
+          )}
+        </div>
+        {showStartTimeSetting && (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="shift-start" className="text-sm">Start time:</Label>
+            <Input
+              id="shift-start"
+              type="time"
+              value={shiftStartTime}
+              onChange={(e) => updateShiftStartTime(e.target.value)}
+              className="w-32 h-8"
+            />
+          </div>
+        )}
+      </div>
+
       {/* Sign In Methods */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Sign In Card */}
