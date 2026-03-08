@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_entries: {
+        Row: {
+          actual_weight: number
+          amount: number
+          commodity: string
+          container_weight: number
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          date: string
+          gross_weight: number
+          id: string
+          item_image: string | null
+          rate: number
+          weight_image: string | null
+        }
+        Insert: {
+          actual_weight?: number
+          amount?: number
+          commodity: string
+          container_weight?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          date?: string
+          gross_weight?: number
+          id?: string
+          item_image?: string | null
+          rate?: number
+          weight_image?: string | null
+        }
+        Update: {
+          actual_weight?: number
+          amount?: number
+          commodity?: string
+          container_weight?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          date?: string
+          gross_weight?: number
+          id?: string
+          item_image?: string | null
+          rate?: number
+          weight_image?: string | null
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -232,6 +280,96 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      sales_entries: {
+        Row: {
+          amount: number | null
+          commodity: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          date: string
+          id: string
+          item_image: string | null
+          rate: number | null
+          weight: number
+          weight_image: string | null
+        }
+        Insert: {
+          amount?: number | null
+          commodity?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          date?: string
+          id?: string
+          item_image?: string | null
+          rate?: number | null
+          weight?: number
+          weight_image?: string | null
+        }
+        Update: {
+          amount?: number | null
+          commodity?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          date?: string
+          id?: string
+          item_image?: string | null
+          rate?: number | null
+          weight?: number
+          weight_image?: string | null
+        }
+        Relationships: []
+      }
+      vip_entries: {
+        Row: {
+          actual_weight: number
+          amount: number
+          commodity: string
+          container_weight: number
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          date: string
+          gross_weight: number
+          id: string
+          item_image: string | null
+          rate: number
+          weight_image: string | null
+        }
+        Insert: {
+          actual_weight?: number
+          amount?: number
+          commodity: string
+          container_weight?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          date?: string
+          gross_weight?: number
+          id?: string
+          item_image?: string | null
+          rate?: number
+          weight_image?: string | null
+        }
+        Update: {
+          actual_weight?: number
+          amount?: number
+          commodity?: string
+          container_weight?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          date?: string
+          gross_weight?: number
+          id?: string
+          item_image?: string | null
+          rate?: number
+          weight_image?: string | null
         }
         Relationships: []
       }
