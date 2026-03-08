@@ -340,6 +340,27 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          role?: string
+        }
+        Relationships: []
+      }
       sales_entries: {
         Row: {
           amount: number | null
