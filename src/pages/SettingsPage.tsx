@@ -8,9 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SettingsPage = () => {
   const { currency, symbol, setCurrencyCode } = useCurrency();
+  const { user } = useAuth();
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -38,6 +39,8 @@ const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {user?.role === "admin" && <PermissionsManager />}
     </div>
   );
 };
