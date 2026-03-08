@@ -3,19 +3,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
+import { Recycle, LogIn, UserPlus, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/types";
 
 const LoginPage = () => {
   const { login, signup } = useAuth();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [selectedRole, setSelectedRole] = useState<UserRole>("boss");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,21 +38,75 @@ const LoginPage = () => {
     }
 
     if (mode === "signup") {
+      // Validate against pre-registered workers
+      const identifier = loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
+      if (!identifier) {
+        setError(loginMethod === "email" ? "Please enter your email" : "Please enter your phone number");
+        setSubmitting(false);
+        return;
+      }
       if (!displayName.trim()) {
         setError("Please enter your name");
         setSubmitting(false);
         return;
       }
-      const err = await signup(email, password, displayName.trim(), selectedRole);
+
+      // Check if pre-registered
+      let query = supabase
+        .from("recruited_workers")
+        .select("*")
+        .eq("claimed", false);
+
+      if (loginMethod === "email") {
+        query = query.eq("email", identifier);
+      } else {
+        query = query.eq("phone", identifier);
+      }
+
+      const { data: recruits, error: checkError } = await query;
+      if (checkError) {
+        setError("Failed to verify registration. Try again.");
+        setSubmitting(false);
+        return;
+      }
+      if (!recruits || recruits.length === 0) {
+        setError("Your " + (loginMethod === "email" ? "email" : "phone number") + " has not been pre-registered by an admin. Please contact your administrator.");
+        setSubmitting(false);
+        return;
+      }
+
+      const recruit = recruits[0];
+
+      // For phone signup, we still need an email for Supabase auth
+      // Use a generated email if signing up via phone
+      const authEmail = loginMethod === "email" ? identifier : `${identifier.replace(/[^a-zA-Z0-9]/g, "")}@phone.local`;
+
+      const err = await signup(authEmail, password, displayName.trim(), recruit.role as any);
       if (err) {
         setError(err);
       } else {
-        toast.success("Account created! Please check your email to verify your account before signing in.");
+        // Mark recruit as claimed
+        await supabase
+          .from("recruited_workers")
+          .update({ claimed: true })
+          .eq("id", recruit.id);
+
+        if (loginMethod === "phone") {
+          toast.success("Account created! You can now sign in with your phone number.");
+        } else {
+          toast.success("Account created! Please check your email to verify your account before signing in.");
+        }
         setMode("login");
         setDisplayName("");
       }
     } else {
-      const ok = await login(email, password);
+      // Login
+      let authEmail = email.trim();
+      if (loginMethod === "phone") {
+        // For phone login, reconstruct the generated email
+        authEmail = `${phone.trim().replace(/[^a-zA-Z0-9]/g, "")}@phone.local`;
+      }
+      const ok = await login(authEmail, password);
       if (!ok) {
         setError("Invalid credentials or email not verified.");
       }
@@ -75,6 +128,30 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-2xl space-y-5">
+          {/* Login method toggle */}
+          {mode !== "forgot" && (
+            <div className="flex gap-2 justify-center">
+              <Button
+                type="button"
+                variant={loginMethod === "email" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLoginMethod("email")}
+                className="gap-1"
+              >
+                <Mail className="w-4 h-4" /> Email
+              </Button>
+              <Button
+                type="button"
+                variant={loginMethod === "phone" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setLoginMethod("phone")}
+                className="gap-1"
+              >
+                <Phone className="w-4 h-4" /> Phone
+              </Button>
+            </div>
+          )}
+
           {mode === "signup" && (
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -89,36 +166,35 @@ const LoginPage = () => {
               />
             </div>
           )}
-          {mode === "signup" && (
+
+          {loginMethod === "email" || mode === "forgot" ? (
             <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="accountant">Accountant</SelectItem>
-                  <SelectItem value="data_manager">Data Manager</SelectItem>
-                  <SelectItem value="human_resource">Human Resource</SelectItem>
-                  <SelectItem value="cashier">Cashier</SelectItem>
-                  <SelectItem value="boss">Boss</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-12"
+                required
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+254..."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="h-12"
+                required
+              />
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-12"
-              required
-            />
-          </div>
+
           {mode !== "forgot" && (
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -143,6 +219,12 @@ const LoginPage = () => {
             {mode === "forgot" ? <Mail className="w-5 h-5" /> : mode === "signup" ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
             {submitting ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Sign In"}
           </Button>
+
+          {mode === "signup" && (
+            <p className="text-xs text-muted-foreground text-center">
+              Only pre-registered workers can sign up. Contact your admin if you're not registered.
+            </p>
+          )}
 
           <div className="text-center space-y-2">
             {mode === "login" && (
