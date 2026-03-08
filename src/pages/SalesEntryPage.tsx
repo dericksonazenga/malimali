@@ -53,19 +53,23 @@ const SalesEntryPage = () => {
     } else {
       if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     }
+    const entryAmount = isExchange ? exchFee : amount;
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
-      commodity,
-      grossWeight: gross,
-      containerWeight: container,
-      weight: actualWeight,
-      rate: rate > 0 ? rate : undefined,
-      amount,
+      commodity: isExchange ? exchangeCommodity : commodity,
+      grossWeight: isExchange ? 0 : gross,
+      containerWeight: isExchange ? 0 : container,
+      weight: isExchange ? (parseFloat(exchangeWeight) || 0) : actualWeight,
+      rate: isExchange ? undefined : (rate > 0 ? rate : undefined),
+      amount: entryAmount,
       isExchange,
       exchangeCommodity: isExchange ? exchangeCommodity : undefined,
       exchangeWeight: isExchange ? parseFloat(exchangeWeight) || 0 : undefined,
       exchangeFee: isExchange ? exchFee : 0,
+      createdBy: "current",
+      createdAt: new Date().toISOString().split("T")[0],
+    });
       createdBy: "current",
       createdAt: new Date().toISOString().split("T")[0],
     });
