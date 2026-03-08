@@ -132,6 +132,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       .on("postgres_changes", { event: "*", schema: "public", table: "vip_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "sales_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "persistent_stock" }, () => fetchPersistentStock())
+      .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, () => fetchToday())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
