@@ -111,13 +111,14 @@ export function useAnalyticsData(range: DateRangeValue) {
       return q;
     };
 
-    const [agents, vips, sales, exps, workers, stock] = await Promise.all([
+    const [agents, vips, sales, exps, workers, stock, commodities] = await Promise.all([
       applyRange(supabase.from("agent_entries").select("*")),
       applyRange(supabase.from("vip_entries").select("*")),
       applyRange(supabase.from("sales_entries").select("*")),
       applyRange(supabase.from("expenses").select("*")),
       supabase.from("workers").select("*"),
       supabase.from("persistent_stock").select("*"),
+      supabase.from("commodities").select("*"),
     ]);
 
     const agentRows = agents.data || [];
@@ -126,6 +127,14 @@ export function useAnalyticsData(range: DateRangeValue) {
     const expRows = exps.data || [];
     const workerRows = workers.data || [];
     const stockRows = stock.data || [];
+
+    const commodityRows = commodities.data || [];
+
+    // Build commodity rate lookup from rates table
+    const commodityRates: Record<string, { agentRate: number; vipRate: number; salesRate: number }> = {};
+    commodityRows.forEach((c: any) => {
+      commodityRates[c.name] = { agentRate: Number(c.agent_rate), vipRate: Number(c.vip_rate), salesRate: Number(c.sales_rate) };
+    });
 
     const agentTotal = agentRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
     const vipTotal = vipRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
@@ -211,10 +220,11 @@ export function useAnalyticsData(range: DateRangeValue) {
 
     const allCommodities = new Set([...Object.keys(purchaseWeights), ...Object.keys(sellAgg)]);
     const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
-      const pw = purchaseWeights[commodity] || { totalWeight: 0, totalCost: 0 };
       const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
-      const avgBuyRate = pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
-      const avgSellRate = sa.totalWeight > 0 ? sa.totalAmount / sa.totalWeight : 0;
+      const rates = commodityRates[commodity];
+      // Use the average of agent and vip rates as the buy rate from the rates table
+      const avgBuyRate = rates ? ((rates.agentRate + rates.vipRate) / 2) : 0;
+      const avgSellRate = rates ? rates.salesRate : 0;
       const marginPerKg = avgSellRate - avgBuyRate;
       const totalProfit = sa.totalWeight > 0 ? marginPerKg * sa.totalWeight : 0;
       return { commodity, avgBuyRate, avgSellRate, marginPerKg, totalWeightSold: sa.totalWeight, totalProfit };
