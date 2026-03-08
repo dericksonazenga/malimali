@@ -176,6 +176,7 @@ const FinancialReportPage = () => {
         commodityBreakdown={commodityBreakdown}
         stockData={stockData}
         expenses={expenses}
+        dailyProfitTrend={dailyProfitTrend}
       />
 
       {/* Detailed Sections */}
