@@ -44,7 +44,7 @@ const LoginPage = () => {
         setSubmitting(false);
         return;
       }
-      const err = await signup(email, password, displayName.trim());
+      const err = await signup(email, password, displayName.trim(), selectedRole);
       if (err) {
         setError(err);
       } else {
