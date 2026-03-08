@@ -118,6 +118,21 @@ const PermissionsManager = () => {
                 ))}
               </tr>
             ))}
+            <tr className="border-t-2 border-border">
+              <td className="py-3 pr-4 font-semibold text-muted-foreground">Select All</td>
+              {ALL_ROLES.map((role) => {
+                const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+                return (
+                  <td key={role} className="text-center py-3 px-2">
+                    <Switch
+                      checked={allSelected}
+                      onCheckedChange={() => toggleAll(role)}
+                      className="mx-auto"
+                    />
+                  </td>
+                );
+              })}
+            </tr>
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground mt-4">
