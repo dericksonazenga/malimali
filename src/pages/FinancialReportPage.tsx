@@ -1,219 +1,340 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { FileDown, TrendingUp, TrendingDown, DollarSign, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
+  BarChart3, Package, Users, Receipt, Loader2
+} from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
+import { downloadCSV } from "@/utils/downloadCSV";
+import DateRangeSelector from "@/components/analytics/DateRangeSelector";
+import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 
-interface ExpenseRow { id: string; category: string; amount: number; notes: string }
+const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 const FinancialReportPage = () => {
   const { symbol, currency } = useCurrency();
-  const [agentTotal, setAgentTotal] = useState(0);
-  const [vipTotal, setVipTotal] = useState(0);
-  const [salesTotal, setSalesTotal] = useState(0);
-  const [expenseTotal, setExpenseTotal] = useState(0);
-  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
-  const [salaryTotal, setSalaryTotal] = useState(0);
-  const [salaryPaid, setSalaryPaid] = useState(0);
-  const [salaryBalance, setSalaryBalance] = useState(0);
+  const [range, setRange] = useState<DateRange>("today");
+  const { data, loading } = useAnalyticsData(range);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const today = new Date().toISOString().split("T")[0];
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
-      // Get last EOD timestamp to filter only post-EOD data
-      const { data: eodData } = await supabase
-        .from("end_of_day_log")
-        .select("triggered_at")
-        .eq("date", today)
-        .order("triggered_at", { ascending: false })
-        .limit(1);
-      const lastEod = eodData?.[0]?.triggered_at;
+  const {
+    agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
+    agentTotal, vipTotal, salesTotal, expenseTotal,
+    salaryTotal, salaryPaid, salaryBalance,
+    totalPurchases, grossProfit, netProfit, commodityBreakdown,
+  } = data;
 
-      let agentQ = supabase.from("agent_entries").select("amount").eq("date", today);
-      let vipQ = supabase.from("vip_entries").select("amount").eq("date", today);
-      let salesQ = supabase.from("sales_entries").select("amount").eq("date", today);
-      let expenseQ = supabase.from("expenses").select("id, category, amount, notes").eq("date", today);
+  const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
-      if (lastEod) {
-        agentQ = agentQ.gt("created_at", lastEod);
-        vipQ = vipQ.gt("created_at", lastEod);
-        salesQ = salesQ.gt("created_at", lastEod);
-        expenseQ = expenseQ.gt("created_at", lastEod);
-      }
-
-      const [agents, vips, sales, expenses, workers] = await Promise.all([
-        agentQ, vipQ, salesQ, expenseQ,
-        supabase.from("workers").select("salary, paid, balance"),
-      ]);
-      setAgentTotal((agents.data || []).reduce((s, e) => s + Number(e.amount), 0));
-      setVipTotal((vips.data || []).reduce((s, e) => s + Number(e.amount), 0));
-      setSalesTotal((sales.data || []).reduce((s, e) => s + Number(e.amount || 0), 0));
-      const expData = (expenses.data || []).map((e: any) => ({ id: e.id, category: e.category, amount: Number(e.amount), notes: e.notes || "" }));
-      setExpenseRows(expData);
-      setExpenseTotal(expData.reduce((s, e) => s + e.amount, 0));
-      const w = workers.data || [];
-      setSalaryTotal(w.reduce((s, x) => s + Number(x.salary), 0));
-      setSalaryPaid(w.reduce((s, x) => s + Number(x.paid), 0));
-      setSalaryBalance(w.reduce((s, x) => s + Number(x.balance), 0));
-    };
-    fetchData();
-  }, []);
-
-  const totalPurchases = agentTotal + vipTotal;
-  const grossProfit = salesTotal - totalPurchases;
-  const netProfit = grossProfit - expenseTotal - salaryPaid;
-
-  const generateCSV = () => {
-    const rows = [
-      ["SCRAPFLOW FINANCIAL REPORT"],
-      [`Currency: ${currency}`],
-      [`Generated: ${new Date().toLocaleString()}`],
+  // Full report CSV
+  const downloadFullReport = () => {
+    const rows: string[][] = [
+      ["RACHEL SCRAP LTD - FULL ANALYTICS REPORT"],
+      [`Period: ${rangeLabel}`, `Currency: ${currency}`, `Generated: ${new Date().toLocaleString()}`],
       [],
-      ["REVENUE"],
-      ["Category", "Amount"],
-      ["Sales Revenue", salesTotal.toString()],
+      ["=== SUMMARY ==="],
+      ["Metric", "Amount"],
+      ["Sales Revenue", fmt(salesTotal)],
+      ["Agent Purchases", fmt(agentTotal)],
+      ["VIP Purchases", fmt(vipTotal)],
+      ["Total Purchases", fmt(totalPurchases)],
+      ["Gross Profit", fmt(grossProfit)],
+      ["Total Expenses", fmt(expenseTotal)],
+      ["Salary Paid", fmt(salaryPaid)],
+      ["Net Profit", fmt(netProfit)],
       [],
-      ["PURCHASES"],
-      ["Agent Purchases", agentTotal.toString()],
-      ["VIP Purchases", vipTotal.toString()],
-      ["Total Purchases", totalPurchases.toString()],
+      ["=== AGENT ENTRIES ==="],
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount"],
+      ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount]),
       [],
-      ["EXPENSES"],
-      ...expenseRows.map((e) => [e.category + " - " + e.notes, e.amount.toString()]),
-      ["Total Expenses", expenseTotal.toString()],
+      ["=== VIP ENTRIES ==="],
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount"],
+      ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount]),
       [],
-      ["PAYROLL"],
-      ["Total Salary", salaryTotal.toString()],
-      ["Total Paid", salaryPaid.toString()],
-      ["Balance Owed", salaryBalance.toString()],
+      ["=== SALES ENTRIES ==="],
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange"],
+      ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No"]),
       [],
-      ["SUMMARY"],
-      ["Gross Profit (Sales - Purchases)", grossProfit.toString()],
-      ["Net Profit (Gross - Expenses - Salary Paid)", netProfit.toString()],
+      ["=== EXPENSES ==="],
+      ["Category", "Amount", "Notes"],
+      ...expenses.map((e: any) => [e.category, e.amount, e.notes || ""]),
+      [],
+      ["=== INVENTORY ==="],
+      ["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"],
+      ...Object.entries(commodityBreakdown).map(([c, v]) => [c, fmt(v.bought), fmt(v.sold), fmt(v.net)]),
+      [],
+      ["=== CURRENT STOCK ==="],
+      ["Commodity", "Weight (kg)"],
+      ...stockData.map((s: any) => [s.commodity, s.weight]),
+      [],
+      ["=== PAYROLL ==="],
+      ["Worker", "Role", "Salary", "Paid", "Balance"],
+      ...workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]),
     ];
-
-    const csv = rows.map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ScrapFlow_Report_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Report downloaded!");
+    downloadCSV(rows, `${filePrefix}_FullReport.csv`);
+    toast.success("Full report downloaded!");
   };
 
+  // Section-specific CSV builders
+  const agentCSV = () => [
+    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"],
+    ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
+  ];
+  const vipCSV = () => [
+    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"],
+    ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
+  ];
+  const salesCSV = () => [
+    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Exchange", "Date"],
+    ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No", e.date]),
+  ];
+  const expenseCSV = () => [
+    ["Category", "Amount", "Notes", "Date"],
+    ...expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]),
+  ];
+  const inventoryCSV = () => [
+    ["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"],
+    ...Object.entries(commodityBreakdown).map(([c, v]) => [c, String(v.bought), String(v.sold), String(v.net)]),
+  ];
+  const stockCSV = () => [
+    ["Commodity", "Current Weight (kg)"],
+    ...stockData.map((s: any) => [s.commodity, String(s.weight)]),
+  ];
+  const payrollCSV = () => [
+    ["Worker", "Role", "Salary", "Paid", "Balance"],
+    ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)]),
+  ];
+  const revenueCSV = () => [
+    ["Category", "Amount"],
+    ["Sales Revenue", String(salesTotal)],
+    ["Agent Purchases", String(-agentTotal)],
+    ["VIP Purchases", String(-vipTotal)],
+    ["Total Expenses", String(-expenseTotal)],
+    ["Salary Paid", String(-salaryPaid)],
+    ["Gross Profit", String(grossProfit)],
+    ["Net Profit", String(netProfit)],
+  ];
+
+  const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
+    <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
+      <span className="text-sm">{label}</span>
+      <span className={`font-mono text-sm ${negative ? "text-destructive" : value >= 0 ? "text-success" : "text-destructive"}`}>
+        {negative ? "-" : ""}{symbol}{fmt(Math.abs(value))}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Financial Report</h1>
-        <Button onClick={generateCSV} className="h-12 gap-2">
-          <FileDown className="w-4 h-4" /> Download Report (CSV)
+    <div className="space-y-5 max-w-6xl pb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Analytics & Reports</h1>
+        <Button onClick={downloadFullReport} className="h-10 gap-2">
+          <FileSpreadsheet className="w-4 h-4" /> Download Full Report
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Sales Revenue</p>
-                <p className="text-2xl font-bold font-mono text-success">{symbol}{salesTotal.toLocaleString()}</p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-accent"><TrendingUp className="w-5 h-5 text-success" /></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Purchases</p>
-                <p className="text-2xl font-bold font-mono text-info">{symbol}{totalPurchases.toLocaleString()}</p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-accent"><TrendingDown className="w-5 h-5 text-info" /></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold font-mono text-destructive">{symbol}{expenseTotal.toLocaleString()}</p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-accent"><DollarSign className="w-5 h-5 text-destructive" /></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Net Profit</p>
-                <p className={`text-2xl font-bold font-mono ${netProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {symbol}{netProfit.toLocaleString()}
-                </p>
-              </div>
-              <div className="p-2.5 rounded-lg bg-accent"><BarChart3 className="w-5 h-5 text-primary" /></div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Date Range */}
+      <DateRangeSelector value={range} onChange={setRange} />
+
+      {/* KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Sales Revenue", value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
+          { label: "Total Purchases", value: totalPurchases, icon: <TrendingDown className="w-4 h-4 text-info" />, color: "text-info" },
+          { label: "Total Expenses", value: expenseTotal, icon: <DollarSign className="w-4 h-4 text-destructive" />, color: "text-destructive" },
+          { label: "Net Profit", value: netProfit, icon: <BarChart3 className="w-4 h-4 text-primary" />, color: netProfit >= 0 ? "text-success" : "text-destructive" },
+        ].map(kpi => (
+          <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-1.5 mb-1">{kpi.icon}<span className="text-xs text-muted-foreground">{kpi.label}</span></div>
+            <p className={`text-xl font-bold font-mono ${kpi.color}`}>{symbol}{fmt(kpi.value)}</p>
+          </div>
+        ))}
       </div>
 
+      {/* Detailed Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader><CardTitle>Revenue Breakdown</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between py-2 border-b border-border">
-              <span>Sales Revenue</span>
-              <span className="font-mono font-bold text-success">{symbol}{salesTotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span>Agent Purchases</span>
-              <span className="font-mono text-muted-foreground">-{symbol}{agentTotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-border">
-              <span>VIP Purchases</span>
-              <span className="font-mono text-muted-foreground">-{symbol}{vipTotal.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-2 font-bold">
-              <span>Gross Profit</span>
-              <span className={`font-mono ${grossProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                {symbol}{grossProfit.toLocaleString()}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Revenue Breakdown */}
+        <AnalyticsSection
+          title="Revenue Breakdown"
+          icon={<TrendingUp className="w-4 h-4 text-success" />}
+          csvRows={revenueCSV()}
+          csvFilename={`${filePrefix}_Revenue.csv`}
+        >
+          <div className="space-y-0.5">
+            <StatRow label="Sales Revenue" value={salesTotal} />
+            <StatRow label="Agent Purchases" value={agentTotal} negative />
+            <StatRow label="VIP Purchases" value={vipTotal} negative />
+            <StatRow label="Expenses" value={expenseTotal} negative />
+            <StatRow label="Salary Paid" value={salaryPaid} negative />
+            <StatRow label="Gross Profit" value={grossProfit} bold />
+            <StatRow label="Net Profit" value={netProfit} bold />
+          </div>
+        </AnalyticsSection>
 
-        <Card>
-          <CardHeader><CardTitle>Expense & Payroll</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {expenseRows.map((e) => (
-              <div key={e.id} className="flex justify-between py-2 border-b border-border">
-                <span>{e.category} <span className="text-xs text-muted-foreground">({e.notes})</span></span>
-                <span className="font-mono text-destructive">-{symbol}{e.amount.toLocaleString()}</span>
+        {/* Agent Entries */}
+        <AnalyticsSection
+          title={`Agent Entries (${agentEntries.length})`}
+          icon={<Users className="w-4 h-4 text-info" />}
+          csvRows={agentCSV()}
+          csvFilename={`${filePrefix}_Agents.csv`}
+        >
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {agentEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
+            {agentEntries.slice(0, 50).map((e: any) => (
+              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
+                <span className="font-mono text-info whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
               </div>
             ))}
-            <div className="flex justify-between py-2 border-b border-border">
-              <span>Salary Paid</span>
-              <span className="font-mono text-destructive">-{symbol}{salaryPaid.toLocaleString()}</span>
+            {agentEntries.length > 50 && <p className="text-xs text-muted-foreground">+{agentEntries.length - 50} more (download for full list)</p>}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
+            <span>Total</span><span className="font-mono">{symbol}{fmt(agentTotal)}</span>
+          </div>
+        </AnalyticsSection>
+
+        {/* VIP Entries */}
+        <AnalyticsSection
+          title={`VIP Entries (${vipEntries.length})`}
+          icon={<Users className="w-4 h-4 text-primary" />}
+          csvRows={vipCSV()}
+          csvFilename={`${filePrefix}_VIP.csv`}
+        >
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {vipEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
+            {vipEntries.slice(0, 50).map((e: any) => (
+              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
+                <span className="font-mono text-primary whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
+              </div>
+            ))}
+            {vipEntries.length > 50 && <p className="text-xs text-muted-foreground">+{vipEntries.length - 50} more</p>}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
+            <span>Total</span><span className="font-mono">{symbol}{fmt(vipTotal)}</span>
+          </div>
+        </AnalyticsSection>
+
+        {/* Sales Entries */}
+        <AnalyticsSection
+          title={`Sales Entries (${salesEntries.length})`}
+          icon={<TrendingUp className="w-4 h-4 text-success" />}
+          csvRows={salesCSV()}
+          csvFilename={`${filePrefix}_Sales.csv`}
+        >
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {salesEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
+            {salesEntries.slice(0, 50).map((e: any) => (
+              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">{e.customer_name || "—"} · {e.commodity || "Exchange"} · {e.weight}kg</span>
+                <span className="font-mono text-success whitespace-nowrap">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "Exchange"}</span>
+              </div>
+            ))}
+            {salesEntries.length > 50 && <p className="text-xs text-muted-foreground">+{salesEntries.length - 50} more</p>}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
+            <span>Total</span><span className="font-mono">{symbol}{fmt(salesTotal)}</span>
+          </div>
+        </AnalyticsSection>
+
+        {/* Expenses */}
+        <AnalyticsSection
+          title={`Expenses (${expenses.length})`}
+          icon={<Receipt className="w-4 h-4 text-destructive" />}
+          csvRows={expenseCSV()}
+          csvFilename={`${filePrefix}_Expenses.csv`}
+        >
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {expenses.length === 0 && <p className="text-sm text-muted-foreground">No expenses</p>}
+            {expenses.map((e: any) => (
+              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">{e.category} {e.notes ? `(${e.notes})` : ""}</span>
+                <span className="font-mono text-destructive whitespace-nowrap">-{symbol}{fmt(Number(e.amount))}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
+            <span>Total</span><span className="font-mono text-destructive">-{symbol}{fmt(expenseTotal)}</span>
+          </div>
+        </AnalyticsSection>
+
+        {/* Inventory / Commodity Flow */}
+        <AnalyticsSection
+          title="Commodity Flow"
+          icon={<Package className="w-4 h-4 text-accent-foreground" />}
+          csvRows={inventoryCSV()}
+          csvFilename={`${filePrefix}_CommodityFlow.csv`}
+        >
+          <div className="space-y-1">
+            {Object.keys(commodityBreakdown).length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
+            <div className="grid grid-cols-4 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
+              <span>Commodity</span><span className="text-right">In</span><span className="text-right">Out</span><span className="text-right">Net</span>
             </div>
-            <div className="flex justify-between py-2 border-b border-border text-muted-foreground">
-              <span>Salary Balance Owed</span>
-              <span className="font-mono">{symbol}{salaryBalance.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-2 font-bold">
-              <span>Net Profit</span>
-              <span className={`font-mono ${netProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                {symbol}{netProfit.toLocaleString()}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+            {Object.entries(commodityBreakdown).map(([c, v]) => (
+              <div key={c} className="grid grid-cols-4 text-sm py-1 border-b border-border/50">
+                <span className="truncate">{c}</span>
+                <span className="text-right font-mono text-info">{fmt(v.bought)}kg</span>
+                <span className="text-right font-mono text-destructive">{fmt(v.sold)}kg</span>
+                <span className={`text-right font-mono ${v.net >= 0 ? "text-success" : "text-destructive"}`}>{fmt(v.net)}kg</span>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
+
+        {/* Current Stock */}
+        <AnalyticsSection
+          title="Current Stock"
+          icon={<Package className="w-4 h-4 text-success" />}
+          csvRows={stockCSV()}
+          csvFilename={`${filePrefix}_Stock.csv`}
+        >
+          <div className="space-y-1">
+            {stockData.length === 0 && <p className="text-sm text-muted-foreground">No stock data</p>}
+            {stockData.map((s: any) => (
+              <div key={s.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span>{s.commodity}</span>
+                <span className="font-mono font-bold">{fmt(Number(s.weight))}kg</span>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
+
+        {/* Payroll */}
+        <AnalyticsSection
+          title={`Payroll (${workers.length} workers)`}
+          icon={<Users className="w-4 h-4 text-muted-foreground" />}
+          csvRows={payrollCSV()}
+          csvFilename={`${filePrefix}_Payroll.csv`}
+        >
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {workers.length === 0 && <p className="text-sm text-muted-foreground">No workers</p>}
+            {workers.map((w: any) => (
+              <div key={w.id} className="grid grid-cols-4 text-sm py-1 border-b border-border/50">
+                <span className="truncate">{w.name}</span>
+                <span className="font-mono text-right">{symbol}{fmt(Number(w.salary))}</span>
+                <span className="font-mono text-right text-success">{symbol}{fmt(Number(w.paid))}</span>
+                <span className="font-mono text-right text-destructive">{symbol}{fmt(Number(w.balance))}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 pt-2 border-t border-border grid grid-cols-4 font-bold text-sm">
+            <span>Total</span>
+            <span className="font-mono text-right">{symbol}{fmt(salaryTotal)}</span>
+            <span className="font-mono text-right text-success">{symbol}{fmt(salaryPaid)}</span>
+            <span className="font-mono text-right text-destructive">{symbol}{fmt(salaryBalance)}</span>
+          </div>
+        </AnalyticsSection>
       </div>
     </div>
   );
