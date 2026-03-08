@@ -73,6 +73,46 @@ const DailySummariesPage = () => {
         <FileText className="w-6 h-6 text-primary" /> Daily Summaries
       </h1>
 
+      {/* End of Day Trigger Log */}
+      {eodLogs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" /> End of Day History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Triggered By</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {eodLogs.map((log) => {
+                  const dt = new Date(log.triggered_at);
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">{log.date}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {dt.toLocaleTimeString()}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {log.triggered_by ? (profiles[log.triggered_by] || "Unknown user") : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       {summaries.map((s) => {
         const expanded = expandedId === s.id;
         const profitable = s.net_profit >= 0;
