@@ -208,10 +208,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salesEntries.length === 0 && (
+                  {filteredSales.length === 0 && (
                     <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
                   )}
-                  {salesEntries.map((e: any) => (
+                  {filteredSales.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell>{e.customer_name || "—"}</TableCell>
                       <TableCell>{e.commodity || "Exchange"}</TableCell>
