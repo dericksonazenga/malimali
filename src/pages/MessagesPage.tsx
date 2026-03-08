@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockUsers } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Send, Inbox, FileEdit, Camera, Upload,
   Paperclip, ArrowLeft, User as UserIcon, Users, Check,

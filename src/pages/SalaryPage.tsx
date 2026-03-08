@@ -1,29 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { mockWorkers } from "@/data/mockData";
-import { Worker } from "@/types";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Banknote, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface WorkerRow {
+  id: string;
+  name: string;
+  role: string;
+  salary: number;
+  paid: number;
+  balance: number;
+}
 
 const SalaryPage = () => {
   const { symbol } = useCurrency();
-  const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
+  const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
 
-  const handlePay = (id: string) => {
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      const { data } = await supabase.from("workers").select("*").order("name");
+      if (data) {
+        setWorkers(data.map((w: any) => ({
+          id: w.id,
+          name: w.name,
+          role: w.role,
+          salary: Number(w.salary),
+          paid: Number(w.paid),
+          balance: Number(w.balance),
+        })));
+      }
+    };
+    fetchWorkers();
+  }, []);
+
+  const handlePay = async (id: string) => {
     const amount = parseFloat(payAmounts[id] || "0");
     if (amount <= 0) {
       toast.error("Enter a valid amount");
       return;
     }
+    const worker = workers.find((w) => w.id === id);
+    if (!worker) return;
+
+    const newPaid = worker.paid + amount;
+    const newBalance = worker.salary - newPaid;
+
+    const { error } = await supabase
+      .from("workers")
+      .update({ paid: newPaid, balance: newBalance })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Failed to record payment");
+      return;
+    }
+
     setWorkers((prev) =>
-      prev.map((w) =>
-        w.id === id ? { ...w, paid: w.paid + amount, balance: w.salary - (w.paid + amount) } : w
-      )
+      prev.map((w) => w.id === id ? { ...w, paid: newPaid, balance: newBalance } : w)
     );
     setPayAmounts((prev) => ({ ...prev, [id]: "" }));
     toast.success("Payment recorded");

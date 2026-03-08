@@ -1,21 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockExpenses, mockWorkers } from "@/data/mockData";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { FileDown, TrendingUp, TrendingDown, DollarSign, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ExpenseRow { id: string; category: string; amount: number; notes: string }
 
 const FinancialReportPage = () => {
   const { symbol, currency } = useCurrency();
+  const [agentTotal, setAgentTotal] = useState(0);
+  const [vipTotal, setVipTotal] = useState(0);
+  const [salesTotal, setSalesTotal] = useState(0);
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([]);
+  const [salaryTotal, setSalaryTotal] = useState(0);
+  const [salaryPaid, setSalaryPaid] = useState(0);
+  const [salaryBalance, setSalaryBalance] = useState(0);
 
-  const agentTotal = mockAgentEntries.reduce((s, e) => s + e.amount, 0);
-  const vipTotal = mockVipEntries.reduce((s, e) => s + e.amount, 0);
-  const salesTotal = mockSalesEntries.reduce((s, e) => s + (e.amount || 0), 0);
-  const expenseTotal = mockExpenses.reduce((s, e) => s + e.amount, 0);
-  const salaryTotal = mockWorkers.reduce((s, w) => s + w.salary, 0);
-  const salaryPaid = mockWorkers.reduce((s, w) => s + w.paid, 0);
-  const salaryBalance = mockWorkers.reduce((s, w) => s + w.balance, 0);
+  useEffect(() => {
+    const fetchData = async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const [agents, vips, sales, expenses, workers] = await Promise.all([
+        supabase.from("agent_entries").select("amount").eq("date", today),
+        supabase.from("vip_entries").select("amount").eq("date", today),
+        supabase.from("sales_entries").select("amount").eq("date", today),
+        supabase.from("expenses").select("id, category, amount, notes").eq("date", today),
+        supabase.from("workers").select("salary, paid, balance"),
+      ]);
+      setAgentTotal((agents.data || []).reduce((s, e) => s + Number(e.amount), 0));
+      setVipTotal((vips.data || []).reduce((s, e) => s + Number(e.amount), 0));
+      setSalesTotal((sales.data || []).reduce((s, e) => s + Number(e.amount || 0), 0));
+      const expData = (expenses.data || []).map((e: any) => ({ id: e.id, category: e.category, amount: Number(e.amount), notes: e.notes || "" }));
+      setExpenseRows(expData);
+      setExpenseTotal(expData.reduce((s, e) => s + e.amount, 0));
+      const w = workers.data || [];
+      setSalaryTotal(w.reduce((s, x) => s + Number(x.salary), 0));
+      setSalaryPaid(w.reduce((s, x) => s + Number(x.paid), 0));
+      setSalaryBalance(w.reduce((s, x) => s + Number(x.balance), 0));
+    };
+    fetchData();
+  }, []);
 
   const totalPurchases = agentTotal + vipTotal;
   const grossProfit = salesTotal - totalPurchases;
@@ -37,7 +63,7 @@ const FinancialReportPage = () => {
       ["Total Purchases", totalPurchases.toString()],
       [],
       ["EXPENSES"],
-      ...mockExpenses.map((e) => [e.category + " - " + e.notes, e.amount.toString()]),
+      ...expenseRows.map((e) => [e.category + " - " + e.notes, e.amount.toString()]),
       ["Total Expenses", expenseTotal.toString()],
       [],
       ["PAYROLL"],
@@ -70,7 +96,6 @@ const FinancialReportPage = () => {
         </Button>
       </div>
 
-      {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-5">
@@ -120,7 +145,6 @@ const FinancialReportPage = () => {
         </Card>
       </div>
 
-      {/* Detailed breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader><CardTitle>Revenue Breakdown</CardTitle></CardHeader>
@@ -149,7 +173,7 @@ const FinancialReportPage = () => {
         <Card>
           <CardHeader><CardTitle>Expense & Payroll</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {mockExpenses.map((e) => (
+            {expenseRows.map((e) => (
               <div key={e.id} className="flex justify-between py-2 border-b border-border">
                 <span>{e.category} <span className="text-xs text-muted-foreground">({e.notes})</span></span>
                 <span className="font-mono text-destructive">-{symbol}{e.amount.toLocaleString()}</span>

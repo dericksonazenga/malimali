@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { mockWorkers } from "@/data/mockData";
 import { Expense, Worker } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
