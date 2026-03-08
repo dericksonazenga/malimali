@@ -27,8 +27,8 @@ export const mockVipEntries: VipEntry[] = [
 ];
 
 export const mockSalesEntries: SalesEntry[] = [
-  { id: "1", customerName: "Steel Works Ltd", weight: 1000, rate: 35, amount: 35000, createdBy: "3", createdAt: "2026-02-28" },
-  { id: "2", customerName: "Export House", weight: 500, createdBy: "3", createdAt: "2026-03-01" },
+  { id: "1", customerName: "Steel Works Ltd", grossWeight: 1020, containerWeight: 20, weight: 1000, rate: 35, amount: 35000, isExchange: false, createdBy: "3", createdAt: "2026-02-28" },
+  { id: "2", customerName: "Export House", grossWeight: 500, containerWeight: 0, weight: 500, isExchange: false, createdBy: "3", createdAt: "2026-03-01" },
 ];
 
 export const mockExpenses: Expense[] = [
