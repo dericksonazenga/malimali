@@ -229,7 +229,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);
-  }, [range]);
+  }, [range.preset, range.customFrom?.getTime(), range.customTo?.getTime()]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
