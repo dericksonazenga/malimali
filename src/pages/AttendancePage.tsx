@@ -267,7 +267,7 @@ const AttendancePage = () => {
             <Settings className="w-4 h-4" /> Shift starts at <span className="font-mono font-semibold text-foreground">{shiftStartTime}</span>
           </Button>
           {lateCount > 0 && (
-            <Badge variant="destructive" className="gap-1">
+            <Badge className="gap-1 bg-[linear-gradient(135deg,#4a5d23_25%,#8b7d3c_25%,#8b7d3c_50%,#3b4a2a_50%,#3b4a2a_75%,#6b5b3a_75%)] text-white border-none">
               <AlertTriangle className="w-3 h-3" /> {lateCount} late today
             </Badge>
           )}
