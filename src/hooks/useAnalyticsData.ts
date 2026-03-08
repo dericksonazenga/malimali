@@ -128,13 +128,8 @@ export function useAnalyticsData(range: DateRangeValue) {
     const workerRows = workers.data || [];
     const stockRows = stock.data || [];
 
-    const commodityRows = commodities.data || [];
-
-    // Build commodity rate lookup from rates table
-    const commodityRates: Record<string, { agentRate: number; vipRate: number; salesRate: number }> = {};
-    commodityRows.forEach((c: any) => {
-      commodityRates[c.name] = { agentRate: Number(c.agent_rate), vipRate: Number(c.vip_rate), salesRate: Number(c.sales_rate) };
-    });
+    // All profit calculations use the rate stored on each transaction at time of entry,
+    // so rate changes never retroactively affect previous records.
 
     const agentTotal = agentRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
     const vipTotal = vipRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
