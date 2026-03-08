@@ -22,11 +22,30 @@ const FinancialReportPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       const today = new Date().toISOString().split("T")[0];
+
+      // Get last EOD timestamp to filter only post-EOD data
+      const { data: eodData } = await supabase
+        .from("end_of_day_log")
+        .select("triggered_at")
+        .eq("date", today)
+        .order("triggered_at", { ascending: false })
+        .limit(1);
+      const lastEod = eodData?.[0]?.triggered_at;
+
+      let agentQ = supabase.from("agent_entries").select("amount").eq("date", today);
+      let vipQ = supabase.from("vip_entries").select("amount").eq("date", today);
+      let salesQ = supabase.from("sales_entries").select("amount").eq("date", today);
+      let expenseQ = supabase.from("expenses").select("id, category, amount, notes").eq("date", today);
+
+      if (lastEod) {
+        agentQ = agentQ.gt("created_at", lastEod);
+        vipQ = vipQ.gt("created_at", lastEod);
+        salesQ = salesQ.gt("created_at", lastEod);
+        expenseQ = expenseQ.gt("created_at", lastEod);
+      }
+
       const [agents, vips, sales, expenses, workers] = await Promise.all([
-        supabase.from("agent_entries").select("amount").eq("date", today),
-        supabase.from("vip_entries").select("amount").eq("date", today),
-        supabase.from("sales_entries").select("amount").eq("date", today),
-        supabase.from("expenses").select("id, category, amount, notes").eq("date", today),
+        agentQ, vipQ, salesQ, expenseQ,
         supabase.from("workers").select("salary, paid, balance"),
       ]);
       setAgentTotal((agents.data || []).reduce((s, e) => s + Number(e.amount), 0));
