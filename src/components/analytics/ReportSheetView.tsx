@@ -224,7 +224,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {salesEntries.length > 0 && (
+              {filteredSales.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono text-success">{symbol}{fmt(salesTotal)}</span></span>
                 </div>
