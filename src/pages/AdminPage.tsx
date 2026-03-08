@@ -24,7 +24,7 @@ const roleLabel = (r: string) =>
 const AdminPage = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editRole, setEditRole] = useState<UserRole>("worker");
+  const [editRole, setEditRole] = useState<UserRole>("boss");
   const [loading, setLoading] = useState(true);
 
   const fetchProfiles = useCallback(async () => {
