@@ -375,6 +375,7 @@ const FinancialReportPage = () => {
               </span>
             </div>
           )}
+        </AnalyticsSection>
 
         {/* Payroll */}
         <AnalyticsSection
