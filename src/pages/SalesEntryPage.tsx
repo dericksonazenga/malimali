@@ -30,6 +30,7 @@ const SalesEntryPage = () => {
   const [isExchange, setIsExchange] = useState(false);
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
+  const [exchangeFee, setExchangeFee] = useState("");
 
   useEffect(() => {
     if (resetSignal === 0) return;
@@ -42,7 +43,8 @@ const SalesEntryPage = () => {
   const container = parseFloat(containerWeight) || 0;
   const actualWeight = Math.max(0, gross - container);
   const amount = rate > 0 ? actualWeight * rate : undefined;
-  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
+  const exchFee = parseFloat(exchangeFee) || 0;
+  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0) + (e.exchangeFee || 0), 0), [entries]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +62,12 @@ const SalesEntryPage = () => {
       isExchange,
       exchangeCommodity: isExchange ? exchangeCommodity : undefined,
       exchangeWeight: isExchange ? parseFloat(exchangeWeight) || 0 : undefined,
+      exchangeFee: isExchange ? exchFee : 0,
       createdBy: "current",
       createdAt: new Date().toISOString().split("T")[0],
     });
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
-    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight("");
+    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
     toast.success("Sales entry added!");
   };
 
@@ -120,7 +123,8 @@ const SalesEntryPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>Exchange Weight (kg) *</Label><Input type="number" value={exchangeWeight} onChange={(e) => setExchangeWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                   <div className="space-y-2"><Label>Exchange Weight (kg) *</Label><Input type="number" value={exchangeWeight} onChange={(e) => setExchangeWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                   <div className="space-y-2"><Label>Exchange Fee ({symbol})</Label><Input type="number" value={exchangeFee} onChange={(e) => setExchangeFee(e.target.value)} placeholder="Extra cash from customer" className="h-12" /></div>
                 </div>
               )}
             </div>
@@ -143,7 +147,7 @@ const SalesEntryPage = () => {
               <TableHead>Customer</TableHead><TableHead>Commodity</TableHead>
               <TableHead className="text-right">Gross</TableHead><TableHead className="text-right">Container</TableHead>
               <TableHead className="text-right">Actual Wt</TableHead><TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">Amount</TableHead><TableHead>Exchange</TableHead>
+              <TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Ex. Fee</TableHead><TableHead>Exchange</TableHead>
               <TableHead>Date</TableHead>{hasPermission("delete_entries") && <TableHead />}
             </TableRow></TableHeader>
             <TableBody>
@@ -156,6 +160,7 @@ const SalesEntryPage = () => {
                   <TableCell className="text-right font-mono font-semibold">{entry.weight}</TableCell>
                   <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
                   <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
+                  <TableCell className="text-right font-mono">{entry.exchangeFee ? <span className="text-primary">{symbol}{entry.exchangeFee.toLocaleString()}</span> : "—"}</TableCell>
                   <TableCell>{entry.isExchange ? <span className="text-xs bg-accent px-2 py-1 rounded">{entry.exchangeCommodity} ({entry.exchangeWeight}kg)</span> : "—"}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{entry.createdAt}</TableCell>
                   {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>)}

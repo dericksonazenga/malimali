@@ -66,6 +66,7 @@ export interface SalesEntry {
   isExchange: boolean;
   exchangeCommodity?: string;
   exchangeWeight?: number;
+  exchangeFee?: number;
   weightImage?: string;
   itemImage?: string;
   createdBy: string;

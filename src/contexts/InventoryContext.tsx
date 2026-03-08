@@ -69,6 +69,7 @@ const mapSales = (r: any): SalesEntry => ({
   isExchange: r.is_exchange || false,
   exchangeCommodity: r.exchange_commodity,
   exchangeWeight: r.exchange_weight != null ? Number(r.exchange_weight) : undefined,
+  exchangeFee: r.exchange_fee != null ? Number(r.exchange_fee) : undefined,
   weightImage: r.weight_image,
   itemImage: r.item_image,
   createdBy: r.created_by || "",
@@ -159,6 +160,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       is_exchange: entry.isExchange,
       exchange_commodity: entry.exchangeCommodity || null,
       exchange_weight: entry.exchangeWeight || null,
+      exchange_fee: entry.exchangeFee || 0,
       created_by: (await supabase.auth.getUser()).data.user?.id,
     });
     if (error) console.error("Failed to add sales entry:", error);
