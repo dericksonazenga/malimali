@@ -43,7 +43,8 @@ const SalesEntryPage = () => {
   const container = parseFloat(containerWeight) || 0;
   const actualWeight = Math.max(0, gross - container);
   const amount = rate > 0 ? actualWeight * rate : undefined;
-  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
+  const exchFee = parseFloat(exchangeFee) || 0;
+  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0) + (e.exchangeFee || 0), 0), [entries]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
