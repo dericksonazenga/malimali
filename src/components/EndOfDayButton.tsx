@@ -3,13 +3,19 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Moon } from "lucide-react";
 import { toast } from "sonner";
+import { generateDailySummary } from "@/utils/generateDailySummary";
 
 const EndOfDayButton = () => {
   const { triggerEndOfDay, canTrigger } = useEndOfDay();
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    const saved = await generateDailySummary();
     triggerEndOfDay();
-    toast.success("End of Day completed! All displayed records cleared. Data is safely stored in the database.");
+    if (saved) {
+      toast.success("End of Day completed! Daily summary saved. All displayed records cleared.");
+    } else {
+      toast.warning("End of Day completed but summary failed to save. Data is still in the database.");
+    }
   };
 
   // Hide entirely during cooldown
