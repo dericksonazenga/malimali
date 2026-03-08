@@ -304,6 +304,39 @@ export type Database = {
         }
         Relationships: []
       }
+      recruited_workers: {
+        Row: {
+          claimed: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          recruited_by: string | null
+          role: string
+        }
+        Insert: {
+          claimed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          recruited_by?: string | null
+          role?: string
+        }
+        Update: {
+          claimed?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          recruited_by?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
       sales_entries: {
         Row: {
           amount: number | null
