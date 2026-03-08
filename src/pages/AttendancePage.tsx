@@ -175,66 +175,51 @@ const AttendancePage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Sign In/Out Actions */}
+      {/* Sign In/Out with Dropdowns */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-2 border-primary/20">
-          <CardContent className="pt-6">
-            <Button
-              onClick={() => openPicker("sign_in")}
-              className="w-full h-20 text-lg font-bold gap-3 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <UserCheck className="w-8 h-8" />
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center gap-2 text-primary font-bold text-lg">
+              <UserCheck className="w-6 h-6" />
               Sign In Worker
-              <LogIn className="w-6 h-6" />
-            </Button>
+              <LogIn className="w-5 h-5" />
+            </div>
+            <Select value={signInWorker} onValueChange={(val) => { setSignInWorker(val); handleSignIn(val); }}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Select worker to sign in..." />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((w) => (
+                  <SelectItem key={w.id} value={w.name}>
+                    {w.name} — <span className="text-muted-foreground">{w.role}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
         <Card className="border-2 border-destructive/20">
-          <CardContent className="pt-6">
-            <Button
-              onClick={() => openPicker("sign_out")}
-              className="w-full h-20 text-lg font-bold gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              <UserCheck className="w-8 h-8" />
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center gap-2 text-destructive font-bold text-lg">
+              <UserCheck className="w-6 h-6" />
               Sign Out Worker
-              <LogOut className="w-6 h-6" />
-            </Button>
+              <LogOut className="w-5 h-5" />
+            </div>
+            <Select value={signOutWorker} onValueChange={(val) => { setSignOutWorker(val); handleSignOut(val); }}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Select worker to sign out..." />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.filter((w) => todayRecords.some((r) => r.workerName === w.name && r.signInAt && !r.signOutAt)).map((w) => (
+                  <SelectItem key={w.id} value={w.name}>
+                    {w.name} — <span className="text-muted-foreground">{w.role}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
       </div>
-
-      {/* Worker Picker Dialog */}
-      <Dialog open={showWorkerPicker} onOpenChange={setShowWorkerPicker}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-primary" />
-              {pickerMode === "sign_in" ? "Select Worker to Sign In" : "Select Worker to Sign Out"}
-            </DialogTitle>
-            <DialogDescription>Choose the worker from the list below.</DialogDescription>
-          </DialogHeader>
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} placeholder="Search worker..." className="pl-9 h-10" autoFocus />
-          </div>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {workers
-              .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
-              .map((w) => (
-                <button key={w.id} type="button" onClick={() => handleWorkerAction(w)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">
-                  <div>
-                    <p className="font-medium text-sm">{w.name}</p>
-                    <p className="text-xs text-muted-foreground">{w.role}</p>
-                  </div>
-                </button>
-              ))}
-            {workers.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No workers found. Add workers first.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Tabs: Today / History */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
