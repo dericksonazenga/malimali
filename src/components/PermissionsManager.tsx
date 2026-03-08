@@ -49,10 +49,6 @@ const PermissionsManager = () => {
   }, [fetchPermissions]);
 
   const toggle = async (role: string, permission: string) => {
-    if (role === "admin") {
-      toast.info("Admin always has all permissions");
-      return;
-    }
 
     const has = matrix[role]?.has(permission);
     if (has) {
@@ -116,7 +112,6 @@ const PermissionsManager = () => {
                     <Switch
                       checked={matrix[role]?.has(perm.key) ?? false}
                       onCheckedChange={() => toggle(role, perm.key)}
-                      disabled={role === "admin"}
                       className="mx-auto"
                     />
                   </td>
@@ -126,7 +121,7 @@ const PermissionsManager = () => {
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground mt-4">
-          Admin always has all permissions. Changes take effect on next login.
+          Changes take effect on next login.
         </p>
       </CardContent>
     </Card>
