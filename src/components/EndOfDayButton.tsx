@@ -18,8 +18,6 @@ const EndOfDayButton = () => {
     }
   };
 
-  // Hide entirely during cooldown
-  if (!canTrigger) return null;
 
   return (
     <AlertDialog>
@@ -36,8 +34,6 @@ const EndOfDayButton = () => {
             This will wipe all displayed attendance records and commodity entries (Agent, VIP, Sales) from the screen to begin a new day. 
             <br /><br />
             <strong>All data is safely retained in the database</strong> and can be accessed later via reports or exports.
-            <br /><br />
-            You won't be able to trigger this again for 3 hours.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
