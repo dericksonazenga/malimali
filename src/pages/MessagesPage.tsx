@@ -166,7 +166,7 @@ const MessagesPage = () => {
   const resolveRecipientIds = (): string[] => {
     const ids = new Set(selectedRecipientIds);
     selectedRoles.forEach((role) => {
-      mockUsers
+      allUsers
         .filter((u) => u.role === role && u.id !== user?.id)
         .forEach((u) => ids.add(u.id));
     });
