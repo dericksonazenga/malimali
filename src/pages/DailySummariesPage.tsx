@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users } from "lucide-react";
+import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock } from "lucide-react";
 
 interface DailySummary {
   id: string;

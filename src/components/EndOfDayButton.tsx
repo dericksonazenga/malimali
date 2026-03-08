@@ -11,6 +11,13 @@ const EndOfDayButton = () => {
   const handleConfirm = async () => {
     const saved = await generateDailySummary();
     triggerEndOfDay();
+
+    // Log this EOD trigger
+    const userId = (await (await import("@/integrations/supabase/client")).supabase.auth.getUser()).data.user?.id;
+    await (await import("@/integrations/supabase/client")).supabase.from("end_of_day_log").insert({
+      triggered_by: userId,
+    });
+
     if (saved) {
       toast.success("End of Day completed! Daily summary saved. All displayed records cleared.");
     } else {
