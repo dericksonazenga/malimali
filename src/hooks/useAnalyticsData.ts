@@ -97,7 +97,7 @@ export interface AnalyticsData {
   commodityProfitBreakdown: CommodityProfit[];
 }
 
-export function useAnalyticsData(range: DateRange) {
+export function useAnalyticsData(range: DateRangeValue) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
