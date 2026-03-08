@@ -32,6 +32,7 @@ const FinancialReportPage = () => {
     agentTotal, vipTotal, salesTotal, expenseTotal,
     salaryTotal, salaryPaid, salaryBalance,
     totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
+    commodityProfitBreakdown,
   } = data;
 
   const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -325,6 +326,55 @@ const FinancialReportPage = () => {
               </div>
             ))}
           </div>
+        </AnalyticsSection>
+
+        {/* Per-Commodity Profit Breakdown */}
+        <AnalyticsSection
+          title="Commodity Profit Breakdown"
+          icon={<BarChart3 className="w-4 h-4 text-primary" />}
+          csvRows={[
+            ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
+            ...commodityProfitBreakdown.map((c) => [
+              c.commodity, fmt(c.avgBuyRate), fmt(c.avgSellRate), fmt(c.marginPerKg),
+              fmt(c.totalWeightSold), fmt(c.totalProfit),
+            ]),
+          ]}
+          csvFilename={`${filePrefix}_CommodityProfit.csv`}
+        >
+          <div className="space-y-1">
+            {commodityProfitBreakdown.length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
+            <div className="grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
+              <span>Commodity</span>
+              <span className="text-right">Buy/kg</span>
+              <span className="text-right">Sell/kg</span>
+              <span className="text-right">Margin/kg</span>
+              <span className="text-right">Sold (kg)</span>
+              <span className="text-right">Profit</span>
+            </div>
+            {commodityProfitBreakdown.map((c) => (
+              <div key={c.commodity} className="grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
+                <span className="truncate font-medium">{c.commodity}</span>
+                <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
+                <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
+                <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
+                  {symbol}{fmt(c.marginPerKg)}
+                </span>
+                <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
+                <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                  {symbol}{fmt(c.totalProfit)}
+                </span>
+              </div>
+            ))}
+          </div>
+          {commodityProfitBreakdown.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-border grid grid-cols-6 font-bold text-sm">
+              <span>Total</span>
+              <span /><span /><span /><span />
+              <span className={`text-right font-mono ${commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0) >= 0 ? "text-success" : "text-destructive"}`}>
+                {symbol}{fmt(commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0))}
+              </span>
+            </div>
+          )}
         </AnalyticsSection>
 
         {/* Payroll */}
