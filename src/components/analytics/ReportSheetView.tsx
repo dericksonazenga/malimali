@@ -150,7 +150,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {agentEntries.length > 0 && (
+              {filteredAgents.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono">{symbol}{fmt(agentTotal)}</span></span>
                 </div>
