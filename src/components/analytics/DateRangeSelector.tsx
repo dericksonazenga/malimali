@@ -61,7 +61,7 @@ const DateRangeSelector = ({ value, onChange }: Props) => {
           <span className="truncate max-w-[200px]">{getDisplayLabel(value)}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 min-w-[280px]" align="start">
+      <PopoverContent className="w-auto p-0 min-w-[280px] max-h-[80vh] overflow-y-auto" align="start">
         {!showCustom ? (
           <div className="p-2 space-y-0.5">
             {presets.map(p => (
