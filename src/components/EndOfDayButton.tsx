@@ -18,8 +18,6 @@ const EndOfDayButton = () => {
     }
   };
 
-  // Hide entirely during cooldown
-  if (!canTrigger) return null;
 
   return (
     <AlertDialog>
