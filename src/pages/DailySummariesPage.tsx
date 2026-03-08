@@ -38,16 +38,22 @@ const DailySummariesPage = () => {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("daily_summaries")
-        .select("*")
-        .order("date", { ascending: false })
-        .limit(30);
-      if (data) setSummaries(data as any);
+    const fetchAll = async () => {
+      const [summariesRes, logsRes, profilesRes] = await Promise.all([
+        supabase.from("daily_summaries").select("*").order("date", { ascending: false }).limit(30),
+        supabase.from("end_of_day_log").select("*").order("triggered_at", { ascending: false }).limit(30),
+        supabase.from("profiles").select("user_id, display_name"),
+      ]);
+      if (summariesRes.data) setSummaries(summariesRes.data as any);
+      if (logsRes.data) setEodLogs(logsRes.data as any);
+      if (profilesRes.data) {
+        const map: Record<string, string> = {};
+        profilesRes.data.forEach((p: any) => { map[p.user_id] = p.display_name; });
+        setProfiles(map);
+      }
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, []);
 
   if (loading) return <p className="text-muted-foreground p-4">Loading summaries…</p>;
