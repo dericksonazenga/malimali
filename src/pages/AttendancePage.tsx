@@ -345,8 +345,7 @@ const AttendancePage = () => {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
-                  variant="destructive"
-                  className="w-full h-12 gap-2 text-base"
+                  className="w-full h-12 gap-2 text-base bg-green-600 text-white hover:bg-green-700"
                   disabled={activeWorkers.length === 0}
                 >
                   <Users className="w-5 h-5" />
