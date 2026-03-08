@@ -2,8 +2,6 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect 
 import { supabase } from "@/integrations/supabase/client";
 import { AgentEntry, VipEntry, SalesEntry } from "@/types";
 
-const PERSISTENT_STOCK_KEY = "inventory_persistent_stock";
-
 interface InventoryContextType {
   agentEntries: AgentEntry[];
   vipEntries: VipEntry[];
@@ -25,17 +23,6 @@ export const useInventory = () => {
   const ctx = useContext(InventoryContext);
   if (!ctx) throw new Error("useInventory must be used within InventoryProvider");
   return ctx;
-};
-
-const loadPersistentStock = (): Record<string, number> => {
-  try {
-    const stored = localStorage.getItem(PERSISTENT_STOCK_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch { return {}; }
-};
-
-const savePersistentStock = (stock: Record<string, number>) => {
-  localStorage.setItem(PERSISTENT_STOCK_KEY, JSON.stringify(stock));
 };
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -87,8 +74,17 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [agentEntries, setAgentEntries] = useState<AgentEntry[]>([]);
   const [vipEntries, setVipEntries] = useState<VipEntry[]>([]);
   const [salesEntries, setSalesEntries] = useState<SalesEntry[]>([]);
-  const [persistentStock, setPersistentStock] = useState<Record<string, number>>(loadPersistentStock);
+  const [persistentStock, setPersistentStock] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  const fetchPersistentStock = useCallback(async () => {
+    const { data } = await supabase.from("persistent_stock").select("*");
+    if (data) {
+      const stock: Record<string, number> = {};
+      data.forEach((row: any) => { stock[row.commodity] = Number(row.weight); });
+      setPersistentStock(stock);
+    }
+  }, []);
 
   const fetchToday = useCallback(async () => {
     const d = today();
@@ -105,18 +101,18 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchToday();
+    fetchPersistentStock();
 
     const channel = supabase
       .channel("entries-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "agent_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "vip_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "sales_entries" }, () => fetchToday())
+      .on("postgres_changes", { event: "*", schema: "public", table: "persistent_stock" }, () => fetchPersistentStock())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchToday]);
-
-  useEffect(() => { savePersistentStock(persistentStock); }, [persistentStock]);
+  }, [fetchToday, fetchPersistentStock]);
 
   const addAgentEntry = useCallback(async (entry: AgentEntry) => {
     const { error } = await supabase.from("agent_entries").insert({
@@ -173,27 +169,36 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     if (error) console.error("Failed to remove sales entry:", error);
   }, []);
 
-  const clearAll = useCallback(() => {
-    setPersistentStock(prev => {
-      const updated = { ...prev };
-      agentEntries.forEach(e => {
-        updated[e.commodity] = (updated[e.commodity] || 0) + e.actualWeight;
-      });
-      vipEntries.forEach(e => {
-        updated[e.commodity] = (updated[e.commodity] || 0) + e.actualWeight;
-      });
-      salesEntries.forEach(e => {
-        if (e.commodity) {
-          updated[e.commodity] = (updated[e.commodity] || 0) - e.weight;
-        }
-      });
-      return updated;
+  const clearAll = useCallback(async () => {
+    // Accumulate today's entries into persistent stock in the DB
+    const updates: Record<string, number> = {};
+    agentEntries.forEach(e => {
+      updates[e.commodity] = (updates[e.commodity] || 0) + e.actualWeight;
     });
-    // Note: entries remain in DB for historical records; UI shows today's only
+    vipEntries.forEach(e => {
+      updates[e.commodity] = (updates[e.commodity] || 0) + e.actualWeight;
+    });
+    salesEntries.forEach(e => {
+      if (e.commodity) {
+        updates[e.commodity] = (updates[e.commodity] || 0) - e.weight;
+      }
+    });
+
+    // Upsert each commodity delta into persistent_stock
+    for (const [commodity, delta] of Object.entries(updates)) {
+      const currentWeight = persistentStock[commodity] || 0;
+      const newWeight = currentWeight + delta;
+      await supabase.from("persistent_stock").upsert(
+        { commodity, weight: newWeight, updated_at: new Date().toISOString() },
+        { onConflict: "commodity" }
+      );
+    }
+
+    // Clear local display
     setAgentEntries([]);
     setVipEntries([]);
     setSalesEntries([]);
-  }, [agentEntries, vipEntries, salesEntries]);
+  }, [agentEntries, vipEntries, salesEntries, persistentStock]);
 
   return (
     <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll }}>

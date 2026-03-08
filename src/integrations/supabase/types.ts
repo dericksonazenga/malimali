@@ -253,6 +253,27 @@ export type Database = {
         }
         Relationships: []
       }
+      persistent_stock: {
+        Row: {
+          commodity: string
+          id: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          commodity: string
+          id?: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          commodity?: string
+          id?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
