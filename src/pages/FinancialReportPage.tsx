@@ -6,7 +6,7 @@ import {
   BarChart3, Package, Users, Receipt, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
+import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
