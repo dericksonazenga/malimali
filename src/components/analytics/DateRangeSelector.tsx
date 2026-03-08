@@ -57,7 +57,7 @@ const DateRangeSelector = ({ value, onChange }: Props) => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="h-9 gap-2 text-sm font-medium">
-          <CalendarIcon className="w-4 h-4" />
+          <CalendarIcon className="w-5 h-5 text-success" />
           <span className="truncate max-w-[200px]">{getDisplayLabel(value)}</span>
         </Button>
       </PopoverTrigger>
