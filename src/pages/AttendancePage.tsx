@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, Search, UserCheck } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,9 +42,8 @@ const AttendancePage = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [activeTab, setActiveTab] = useState("today");
-  const [showWorkerPicker, setShowWorkerPicker] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"sign_in" | "sign_out">("sign_in");
-  const [workerSearch, setWorkerSearch] = useState("");
+  const [signInWorker, setSignInWorker] = useState<string>("");
+  const [signOutWorker, setSignOutWorker] = useState<string>("");
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -141,38 +139,32 @@ const AttendancePage = () => {
     };
   }, [records, dateRange]);
 
-  const openPicker = (mode: "sign_in" | "sign_out") => {
-    setPickerMode(mode);
-    setWorkerSearch("");
-    setShowWorkerPicker(true);
-  };
-
-  const handleWorkerAction = async (worker: WorkerRow) => {
-    setShowWorkerPicker(false);
+  const handleSignIn = async (workerName: string) => {
+    const worker = workers.find(w => w.name === workerName);
+    if (!worker) return;
     const now = new Date().toISOString();
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
+    if (existing) { toast.error(`${worker.name} has already signed in today!`); setSignInWorker(""); return; }
+    const { error } = await supabase.from("attendance").insert({
+      worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
+    });
+    if (error) { toast.error("Failed to save attendance"); return; }
+    toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    setSignInWorker("");
+    await fetchRecords();
+  };
 
-    if (pickerMode === "sign_in") {
-      const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
-      if (existing) {
-        toast.error(`${worker.name} has already signed in today!`);
-        return;
-      }
-      const { error } = await supabase.from("attendance").insert({
-        worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
-      });
-      if (error) { toast.error("Failed to save attendance"); return; }
-      toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
-    } else {
-      const todayRecord = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt && !r.signOutAt);
-      if (!todayRecord) {
-        toast.error(`${worker.name} hasn't signed in today or already signed out`);
-        return;
-      }
-      const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
-      if (error) { toast.error("Failed to save sign-out"); return; }
-      toast.success(`✅ ${worker.name} signed out at ${new Date().toLocaleTimeString()}`);
-    }
+  const handleSignOut = async (workerName: string) => {
+    const worker = workers.find(w => w.name === workerName);
+    if (!worker) return;
+    const now = new Date().toISOString();
+    const todayRecord = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt && !r.signOutAt);
+    if (!todayRecord) { toast.error(`${worker.name} hasn't signed in today or already signed out`); setSignOutWorker(""); return; }
+    const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
+    if (error) { toast.error("Failed to save sign-out"); return; }
+    toast.success(`✅ ${worker.name} signed out at ${new Date().toLocaleTimeString()}`);
+    setSignOutWorker("");
     await fetchRecords();
   };
 
@@ -183,66 +175,51 @@ const AttendancePage = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Sign In/Out Actions */}
+      {/* Sign In/Out with Dropdowns */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-2 border-primary/20">
-          <CardContent className="pt-6">
-            <Button
-              onClick={() => openPicker("sign_in")}
-              className="w-full h-20 text-lg font-bold gap-3 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <UserCheck className="w-8 h-8" />
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center gap-2 text-primary font-bold text-lg">
+              <UserCheck className="w-6 h-6" />
               Sign In Worker
-              <LogIn className="w-6 h-6" />
-            </Button>
+              <LogIn className="w-5 h-5" />
+            </div>
+            <Select value={signInWorker} onValueChange={(val) => { setSignInWorker(val); handleSignIn(val); }}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Select worker to sign in..." />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((w) => (
+                  <SelectItem key={w.id} value={w.name}>
+                    {w.name} — <span className="text-muted-foreground">{w.role}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
         <Card className="border-2 border-destructive/20">
-          <CardContent className="pt-6">
-            <Button
-              onClick={() => openPicker("sign_out")}
-              className="w-full h-20 text-lg font-bold gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              <UserCheck className="w-8 h-8" />
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center gap-2 text-destructive font-bold text-lg">
+              <UserCheck className="w-6 h-6" />
               Sign Out Worker
-              <LogOut className="w-6 h-6" />
-            </Button>
+              <LogOut className="w-5 h-5" />
+            </div>
+            <Select value={signOutWorker} onValueChange={(val) => { setSignOutWorker(val); handleSignOut(val); }}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Select worker to sign out..." />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.filter((w) => todayRecords.some((r) => r.workerName === w.name && r.signInAt && !r.signOutAt)).map((w) => (
+                  <SelectItem key={w.id} value={w.name}>
+                    {w.name} — <span className="text-muted-foreground">{w.role}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
       </div>
-
-      {/* Worker Picker Dialog */}
-      <Dialog open={showWorkerPicker} onOpenChange={setShowWorkerPicker}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-primary" />
-              {pickerMode === "sign_in" ? "Select Worker to Sign In" : "Select Worker to Sign Out"}
-            </DialogTitle>
-            <DialogDescription>Choose the worker from the list below.</DialogDescription>
-          </DialogHeader>
-          <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} placeholder="Search worker..." className="pl-9 h-10" autoFocus />
-          </div>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {workers
-              .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
-              .map((w) => (
-                <button key={w.id} type="button" onClick={() => handleWorkerAction(w)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">
-                  <div>
-                    <p className="font-medium text-sm">{w.name}</p>
-                    <p className="text-xs text-muted-foreground">{w.role}</p>
-                  </div>
-                </button>
-              ))}
-            {workers.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No workers found. Add workers first.</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Tabs: Today / History */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
