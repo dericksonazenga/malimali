@@ -62,11 +62,12 @@ const SalesEntryPage = () => {
       isExchange,
       exchangeCommodity: isExchange ? exchangeCommodity : undefined,
       exchangeWeight: isExchange ? parseFloat(exchangeWeight) || 0 : undefined,
+      exchangeFee: isExchange ? exchFee : 0,
       createdBy: "current",
       createdAt: new Date().toISOString().split("T")[0],
     });
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
-    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight("");
+    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
     toast.success("Sales entry added!");
   };
 
