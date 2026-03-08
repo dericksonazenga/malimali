@@ -89,6 +89,24 @@ const LoginPage = () => {
               />
             </div>
           )}
+          {mode === "signup" && (
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="data_manager">Data Manager</SelectItem>
+                  <SelectItem value="human_resource">Human Resource</SelectItem>
+                  <SelectItem value="cashier">Cashier</SelectItem>
+                  <SelectItem value="boss">Boss</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
