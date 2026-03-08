@@ -24,6 +24,7 @@ import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
 import AttendancePage from "@/pages/AttendancePage";
 import NotFound from "@/pages/NotFound";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
