@@ -10,6 +10,7 @@ import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
+import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
