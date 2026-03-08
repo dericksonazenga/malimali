@@ -48,6 +48,7 @@ const ExpensesPage = () => {
   const [verifying, setVerifying] = useState(false);
   const [credentials, setCredentials] = useState<StoredCredential[]>([]);
   const [workerSearch, setWorkerSearch] = useState("");
+  const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
 
   // Load expenses from DB
   useEffect(() => {
