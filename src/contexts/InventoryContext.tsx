@@ -69,6 +69,7 @@ const mapSales = (r: any): SalesEntry => ({
   isExchange: r.is_exchange || false,
   exchangeCommodity: r.exchange_commodity,
   exchangeWeight: r.exchange_weight != null ? Number(r.exchange_weight) : undefined,
+  exchangeFee: r.exchange_fee != null ? Number(r.exchange_fee) : undefined,
   weightImage: r.weight_image,
   itemImage: r.item_image,
   createdBy: r.created_by || "",
