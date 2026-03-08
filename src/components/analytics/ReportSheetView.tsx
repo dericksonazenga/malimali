@@ -1,7 +1,9 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye } from "lucide-react";
-import * as XLSX from "xlsx";
-import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReportSheetViewProps {
   symbol: string;
@@ -35,136 +37,326 @@ const ReportSheetView = ({
   agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
   commodityBreakdown, commodityProfitBreakdown,
 }: ReportSheetViewProps) => {
-
-  const openInExcel = () => {
-    const wb = XLSX.utils.book_new();
-
-    // 1. Summary sheet
-    const summaryData = [
-      ["RACHEL SCRAP LTD - FINANCIAL REPORT"],
-      [`Period: ${rangeLabel}`, `Currency: ${currency}`, `Generated: ${new Date().toLocaleString()}`],
-      [],
-      ["Metric", "Amount"],
-      ["Sales Revenue", salesTotal],
-      ["Agent Purchases", agentTotal],
-      ["VIP Purchases", vipTotal],
-      ["Total Purchases", totalPurchases],
-      ["Gross Profit", grossProfit],
-      ["Total Expenses", expenseTotal],
-      ["Salary Paid", salaryPaid],
-      ["Net Profit", netProfit],
-    ];
-    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-    summaryWs["!cols"] = [{ wch: 20 }, { wch: 18 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
-
-    // 2. Agent Entries sheet
-    const agentData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
-      ...agentEntries.map((e: any) => [e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]),
-      [],
-      ["", "", "", "TOTAL:", agentTotal, ""],
-    ];
-    const agentWs = XLSX.utils.aoa_to_sheet(agentData);
-    agentWs["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, agentWs, "Agent Entries");
-
-    // 3. VIP Entries sheet
-    const vipData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
-      ...vipEntries.map((e: any) => [e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]),
-      [],
-      ["", "", "", "TOTAL:", vipTotal, ""],
-    ];
-    const vipWs = XLSX.utils.aoa_to_sheet(vipData);
-    vipWs["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, vipWs, "VIP Entries");
-
-    // 4. Sales Entries sheet
-    const salesData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ...salesEntries.map((e: any) => [
-        e.customer_name || "", e.commodity || "Exchange", Number(e.weight),
-        e.rate ? Number(e.rate) : "", e.amount ? Number(e.amount) : "", e.is_exchange ? "Yes" : "No", e.date,
-      ]),
-      [],
-      ["", "", "", "", salesTotal, "TOTAL", ""],
-    ];
-    const salesWs = XLSX.utils.aoa_to_sheet(salesData);
-    salesWs["!cols"] = [{ wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, salesWs, "Sales Entries");
-
-    // 5. Expenses sheet
-    const expData = [
-      ["Category", "Amount", "Notes", "Date"],
-      ...expenses.map((e: any) => [e.category, Number(e.amount), e.notes || "", e.date]),
-      [],
-      ["TOTAL:", expenseTotal, "", ""],
-    ];
-    const expWs = XLSX.utils.aoa_to_sheet(expData);
-    expWs["!cols"] = [{ wch: 18 }, { wch: 14 }, { wch: 24 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, expWs, "Expenses");
-
-    // 6. Commodity Flow sheet
-    const commodityRows = Object.entries(commodityBreakdown);
-    const totalBought = commodityRows.reduce((s, [, v]) => s + v.bought, 0);
-    const totalSold = commodityRows.reduce((s, [, v]) => s + v.sold, 0);
-    const totalNet = commodityRows.reduce((s, [, v]) => s + v.net, 0);
-    const invData = [
-      ["Commodity", "Bought (kg)", "Sold (kg)", "Net (kg)"],
-      ...commodityRows.map(([c, v]) => [c, v.bought, v.sold, v.net]),
-      [],
-      ["TOTAL:", totalBought, totalSold, totalNet],
-    ];
-    const invWs = XLSX.utils.aoa_to_sheet(invData);
-    invWs["!cols"] = [{ wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, invWs, "Commodity Flow");
-
-    // 7. Current Stock sheet
-    const totalStock = stockData.reduce((s: number, x: any) => s + Number(x.weight), 0);
-    const stockSheetData = [
-      ["Commodity", "Weight (kg)"],
-      ...stockData.map((s: any) => [s.commodity, Number(s.weight)]),
-      [],
-      ["TOTAL:", totalStock],
-    ];
-    const stockWs = XLSX.utils.aoa_to_sheet(stockSheetData);
-    stockWs["!cols"] = [{ wch: 16 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, stockWs, "Current Stock");
-
-    // 8. Payroll sheet
-    const payrollData = [
-      ["Worker", "Role", "Salary", "Paid", "Balance"],
-      ...workers.map((w: any) => [w.name, w.role, Number(w.salary), Number(w.paid), Number(w.balance)]),
-      [],
-      ["TOTAL:", "", salaryTotal, salaryPaid, salaryBalance],
-    ];
-    const payrollWs = XLSX.utils.aoa_to_sheet(payrollData);
-    payrollWs["!cols"] = [{ wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, payrollWs, "Payroll");
-
-    // 9. Commodity Profit sheet
-    const totalCommodityProfit = commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0);
-    const profitData = [
-      ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
-      ...commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]),
-      [],
-      ["TOTAL:", "", "", "", "", totalCommodityProfit],
-    ];
-    const profitWs = XLSX.utils.aoa_to_sheet(profitData);
-    profitWs["!cols"] = [{ wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
-
-    // Generate and download
-    const fileName = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    toast.success("Excel report opened!");
-  };
-
   return (
-    <Button variant="outline" className="h-10 gap-2" onClick={openInExcel}>
-      <Eye className="w-4 h-4" /> View in Excel
-    </Button>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="h-10 gap-2">
+          <Eye className="w-4 h-4" /> View Report
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 gap-0">
+        <DialogHeader className="px-6 pt-5 pb-3 border-b border-border">
+          <DialogTitle className="text-lg">
+            Full Report — {rangeLabel} ({currency})
+          </DialogTitle>
+          <p className="text-xs text-muted-foreground">Generated: {new Date().toLocaleString()}</p>
+        </DialogHeader>
+
+        <Tabs defaultValue="summary" className="flex flex-col flex-1 min-h-0">
+          <div className="px-4 pt-2 border-b border-border">
+            <TabsList className="h-8 gap-1">
+              <TabsTrigger value="summary" className="text-xs h-7 px-2.5">Summary</TabsTrigger>
+              <TabsTrigger value="agents" className="text-xs h-7 px-2.5">Agents</TabsTrigger>
+              <TabsTrigger value="vip" className="text-xs h-7 px-2.5">VIP</TabsTrigger>
+              <TabsTrigger value="sales" className="text-xs h-7 px-2.5">Sales</TabsTrigger>
+              <TabsTrigger value="expenses" className="text-xs h-7 px-2.5">Expenses</TabsTrigger>
+              <TabsTrigger value="inventory" className="text-xs h-7 px-2.5">Inventory</TabsTrigger>
+              <TabsTrigger value="payroll" className="text-xs h-7 px-2.5">Payroll</TabsTrigger>
+              <TabsTrigger value="profit" className="text-xs h-7 px-2.5">Profit</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <ScrollArea className="flex-1 max-h-[60vh]">
+            {/* Summary */}
+            <TabsContent value="summary" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Metric</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { label: "Sales Revenue", value: salesTotal, color: "text-success" },
+                    { label: "Agent Purchases", value: agentTotal, color: "text-info" },
+                    { label: "VIP Purchases", value: vipTotal, color: "text-info" },
+                    { label: "Total Purchases", value: totalPurchases, color: "text-muted-foreground" },
+                    { label: "Gross Profit", value: grossProfit, color: grossProfit >= 0 ? "text-success" : "text-destructive" },
+                    { label: "Total Expenses", value: expenseTotal, color: "text-destructive" },
+                    { label: "Salary Paid", value: salaryPaid, color: "text-destructive" },
+                    { label: "Net Profit", value: netProfit, color: netProfit >= 0 ? "text-success" : "text-destructive" },
+                  ].map(row => (
+                    <TableRow key={row.label}>
+                      <TableCell className="font-medium">{row.label}</TableCell>
+                      <TableCell className={`text-right font-mono ${row.color}`}>{symbol}{fmt(row.value)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            {/* Agent Entries */}
+            <TabsContent value="agents" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Weight (kg)</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {agentEntries.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
+                  )}
+                  {agentEntries.map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell>{e.customer_name}</TableCell>
+                      <TableCell>{e.commodity}</TableCell>
+                      <TableCell className="text-right font-mono">{fmt(Number(e.actual_weight))}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(e.rate))}</TableCell>
+                      <TableCell className="text-right font-mono text-info">{symbol}{fmt(Number(e.amount))}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {agentEntries.length > 0 && (
+                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
+                  <span>Total: <span className="font-mono">{symbol}{fmt(agentTotal)}</span></span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* VIP Entries */}
+            <TabsContent value="vip" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Weight (kg)</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vipEntries.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
+                  )}
+                  {vipEntries.map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell>{e.customer_name}</TableCell>
+                      <TableCell>{e.commodity}</TableCell>
+                      <TableCell className="text-right font-mono">{fmt(Number(e.actual_weight))}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(e.rate))}</TableCell>
+                      <TableCell className="text-right font-mono text-primary">{symbol}{fmt(Number(e.amount))}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {vipEntries.length > 0 && (
+                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
+                  <span>Total: <span className="font-mono">{symbol}{fmt(vipTotal)}</span></span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Sales Entries */}
+            <TabsContent value="sales" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Weight (kg)</TableHead>
+                    <TableHead className="text-right">Rate</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Exchange</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesEntries.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
+                  )}
+                  {salesEntries.map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell>{e.customer_name || "—"}</TableCell>
+                      <TableCell>{e.commodity || "Exchange"}</TableCell>
+                      <TableCell className="text-right font-mono">{fmt(Number(e.weight))}</TableCell>
+                      <TableCell className="text-right font-mono">{e.rate ? `${symbol}${fmt(Number(e.rate))}` : "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "—"}</TableCell>
+                      <TableCell>{e.is_exchange ? "Yes" : "No"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {salesEntries.length > 0 && (
+                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
+                  <span>Total: <span className="font-mono text-success">{symbol}{fmt(salesTotal)}</span></span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Expenses */}
+            <TabsContent value="expenses" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expenses.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No expenses</TableCell></TableRow>
+                  )}
+                  {expenses.map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{e.category}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">-{symbol}{fmt(Number(e.amount))}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{e.notes || "—"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {expenses.length > 0 && (
+                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
+                  <span>Total: <span className="font-mono text-destructive">-{symbol}{fmt(expenseTotal)}</span></span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Inventory */}
+            <TabsContent value="inventory" className="p-4 m-0">
+              <h3 className="text-sm font-semibold mb-2">Commodity Flow</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Bought (kg)</TableHead>
+                    <TableHead className="text-right">Sold (kg)</TableHead>
+                    <TableHead className="text-right">Net (kg)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Object.keys(commodityBreakdown).length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No data</TableCell></TableRow>
+                  )}
+                  {Object.entries(commodityBreakdown).map(([c, v]) => (
+                    <TableRow key={c}>
+                      <TableCell className="font-medium">{c}</TableCell>
+                      <TableCell className="text-right font-mono text-info">{fmt(v.bought)}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">{fmt(v.sold)}</TableCell>
+                      <TableCell className={`text-right font-mono ${v.net >= 0 ? "text-success" : "text-destructive"}`}>{fmt(v.net)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <h3 className="text-sm font-semibold mt-4 mb-2">Current Stock</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Weight (kg)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stockData.length === 0 && (
+                    <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No stock</TableCell></TableRow>
+                  )}
+                  {stockData.map((s: any) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">{s.commodity}</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{fmt(Number(s.weight))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            {/* Payroll */}
+            <TabsContent value="payroll" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Salary</TableHead>
+                    <TableHead className="text-right">Paid</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {workers.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No workers</TableCell></TableRow>
+                  )}
+                  {workers.map((w: any) => (
+                    <TableRow key={w.id}>
+                      <TableCell className="font-medium">{w.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{w.role}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(w.salary))}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{symbol}{fmt(Number(w.paid))}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive">{symbol}{fmt(Number(w.balance))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {workers.length > 0 && (
+                <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-border text-sm font-bold text-right">
+                  <span className="font-mono">{symbol}{fmt(salaryTotal)}</span>
+                  <span className="font-mono text-success">{symbol}{fmt(salaryPaid)}</span>
+                  <span className="font-mono text-destructive">{symbol}{fmt(salaryBalance)}</span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Commodity Profit */}
+            <TabsContent value="profit" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Commodity</TableHead>
+                    <TableHead className="text-right">Buy/kg</TableHead>
+                    <TableHead className="text-right">Sell/kg</TableHead>
+                    <TableHead className="text-right">Margin/kg</TableHead>
+                    <TableHead className="text-right">Sold (kg)</TableHead>
+                    <TableHead className="text-right">Profit</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {commodityProfitBreakdown.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No data</TableCell></TableRow>
+                  )}
+                  {commodityProfitBreakdown.map((c) => (
+                    <TableRow key={c.commodity}>
+                      <TableCell className="font-medium">{c.commodity}</TableCell>
+                      <TableCell className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</TableCell>
+                      <TableCell className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>{symbol}{fmt(c.marginPerKg)}</TableCell>
+                      <TableCell className="text-right font-mono">{fmt(c.totalWeightSold)}</TableCell>
+                      <TableCell className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>{symbol}{fmt(c.totalProfit)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 };
 
