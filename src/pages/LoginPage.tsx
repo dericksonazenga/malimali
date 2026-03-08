@@ -21,7 +21,21 @@ const LoginPage = () => {
     setError("");
     setSubmitting(true);
 
-    if (isSignup) {
+    if (mode === "forgot") {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        toast.success("Password reset email sent! Check your inbox.");
+        setMode("login");
+      }
+      setSubmitting(false);
+      return;
+    }
+
+    if (mode === "signup") {
       if (!displayName.trim()) {
         setError("Please enter your name");
         setSubmitting(false);
@@ -32,7 +46,7 @@ const LoginPage = () => {
         setError(err);
       } else {
         toast.success("Account created! Please check your email to verify your account before signing in.");
-        setIsSignup(false);
+        setMode("login");
         setDisplayName("");
       }
     } else {
