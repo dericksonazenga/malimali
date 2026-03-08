@@ -262,7 +262,7 @@ const ExpensesPage = () => {
             <Input value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} placeholder="Search worker..." className="pl-9 h-10" autoFocus />
           </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {mockWorkers
+            {dbWorkers
               .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
               .map((w) => {
               const hasFp = credentials.some(c => c.workerName === w.name);
