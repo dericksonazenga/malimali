@@ -416,11 +416,16 @@ export type Database = {
         Row: {
           amount: number | null
           commodity: string | null
+          container_weight: number
           created_at: string
           created_by: string | null
           customer_name: string | null
           date: string
+          exchange_commodity: string | null
+          exchange_weight: number | null
+          gross_weight: number
           id: string
+          is_exchange: boolean
           item_image: string | null
           rate: number | null
           weight: number
@@ -429,11 +434,16 @@ export type Database = {
         Insert: {
           amount?: number | null
           commodity?: string | null
+          container_weight?: number
           created_at?: string
           created_by?: string | null
           customer_name?: string | null
           date?: string
+          exchange_commodity?: string | null
+          exchange_weight?: number | null
+          gross_weight?: number
           id?: string
+          is_exchange?: boolean
           item_image?: string | null
           rate?: number | null
           weight?: number
@@ -442,11 +452,16 @@ export type Database = {
         Update: {
           amount?: number | null
           commodity?: string | null
+          container_weight?: number
           created_at?: string
           created_by?: string | null
           customer_name?: string | null
           date?: string
+          exchange_commodity?: string | null
+          exchange_weight?: number | null
+          gross_weight?: number
           id?: string
+          is_exchange?: boolean
           item_image?: string | null
           rate?: number | null
           weight?: number
