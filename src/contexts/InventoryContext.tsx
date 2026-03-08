@@ -191,7 +191,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       updates[e.commodity] = (updates[e.commodity] || 0) + e.actualWeight;
     });
     salesEntries.forEach(e => {
-      if (e.commodity) {
+      if (e.commodity && !e.isExchange) {
         updates[e.commodity] = (updates[e.commodity] || 0) - e.weight;
       }
     });
