@@ -151,9 +151,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.from("sales_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
+      gross_weight: entry.grossWeight,
+      container_weight: entry.containerWeight,
       weight: entry.weight,
       rate: entry.rate,
       amount: entry.amount,
+      is_exchange: entry.isExchange,
+      exchange_commodity: entry.exchangeCommodity || null,
+      exchange_weight: entry.exchangeWeight || null,
       created_by: (await supabase.auth.getUser()).data.user?.id,
     });
     if (error) console.error("Failed to add sales entry:", error);

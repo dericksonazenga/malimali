@@ -58,9 +58,14 @@ export interface SalesEntry {
   id: string;
   customerName: string;
   commodity?: string;
+  grossWeight: number;
+  containerWeight: number;
   weight: number;
   rate?: number;
   amount?: number;
+  isExchange: boolean;
+  exchangeCommodity?: string;
+  exchangeWeight?: number;
   weightImage?: string;
   itemImage?: string;
   createdBy: string;
