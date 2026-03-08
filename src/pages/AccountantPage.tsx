@@ -1,18 +1,38 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockAgentEntries, mockVipEntries, mockSalesEntries, mockExpenses, mockWorkers } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useNavigate } from "react-router-dom";
 import { FileText, Star, ShoppingCart, Wallet, Banknote, BarChart3 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const AccountantPage = () => {
   const { symbol } = useCurrency();
   const navigate = useNavigate();
+  const [agentTotal, setAgentTotal] = useState(0);
+  const [vipTotal, setVipTotal] = useState(0);
+  const [salesTotal, setSalesTotal] = useState(0);
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [salaryBalance, setSalaryBalance] = useState(0);
 
-  const agentTotal = mockAgentEntries.reduce((s, e) => s + e.amount, 0);
-  const vipTotal = mockVipEntries.reduce((s, e) => s + e.amount, 0);
-  const salesTotal = mockSalesEntries.reduce((s, e) => s + (e.amount || 0), 0);
-  const expenseTotal = mockExpenses.reduce((s, e) => s + e.amount, 0);
-  const salaryBalance = mockWorkers.reduce((s, w) => s + w.balance, 0);
+  useEffect(() => {
+    const fetchData = async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const [agents, vips, sales, expenses, workers] = await Promise.all([
+        supabase.from("agent_entries").select("amount").eq("date", today),
+        supabase.from("vip_entries").select("amount").eq("date", today),
+        supabase.from("sales_entries").select("amount").eq("date", today),
+        supabase.from("expenses").select("amount").eq("date", today),
+        supabase.from("workers").select("balance"),
+      ]);
+      setAgentTotal((agents.data || []).reduce((s, e) => s + Number(e.amount), 0));
+      setVipTotal((vips.data || []).reduce((s, e) => s + Number(e.amount), 0));
+      setSalesTotal((sales.data || []).reduce((s, e) => s + Number(e.amount || 0), 0));
+      setExpenseTotal((expenses.data || []).reduce((s, e) => s + Number(e.amount), 0));
+      setSalaryBalance((workers.data || []).reduce((s, w) => s + Number(w.balance), 0));
+    };
+    fetchData();
+  }, []);
+
   const netProfit = salesTotal - agentTotal - vipTotal - expenseTotal;
 
   const cards = [

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockUsers } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare, Send, Inbox, FileEdit, Camera, Upload,
   Paperclip, ArrowLeft, User as UserIcon, Users, Check,
@@ -31,11 +31,18 @@ interface Message {
   readBy: string[];
 }
 
+interface ProfileUser {
+  id: string;
+  name: string;
+  role: string;
+}
+
 const roleCategories = [
   { key: "admin", label: "Admin" },
   { key: "accountant", label: "Accountant" },
   { key: "data_manager", label: "Data Manager" },
   { key: "worker", label: "Worker" },
+  { key: "boss", label: "Boss" },
 ];
 
 const MessagesPage = () => {
@@ -66,6 +73,19 @@ const MessagesPage = () => {
   const [showRecipientPicker, setShowRecipientPicker] = useState(false);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
+  const [allUsers, setAllUsers] = useState<ProfileUser[]>([]);
+
+  // Load profiles from DB
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data } = await supabase.from("profiles").select("user_id, display_name, role");
+      if (data) {
+        setAllUsers(data.map((p: any) => ({ id: p.user_id, name: p.display_name, role: p.role })));
+      }
+    };
+    fetchProfiles();
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +166,7 @@ const MessagesPage = () => {
   const resolveRecipientIds = (): string[] => {
     const ids = new Set(selectedRecipientIds);
     selectedRoles.forEach((role) => {
-      mockUsers
+      allUsers
         .filter((u) => u.role === role && u.id !== user?.id)
         .forEach((u) => ids.add(u.id));
     });
@@ -223,7 +243,7 @@ const MessagesPage = () => {
 
   const getRecipientSummary = (msg: Message) => {
     const names = msg.recipientIds
-      .map((id) => mockUsers.find((u) => u.id === id)?.name || "Unknown")
+      .map((id) => allUsers.find((u) => u.id === id)?.name || "Unknown")
       .slice(0, 2);
     const roleLabels = msg.recipientRoles.map(
       (r) => roleCategories.find((rc) => rc.key === r)?.label || r
@@ -411,7 +431,7 @@ const MessagesPage = () => {
                       />
                       {rc.label}
                       <Badge variant="outline" className="ml-auto text-xs">
-                        {mockUsers.filter((u) => u.role === rc.key && u.id !== user?.id).length}
+                        {allUsers.filter((u) => u.role === rc.key && u.id !== user?.id).length}
                       </Badge>
                     </label>
                   ))}
@@ -424,7 +444,7 @@ const MessagesPage = () => {
                 </p>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-1">
-                    {mockUsers
+                    {allUsers
                       .filter((u) => u.id !== user?.id)
                       .map((u) => (
                         <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-accent">

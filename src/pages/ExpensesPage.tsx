@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { mockWorkers } from "@/data/mockData";
 import { Expense, Worker } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +48,7 @@ const ExpensesPage = () => {
   const [verifying, setVerifying] = useState(false);
   const [credentials, setCredentials] = useState<StoredCredential[]>([]);
   const [workerSearch, setWorkerSearch] = useState("");
+  const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
 
   // Load expenses from DB
   useEffect(() => {
@@ -73,10 +73,17 @@ const ExpensesPage = () => {
     fetchExpenses();
   }, []);
 
-  // Load biometric credentials
+  // Load biometric credentials + workers from DB
   useEffect(() => {
     const stored = localStorage.getItem("biometric_credentials");
     if (stored) setCredentials(JSON.parse(stored));
+    const fetchWorkers = async () => {
+      const { data } = await supabase.from("workers").select("*").order("name");
+      if (data) {
+        setDbWorkers(data.map((w: any) => ({ id: w.id, name: w.name, role: w.role, salary: Number(w.salary), paid: Number(w.paid), balance: Number(w.balance) })));
+      }
+    };
+    fetchWorkers();
   }, []);
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
@@ -255,7 +262,7 @@ const ExpensesPage = () => {
             <Input value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} placeholder="Search worker..." className="pl-9 h-10" autoFocus />
           </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {mockWorkers
+            {dbWorkers
               .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
               .map((w) => {
               const hasFp = credentials.some(c => c.workerName === w.name);
