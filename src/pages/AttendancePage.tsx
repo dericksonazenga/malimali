@@ -139,38 +139,32 @@ const AttendancePage = () => {
     };
   }, [records, dateRange]);
 
-  const openPicker = (mode: "sign_in" | "sign_out") => {
-    setPickerMode(mode);
-    setWorkerSearch("");
-    setShowWorkerPicker(true);
-  };
-
-  const handleWorkerAction = async (worker: WorkerRow) => {
-    setShowWorkerPicker(false);
+  const handleSignIn = async (workerName: string) => {
+    const worker = workers.find(w => w.name === workerName);
+    if (!worker) return;
     const now = new Date().toISOString();
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
+    if (existing) { toast.error(`${worker.name} has already signed in today!`); setSignInWorker(""); return; }
+    const { error } = await supabase.from("attendance").insert({
+      worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
+    });
+    if (error) { toast.error("Failed to save attendance"); return; }
+    toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    setSignInWorker("");
+    await fetchRecords();
+  };
 
-    if (pickerMode === "sign_in") {
-      const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
-      if (existing) {
-        toast.error(`${worker.name} has already signed in today!`);
-        return;
-      }
-      const { error } = await supabase.from("attendance").insert({
-        worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
-      });
-      if (error) { toast.error("Failed to save attendance"); return; }
-      toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
-    } else {
-      const todayRecord = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt && !r.signOutAt);
-      if (!todayRecord) {
-        toast.error(`${worker.name} hasn't signed in today or already signed out`);
-        return;
-      }
-      const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
-      if (error) { toast.error("Failed to save sign-out"); return; }
-      toast.success(`✅ ${worker.name} signed out at ${new Date().toLocaleTimeString()}`);
-    }
+  const handleSignOut = async (workerName: string) => {
+    const worker = workers.find(w => w.name === workerName);
+    if (!worker) return;
+    const now = new Date().toISOString();
+    const todayRecord = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt && !r.signOutAt);
+    if (!todayRecord) { toast.error(`${worker.name} hasn't signed in today or already signed out`); setSignOutWorker(""); return; }
+    const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
+    if (error) { toast.error("Failed to save sign-out"); return; }
+    toast.success(`✅ ${worker.name} signed out at ${new Date().toLocaleTimeString()}`);
+    setSignOutWorker("");
     await fetchRecords();
   };
 
