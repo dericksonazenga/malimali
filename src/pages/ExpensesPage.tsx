@@ -80,6 +80,17 @@ const ExpensesPage = () => {
     const isLunch = category.toLowerCase() === "lunch";
     const expenseNotes = isLunch ? `Lunch for ${selectedWorker.name} (${selectedWorker.role})` : (notes || `Verified by ${selectedWorker.name}`);
 
+    // Prevent duplicate lunch entry for the same worker on the same date
+    if (isLunch) {
+      const alreadyHasLunch = expenses.some(
+        (exp) => exp.category.toLowerCase() === "lunch" && exp.notes?.includes(`Lunch for ${selectedWorker.name}`)
+      );
+      if (alreadyHasLunch) {
+        toast.error(`${selectedWorker.name} already has a lunch entry for today`);
+        return;
+      }
+    }
+
     const { data, error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
