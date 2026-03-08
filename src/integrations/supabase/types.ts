@@ -74,6 +74,36 @@ export type Database = {
         }
         Relationships: []
       }
+      commodities: {
+        Row: {
+          agent_rate: number
+          created_at: string
+          id: string
+          name: string
+          sales_rate: number
+          updated_at: string
+          vip_rate: number
+        }
+        Insert: {
+          agent_rate?: number
+          created_at?: string
+          id?: string
+          name: string
+          sales_rate?: number
+          updated_at?: string
+          vip_rate?: number
+        }
+        Update: {
+          agent_rate?: number
+          created_at?: string
+          id?: string
+          name?: string
+          sales_rate?: number
+          updated_at?: string
+          vip_rate?: number
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
