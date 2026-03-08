@@ -1,25 +1,35 @@
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
+import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Moon } from "lucide-react";
 import { toast } from "sonner";
 import { generateDailySummary } from "@/utils/generateDailySummary";
+import { supabase } from "@/integrations/supabase/client";
 
 const EndOfDayButton = () => {
   const { triggerEndOfDay, canTrigger } = useEndOfDay();
+  const { clearAll } = useInventory();
 
   const handleConfirm = async () => {
+    // 1. Save daily summary first (captures all today's data)
     const saved = await generateDailySummary();
-    triggerEndOfDay();
 
-    // Log this EOD trigger
-    const userId = (await (await import("@/integrations/supabase/client")).supabase.auth.getUser()).data.user?.id;
-    await (await import("@/integrations/supabase/client")).supabase.from("end_of_day_log").insert({
+    // 2. Accumulate stock into persistent_stock
+    await clearAll();
+
+    // 3. Log this EOD trigger — this MUST happen after clearAll
+    // so the next fetch filters out pre-EOD entries
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    await supabase.from("end_of_day_log").insert({
       triggered_by: userId,
     });
 
+    // 4. Signal UI reset
+    triggerEndOfDay();
+
     if (saved) {
-      toast.success("End of Day completed! Daily summary saved. All displayed records cleared.");
+      toast.success("End of Day completed! Daily summary saved. All records reset to zero.");
     } else {
       toast.warning("End of Day completed but summary failed to save. Data is still in the database.");
     }
