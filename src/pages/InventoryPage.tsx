@@ -19,7 +19,7 @@ const InventoryPage = () => {
     const persistent = persistentStock[c.name] || 0;
     // Current = persistent + today's in - today's out
     const current = persistent + dailyIn - dailyOut;
-    return { name: c.name, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
+    return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
   }), [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
 
   const totalDailyIn = commodityStock.reduce((s, c) => s + c.stockIn, 0);
