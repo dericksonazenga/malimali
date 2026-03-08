@@ -79,7 +79,7 @@ const DashboardPage = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold">Welcome back, {user?.name}</h1>
+        <h1 className="text-2xl font-bold">Welcome back, Rachel Scrap Ltd.</h1>
         <p className="text-muted-foreground">Here's your scrap yard overview</p>
       </div>
 
