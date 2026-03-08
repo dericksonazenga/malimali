@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { mockWorkers } from "@/data/mockData";
-import { Worker } from "@/types";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +10,15 @@ import { Users, Plus, Fingerprint, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { playSuccessSound, playRejectionAlarm } from "@/utils/alarmSound";
+
+interface WorkerRow {
+  id: string;
+  name: string;
+  role: string;
+  salary: number;
+  paid: number;
+  balance: number;
+}
 
 interface StoredCredential {
   workerName: string;
@@ -28,7 +36,8 @@ const bufferToBase64 = (buffer: ArrayBuffer): string =>
 
 const WorkersPage = () => {
   const { symbol } = useCurrency();
-  const [workers, setWorkers] = useState<Worker[]>(mockWorkers);
+  const [workers, setWorkers] = useState<WorkerRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [salary, setSalary] = useState("");
@@ -38,6 +47,30 @@ const WorkersPage = () => {
     const stored = localStorage.getItem("biometric_credentials");
     return stored ? JSON.parse(stored) : [];
   });
+
+  const fetchWorkers = useCallback(async () => {
+    const { data } = await supabase.from("workers").select("*").order("created_at", { ascending: true });
+    if (data) {
+      setWorkers(data.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        role: r.role,
+        salary: Number(r.salary),
+        paid: Number(r.paid),
+        balance: Number(r.balance),
+      })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchWorkers();
+    const channel = supabase
+      .channel("workers-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchWorkers())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchWorkers]);
 
   const totalBalance = workers.reduce((s, w) => s + w.balance, 0);
 
@@ -113,7 +146,21 @@ const WorkersPage = () => {
     if (!name || !salary) { toast.error("Fill required fields"); return; }
 
     const workerName = name;
-    setWorkers((prev) => [...prev, { id: Date.now().toString(), name, role, salary: parseFloat(salary), paid: 0, balance: parseFloat(salary) }]);
+    const salaryNum = parseFloat(salary);
+
+    const { error } = await supabase.from("workers").insert({
+      name: workerName,
+      role,
+      salary: salaryNum,
+      paid: 0,
+      balance: salaryNum,
+      created_by: (await supabase.auth.getUser()).data.user?.id,
+    });
+
+    if (error) {
+      toast.error("Failed to add worker");
+      return;
+    }
 
     if (registerFp) {
       setRegistering(true);
@@ -125,15 +172,24 @@ const WorkersPage = () => {
     toast.success("Worker added!");
   };
 
-  const recordPayment = (id: string) => {
+  const recordPayment = async (worker: WorkerRow) => {
     const amt = prompt("Enter payment amount:");
     if (!amt) return;
     const payment = parseFloat(amt);
     if (isNaN(payment) || payment <= 0) return;
-    setWorkers((prev) =>
-      prev.map((w) => w.id === id ? { ...w, paid: w.paid + payment, balance: Math.max(0, w.salary - (w.paid + payment)) } : w)
-    );
+
+    const newPaid = worker.paid + payment;
+    const newBalance = Math.max(0, worker.salary - newPaid);
+
+    const { error } = await supabase.from("workers").update({ paid: newPaid, balance: newBalance }).eq("id", worker.id);
+    if (error) { toast.error("Failed to record payment"); return; }
     toast.success("Payment recorded!");
+  };
+
+  const deleteWorker = async (id: string) => {
+    const { error } = await supabase.from("workers").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete worker"); return; }
+    toast.success("Worker removed");
   };
 
   const registerFingerprint = async (workerName: string) => {
@@ -148,6 +204,8 @@ const WorkersPage = () => {
   };
 
   const hasFingerprint = (workerName: string) => credentials.some((c) => c.workerName === workerName);
+
+  if (loading) return <p className="text-muted-foreground p-4">Loading workers…</p>;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -164,13 +222,7 @@ const WorkersPage = () => {
                 variant={registerFp ? "default" : "outline"}
                 className="h-12 gap-2"
                 disabled={registering || !name}
-                onClick={() => {
-                  if (!registerFp) {
-                    setRegisterFp(true);
-                  } else {
-                    setRegisterFp(false);
-                  }
-                }}
+                onClick={() => setRegisterFp(!registerFp)}
               >
                 <Fingerprint className="w-4 h-4" />
                 {registerFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
@@ -233,9 +285,19 @@ const WorkersPage = () => {
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell><Button variant="outline" size="sm" onClick={() => recordPayment(w.id)}>Pay</Button></TableCell>
+                  <TableCell className="flex gap-1">
+                    <Button variant="outline" size="sm" onClick={() => recordPayment(w)}>Pay</Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteWorker(w.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
+              {workers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">No workers yet. Add one above.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
