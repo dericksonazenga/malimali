@@ -3,20 +3,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Recycle, LogIn } from "lucide-react";
+import { Recycle, LogIn, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 const LoginPage = () => {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!login(email, password)) {
-      setError("Invalid credentials. Try: admin@scrap.com, accountant@scrap.com, datamanager@scrap.com, or worker@scrap.com");
+    setSubmitting(true);
+
+    if (isSignup) {
+      if (!displayName.trim()) {
+        setError("Please enter your name");
+        setSubmitting(false);
+        return;
+      }
+      const err = await signup(email, password, displayName.trim());
+      if (err) {
+        setError(err);
+      } else {
+        toast.success("Account created! Please check your email to verify your account before signing in.");
+        setIsSignup(false);
+        setDisplayName("");
+      }
+    } else {
+      const ok = await login(email, password);
+      if (!ok) {
+        setError("Invalid credentials or email not verified.");
+      }
     }
+    setSubmitting(false);
   };
 
   return (
@@ -33,12 +57,26 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-2xl space-y-5">
+          {isSignup && (
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Your full name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="h-12"
+                required
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="admin@scrap.com"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-12"
@@ -55,6 +93,7 @@ const LoginPage = () => {
               onChange={(e) => setPassword(e.target.value)}
               className="h-12"
               required
+              minLength={6}
             />
           </div>
 
@@ -62,17 +101,19 @@ const LoginPage = () => {
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</p>
           )}
 
-          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2">
-            <LogIn className="w-5 h-5" />
-            Sign In
+          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting}>
+            {isSignup ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+            {submitting ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
           </Button>
 
-          <div className="text-xs text-muted-foreground text-center space-y-1">
-            <p className="font-medium">Demo Accounts:</p>
-            <p>Admin: admin@scrap.com</p>
-            <p>Accountant: accountant@scrap.com</p>
-            <p>Data Manager: datamanager@scrap.com</p>
-            <p>Worker: worker@scrap.com</p>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => { setIsSignup(!isSignup); setError(""); }}
+              className="text-sm text-primary hover:underline"
+            >
+              {isSignup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+            </button>
           </div>
         </form>
       </div>

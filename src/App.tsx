@@ -27,7 +27,13 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-sidebar">
+      <div className="text-sidebar-foreground/60">Loading...</div>
+    </div>
+  );
 
   if (!user) return <LoginPage />;
 
