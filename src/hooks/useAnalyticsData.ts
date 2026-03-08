@@ -111,13 +111,14 @@ export function useAnalyticsData(range: DateRangeValue) {
       return q;
     };
 
-    const [agents, vips, sales, exps, workers, stock] = await Promise.all([
+    const [agents, vips, sales, exps, workers, stock, commodities] = await Promise.all([
       applyRange(supabase.from("agent_entries").select("*")),
       applyRange(supabase.from("vip_entries").select("*")),
       applyRange(supabase.from("sales_entries").select("*")),
       applyRange(supabase.from("expenses").select("*")),
       supabase.from("workers").select("*"),
       supabase.from("persistent_stock").select("*"),
+      supabase.from("commodities").select("*"),
     ]);
 
     const agentRows = agents.data || [];
