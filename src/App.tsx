@@ -22,6 +22,7 @@ import AccountantPage from "@/pages/AccountantPage";
 import SalaryPage from "@/pages/SalaryPage";
 import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
+import DailySummariesPage from "@/pages/DailySummariesPage";
 import AttendancePage from "@/pages/AttendancePage";
 import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
