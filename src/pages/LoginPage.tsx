@@ -3,12 +3,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Recycle, LogIn, UserPlus } from "lucide-react";
+import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginPage = () => {
   const { login, signup } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
