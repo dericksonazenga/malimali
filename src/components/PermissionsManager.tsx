@@ -112,7 +112,6 @@ const PermissionsManager = () => {
                     <Switch
                       checked={matrix[role]?.has(perm.key) ?? false}
                       onCheckedChange={() => toggle(role, perm.key)}
-                      disabled={role === "admin"}
                       className="mx-auto"
                     />
                   </td>
