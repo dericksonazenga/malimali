@@ -256,7 +256,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {expenses.length > 0 && (
+              {filteredExpenses.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono text-destructive">-{symbol}{fmt(expenseTotal)}</span></span>
                 </div>
