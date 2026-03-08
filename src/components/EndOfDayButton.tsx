@@ -39,7 +39,7 @@ const EndOfDayButton = () => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="gap-2">
+        <Button className="gap-2 bg-green-600 text-white hover:bg-green-700">
           <Moon className="w-4 h-4" />
           End of Day
         </Button>
