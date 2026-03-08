@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck, QrCode, UserMinus } from "lucide-react";
+import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, UserCheck, QrCode, UserMinus, AlertTriangle, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
