@@ -346,7 +346,7 @@ export type Database = {
           commodity: string | null
           created_at: string
           created_by: string | null
-          customer_name: string
+          customer_name: string | null
           date: string
           id: string
           item_image: string | null
@@ -359,7 +359,7 @@ export type Database = {
           commodity?: string | null
           created_at?: string
           created_by?: string | null
-          customer_name: string
+          customer_name?: string | null
           date?: string
           id?: string
           item_image?: string | null
@@ -372,7 +372,7 @@ export type Database = {
           commodity?: string | null
           created_at?: string
           created_by?: string | null
-          customer_name?: string
+          customer_name?: string | null
           date?: string
           id?: string
           item_image?: string | null
