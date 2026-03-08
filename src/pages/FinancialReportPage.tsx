@@ -31,7 +31,7 @@ const FinancialReportPage = () => {
     agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
     agentTotal, vipTotal, salesTotal, expenseTotal,
     salaryTotal, salaryPaid, salaryBalance,
-    totalPurchases, grossProfit, netProfit, commodityBreakdown,
+    totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
   } = data;
 
   const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -176,6 +176,7 @@ const FinancialReportPage = () => {
         commodityBreakdown={commodityBreakdown}
         stockData={stockData}
         expenses={expenses}
+        dailyProfitTrend={dailyProfitTrend}
       />
 
       {/* Detailed Sections */}

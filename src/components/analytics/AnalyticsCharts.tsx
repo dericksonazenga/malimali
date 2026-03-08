@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
+  Area, AreaChart, ReferenceLine,
 } from "recharts";
+import { DailyProfit } from "@/hooks/useAnalyticsData";
+import { format, parseISO } from "date-fns";
 
 const COLORS = [
   "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)", "hsl(0, 84%, 60%)",
@@ -22,11 +25,12 @@ interface Props {
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   stockData: any[];
   expenses: any[];
+  dailyProfitTrend: DailyProfit[];
 }
 
 const AnalyticsCharts = ({
   symbol, salesTotal, agentTotal, vipTotal, expenseTotal, salaryPaid,
-  grossProfit, netProfit, commodityBreakdown, stockData, expenses,
+  grossProfit, netProfit, commodityBreakdown, stockData, expenses, dailyProfitTrend,
 }: Props) => {
   // Revenue bar chart data
   const revenueBarData = [
@@ -88,8 +92,64 @@ const AnalyticsCharts = ({
     );
   };
 
+  const trendData = dailyProfitTrend.map(d => ({
+    ...d,
+    label: format(parseISO(d.date), "MMM d"),
+  }));
+
+  const ProfitTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-md border border-border bg-popover p-2 text-xs shadow-md">
+        <p className="font-medium mb-1">{label}</p>
+        {payload.map((p: any, i: number) => (
+          <p key={i} style={{ color: p.stroke || p.color }}>
+            {p.name}: {symbol}{Number(p.value).toLocaleString()}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      {/* Daily Profit Trend - Full Width */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Daily Profit Trend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {trendData.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">No data for this period</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 80%)" strokeOpacity={0.3} />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`} />
+                <Tooltip content={<ProfitTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine y={0} stroke="hsl(0, 0%, 50%)" strokeDasharray="3 3" />
+                <Area type="monotone" dataKey="sales" name="Sales" stroke={COLORS[1]} fill="url(#salesGrad)" strokeWidth={1.5} />
+                <Area type="monotone" dataKey="purchases" name="Purchases" stroke={COLORS[2]} fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
+                <Area type="monotone" dataKey="profit" name="Profit" stroke={COLORS[0]} fill="url(#profitGrad)" strokeWidth={2.5} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Revenue Overview Bar */}
       <Card>
         <CardHeader className="pb-2">
@@ -175,6 +235,7 @@ const AnalyticsCharts = ({
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

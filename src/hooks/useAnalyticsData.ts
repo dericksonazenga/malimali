@@ -43,6 +43,14 @@ function getDateBounds(range: DateRange): { from: string | null; to: string | nu
   }
 }
 
+export interface DailyProfit {
+  date: string;
+  sales: number;
+  purchases: number;
+  expenses: number;
+  profit: number;
+}
+
 export interface AnalyticsData {
   agentEntries: any[];
   vipEntries: any[];
@@ -61,6 +69,7 @@ export interface AnalyticsData {
   grossProfit: number;
   netProfit: number;
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
+  dailyProfitTrend: DailyProfit[];
 }
 
 export function useAnalyticsData(range: DateRange) {
@@ -113,12 +122,30 @@ export function useAnalyticsData(range: DateRange) {
     salesRows.forEach((e: any) => { if (e.commodity) { ensure(e.commodity); cb[e.commodity].sold += Number(e.weight); } });
     Object.keys(cb).forEach(c => { cb[c].net = cb[c].bought - cb[c].sold; });
 
+    // Daily profit trend
+    const dailyMap: Record<string, { sales: number; purchases: number; expenses: number }> = {};
+    const ensureDay = (d: string) => { if (!dailyMap[d]) dailyMap[d] = { sales: 0, purchases: 0, expenses: 0 }; };
+    salesRows.forEach((e: any) => { const d = e.date || e.created_at?.split("T")[0]; ensureDay(d); dailyMap[d].sales += Number(e.amount || 0); });
+    agentRows.forEach((e: any) => { const d = e.date || e.created_at?.split("T")[0]; ensureDay(d); dailyMap[d].purchases += Number(e.amount); });
+    vipRows.forEach((e: any) => { const d = e.date || e.created_at?.split("T")[0]; ensureDay(d); dailyMap[d].purchases += Number(e.amount); });
+    expRows.forEach((e: any) => { const d = e.date || e.created_at?.split("T")[0]; ensureDay(d); dailyMap[d].expenses += Number(e.amount); });
+    const dailyProfitTrend: DailyProfit[] = Object.entries(dailyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => ({
+        date,
+        sales: v.sales,
+        purchases: v.purchases,
+        expenses: v.expenses,
+        profit: v.sales - v.purchases - v.expenses,
+      }));
+
     setData({
       agentEntries: agentRows, vipEntries: vipRows, salesEntries: salesRows,
       expenses: expRows, workers: workerRows, stockData: stockRows,
       agentTotal, vipTotal, salesTotal, expenseTotal,
       salaryTotal, salaryPaid, salaryBalance,
       totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
+      dailyProfitTrend,
     });
     setLoading(false);
   }, [range]);
