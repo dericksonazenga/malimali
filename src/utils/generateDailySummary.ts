@@ -4,22 +4,58 @@ export const generateDailySummary = async () => {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch today's data in parallel
-  const [agentRes, vipRes, salesRes, expensesRes] = await Promise.all([
+  const [agentRes, vipRes, salesRes, expensesRes, workersRes] = await Promise.all([
     supabase.from("agent_entries").select("*").eq("date", today),
     supabase.from("vip_entries").select("*").eq("date", today),
     supabase.from("sales_entries").select("*").eq("date", today),
     supabase.from("expenses").select("*").eq("date", today),
+    supabase.from("workers").select("*"),
   ]);
 
   const agentEntries = agentRes.data || [];
   const vipEntries = vipRes.data || [];
   const salesEntries = salesRes.data || [];
   const expenses = expensesRes.data || [];
+  const workers = workersRes.data || [];
 
   const totalAgent = agentEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalVip = vipEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalSales = salesEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const salaryPaid = workers.reduce((s, w) => s + Number(w.paid || 0), 0);
+
+  // Calculate weighted average purchase rate per commodity
+  const purchaseWeights: Record<string, { totalWeight: number; totalCost: number }> = {};
+  const ensurePW = (c: string) => { if (!purchaseWeights[c]) purchaseWeights[c] = { totalWeight: 0, totalCost: 0 }; };
+  agentEntries.forEach((e) => {
+    ensurePW(e.commodity);
+    purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight || 0);
+    purchaseWeights[e.commodity].totalCost += Number(e.amount || 0);
+  });
+  vipEntries.forEach((e) => {
+    ensurePW(e.commodity);
+    purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight || 0);
+    purchaseWeights[e.commodity].totalCost += Number(e.amount || 0);
+  });
+
+  // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
+  let grossProfit = 0;
+  salesEntries.forEach((e) => {
+    const commodity = e.commodity;
+    const saleRate = Number(e.rate || 0);
+    const saleWeight = Number(e.weight || 0);
+    const saleAmount = Number(e.amount || 0);
+
+    if (e.is_exchange || !commodity || saleWeight === 0) {
+      grossProfit += saleAmount;
+    } else {
+      const pw = purchaseWeights[commodity];
+      const avgBuyRate = pw && pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
+      grossProfit += (saleRate - avgBuyRate) * saleWeight;
+    }
+  });
+
+  const netProfit = grossProfit - totalExpenses - salaryPaid;
 
   // Stock changes: commodity -> { in, out }
   const stockChanges: Record<string, { in: number; out: number }> = {};
@@ -37,8 +73,6 @@ export const generateDailySummary = async () => {
       stockChanges[e.commodity].out += Number(e.weight || 0);
     }
   });
-
-  const netProfit = totalSales - totalAgent - totalVip - totalExpenses;
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
 
