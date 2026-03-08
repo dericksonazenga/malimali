@@ -25,11 +25,12 @@ interface Props {
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   stockData: any[];
   expenses: any[];
+  dailyProfitTrend: DailyProfit[];
 }
 
 const AnalyticsCharts = ({
   symbol, salesTotal, agentTotal, vipTotal, expenseTotal, salaryPaid,
-  grossProfit, netProfit, commodityBreakdown, stockData, expenses,
+  grossProfit, netProfit, commodityBreakdown, stockData, expenses, dailyProfitTrend,
 }: Props) => {
   // Revenue bar chart data
   const revenueBarData = [
