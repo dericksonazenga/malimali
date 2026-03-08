@@ -15,7 +15,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import QRScanner from "@/components/QRScanner";
-
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 interface AttendanceRecord {
   id: string;
   workerName: string;
