@@ -13,6 +13,7 @@ const ALL_PERMISSIONS = [
   { key: "manage_workers", label: "Manage Workers" },
   { key: "manage_expenses", label: "Manage Expenses" },
   { key: "manage_inventory", label: "Manage Inventory" },
+  { key: "adjust_stock", label: "Adjust Stock" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
