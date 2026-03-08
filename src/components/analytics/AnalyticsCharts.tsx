@@ -1,0 +1,182 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
+
+const COLORS = [
+  "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)", "hsl(0, 84%, 60%)",
+  "hsl(45, 93%, 47%)", "hsl(280, 67%, 55%)", "hsl(180, 60%, 45%)",
+  "hsl(24, 95%, 53%)", "hsl(330, 65%, 50%)",
+];
+
+interface Props {
+  symbol: string;
+  salesTotal: number;
+  agentTotal: number;
+  vipTotal: number;
+  expenseTotal: number;
+  salaryPaid: number;
+  grossProfit: number;
+  netProfit: number;
+  commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
+  stockData: any[];
+  expenses: any[];
+}
+
+const AnalyticsCharts = ({
+  symbol, salesTotal, agentTotal, vipTotal, expenseTotal, salaryPaid,
+  grossProfit, netProfit, commodityBreakdown, stockData, expenses,
+}: Props) => {
+  // Revenue bar chart data
+  const revenueBarData = [
+    { name: "Sales", value: salesTotal, fill: COLORS[0] },
+    { name: "Agent", value: agentTotal, fill: COLORS[1] },
+    { name: "VIP", value: vipTotal, fill: COLORS[2] },
+    { name: "Expenses", value: expenseTotal, fill: COLORS[3] },
+    { name: "Salary", value: salaryPaid, fill: COLORS[4] },
+  ];
+
+  // Profit waterfall
+  const profitData = [
+    { name: "Gross", value: grossProfit, fill: grossProfit >= 0 ? COLORS[0] : COLORS[2] },
+    { name: "Net", value: netProfit, fill: netProfit >= 0 ? COLORS[0] : COLORS[2] },
+  ];
+
+  // Expense breakdown pie
+  const expenseByCat: Record<string, number> = {};
+  expenses.forEach((e: any) => {
+    expenseByCat[e.category] = (expenseByCat[e.category] || 0) + Number(e.amount);
+  });
+  const expensePieData = Object.entries(expenseByCat).map(([name, value]) => ({ name, value }));
+
+  // Commodity flow bar
+  const commodityBarData = Object.entries(commodityBreakdown).map(([name, v]) => ({
+    name, bought: v.bought, sold: v.sold,
+  }));
+
+  // Stock pie
+  const stockPieData = stockData
+    .filter((s: any) => Number(s.weight) > 0)
+    .map((s: any) => ({ name: s.commodity, value: Number(s.weight) }));
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-md border border-border bg-popover p-2 text-xs shadow-md">
+        <p className="font-medium">{label || payload[0]?.name}</p>
+        {payload.map((p: any, i: number) => (
+          <p key={i} style={{ color: p.color || p.fill }}>
+            {p.name}: {symbol}{Number(p.value).toLocaleString()}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
+  const WeightTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="rounded-md border border-border bg-popover p-2 text-xs shadow-md">
+        <p className="font-medium">{payload[0]?.payload?.name}</p>
+        {payload.map((p: any, i: number) => (
+          <p key={i} style={{ color: p.color || p.fill }}>
+            {p.name}: {Number(p.value).toLocaleString()}kg
+          </p>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Revenue Overview Bar */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Revenue vs Costs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={revenueBarData} barSize={32}>
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {revenueBarData.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Expense Breakdown Pie */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Expense Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {expensePieData.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">No expenses</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={expensePieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                  {expensePieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Commodity Flow Bar */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Commodity Flow (kg)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {commodityBarData.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">No data</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={commodityBarData} barSize={20}>
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip content={<WeightTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="bought" name="In" fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sold" name="Out" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Stock Distribution Pie */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Stock Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {stockPieData.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={stockPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                  {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AnalyticsCharts;

@@ -10,6 +10,7 @@ import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
+import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
@@ -161,6 +162,21 @@ const FinancialReportPage = () => {
           </div>
         ))}
       </div>
+
+      {/* Charts */}
+      <AnalyticsCharts
+        symbol={symbol}
+        salesTotal={salesTotal}
+        agentTotal={agentTotal}
+        vipTotal={vipTotal}
+        expenseTotal={expenseTotal}
+        salaryPaid={salaryPaid}
+        grossProfit={grossProfit}
+        netProfit={netProfit}
+        commodityBreakdown={commodityBreakdown}
+        stockData={stockData}
+        expenses={expenses}
+      />
 
       {/* Detailed Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
