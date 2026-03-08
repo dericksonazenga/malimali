@@ -50,6 +50,8 @@ const AttendancePage = () => {
   const [signOutWorker, setSignOutWorker] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [shiftStartTime, setShiftStartTime] = useState("08:00");
+  const [showStartTimeSetting, setShowStartTimeSetting] = useState(false);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
