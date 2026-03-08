@@ -496,6 +496,36 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          commodity: string
+          created_at: string
+          id: string
+          new_weight: number
+          previous_weight: number
+          reason: string
+        }
+        Insert: {
+          adjusted_by?: string | null
+          commodity: string
+          created_at?: string
+          id?: string
+          new_weight?: number
+          previous_weight?: number
+          reason?: string
+        }
+        Update: {
+          adjusted_by?: string | null
+          commodity?: string
+          created_at?: string
+          id?: string
+          new_weight?: number
+          previous_weight?: number
+          reason?: string
+        }
+        Relationships: []
+      }
       vip_entries: {
         Row: {
           actual_weight: number
