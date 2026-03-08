@@ -34,6 +34,8 @@ const DailySummariesPage = () => {
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [eodLogs, setEodLogs] = useState<EodLog[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetch = async () => {
