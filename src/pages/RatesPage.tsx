@@ -22,9 +22,9 @@ const RatesPage = () => {
   const [newSales, setNewSales] = useState("");
 
   const startEdit = (c: Commodity) => { setEditing(c.id); setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate }); };
-  const saveEdit = (id: string) => { updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
+  const saveEdit = async (id: string) => { await updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newName.trim()) { toast.error("Enter commodity name"); return; }
     if (commodities.some((c) => c.name.toLowerCase() === newName.trim().toLowerCase())) { toast.error("Commodity already exists"); return; }
     const newCommodity: Commodity = {
@@ -34,7 +34,7 @@ const RatesPage = () => {
       vipRate: parseFloat(newVip) || 0,
       salesRate: parseFloat(newSales) || 0,
     };
-    addCommodity(newCommodity);
+    await addCommodity(newCommodity);
     setNewName(""); setNewAgent(""); setNewVip(""); setNewSales(""); setShowAdd(false);
     toast.success(`${newCommodity.name} added!`);
   };
