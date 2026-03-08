@@ -39,6 +39,18 @@ const ReportSheetView = ({
   agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
   commodityBreakdown, commodityProfitBreakdown,
 }: ReportSheetViewProps) => {
+  const [search, setSearch] = useState("");
+  const q = search.toLowerCase().trim();
+
+  const filteredAgents = useMemo(() => q ? agentEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : agentEntries, [q, agentEntries]);
+  const filteredVip = useMemo(() => q ? vipEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : vipEntries, [q, vipEntries]);
+  const filteredSales = useMemo(() => q ? salesEntries.filter((e: any) => `${e.customer_name || ""} ${e.commodity || ""} ${e.date}`.toLowerCase().includes(q)) : salesEntries, [q, salesEntries]);
+  const filteredExpenses = useMemo(() => q ? expenses.filter((e: any) => `${e.category} ${e.notes || ""} ${e.date}`.toLowerCase().includes(q)) : expenses, [q, expenses]);
+  const filteredWorkers = useMemo(() => q ? workers.filter((w: any) => `${w.name} ${w.role}`.toLowerCase().includes(q)) : workers, [q, workers]);
+  const filteredStock = useMemo(() => q ? stockData.filter((s: any) => s.commodity.toLowerCase().includes(q)) : stockData, [q, stockData]);
+  const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => c.toLowerCase().includes(q))) : commodityBreakdown, [q, commodityBreakdown]);
+  const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => c.commodity.toLowerCase().includes(q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -51,7 +63,18 @@ const ReportSheetView = ({
           <DialogTitle className="text-lg">
             Full Report — {rangeLabel} ({currency})
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Generated: {new Date().toLocaleString()}</p>
+          <div className="flex items-center gap-3 pt-1">
+            <p className="text-xs text-muted-foreground whitespace-nowrap">Generated: {new Date().toLocaleString()}</p>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search entries..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+          </div>
         </DialogHeader>
 
         <Tabs defaultValue="summary" className="flex flex-col flex-1 min-h-0">
