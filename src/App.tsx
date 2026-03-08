@@ -24,6 +24,7 @@ import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
 import AttendancePage from "@/pages/AttendancePage";
 import NotFound from "@/pages/NotFound";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
@@ -70,7 +71,10 @@ const App = () => (
             <InventoryProvider>
               <EndOfDayProvider>
                 <BrowserRouter>
-                  <AuthenticatedApp />
+                  <Routes>
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/*" element={<AuthenticatedApp />} />
+                  </Routes>
                 </BrowserRouter>
               </EndOfDayProvider>
             </InventoryProvider>

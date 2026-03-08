@@ -3,12 +3,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Recycle, LogIn, UserPlus } from "lucide-react";
+import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const LoginPage = () => {
   const { login, signup } = useAuth();
-  const [isSignup, setIsSignup] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -20,7 +21,21 @@ const LoginPage = () => {
     setError("");
     setSubmitting(true);
 
-    if (isSignup) {
+    if (mode === "forgot") {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        toast.success("Password reset email sent! Check your inbox.");
+        setMode("login");
+      }
+      setSubmitting(false);
+      return;
+    }
+
+    if (mode === "signup") {
       if (!displayName.trim()) {
         setError("Please enter your name");
         setSubmitting(false);
@@ -31,7 +46,7 @@ const LoginPage = () => {
         setError(err);
       } else {
         toast.success("Account created! Please check your email to verify your account before signing in.");
-        setIsSignup(false);
+        setMode("login");
         setDisplayName("");
       }
     } else {
@@ -57,7 +72,7 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-2xl space-y-5">
-          {isSignup && (
+          {mode === "signup" && (
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
@@ -83,36 +98,47 @@ const LoginPage = () => {
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-12"
-              required
-              minLength={6}
-            />
-          </div>
+          {mode !== "forgot" && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-12"
+                required
+                minLength={6}
+              />
+            </div>
+          )}
 
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</p>
           )}
 
           <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting}>
-            {isSignup ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-            {submitting ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
+            {mode === "forgot" ? <Mail className="w-5 h-5" /> : mode === "signup" ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+            {submitting ? "Please wait..." : mode === "forgot" ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Sign In"}
           </Button>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
+            {mode === "login" && (
+              <button
+                type="button"
+                onClick={() => { setMode("forgot"); setError(""); }}
+                className="text-sm text-muted-foreground hover:text-primary hover:underline block w-full"
+              >
+                Forgot your password?
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => { setIsSignup(!isSignup); setError(""); }}
+              onClick={() => { setMode(mode === "signup" ? "login" : mode === "forgot" ? "login" : "signup"); setError(""); }}
               className="text-sm text-primary hover:underline"
             >
-              {isSignup ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+              {mode === "signup" ? "Already have an account? Sign in" : mode === "forgot" ? "Back to Sign In" : "Don't have an account? Sign up"}
             </button>
           </div>
         </form>
