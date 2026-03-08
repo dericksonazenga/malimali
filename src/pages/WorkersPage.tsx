@@ -99,10 +99,11 @@ const WorkersPage = () => {
       return;
     }
 
-    if (pendingAddFp) {
-      setFpDialogWorker(workerName);
-      setFpDialogOpen(true);
-      setPendingAddFp(false);
+    // Save fingerprint credentials if captured
+    if (pendingCreds.length > 0) {
+      const newCreds: StoredCredential[] = pendingCreds.map((c) => ({ workerName, ...c }));
+      saveCredentials([...credentials.filter((c) => c.workerName !== workerName), ...newCreds]);
+      setPendingCreds([]);
     }
 
     setName(""); setRole(""); setSalary("");
