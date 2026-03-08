@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Profile fetch error:", error);
       setUser(null);
     } else {
-      const u = buildUser(data);
+      const u = await buildUser(data);
       u.email = supabaseUser.email || "";
       setUser(u);
     }
