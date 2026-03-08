@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Eye, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ReportSheetViewProps {
@@ -37,6 +39,18 @@ const ReportSheetView = ({
   agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
   commodityBreakdown, commodityProfitBreakdown,
 }: ReportSheetViewProps) => {
+  const [search, setSearch] = useState("");
+  const q = search.toLowerCase().trim();
+
+  const filteredAgents = useMemo(() => q ? agentEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : agentEntries, [q, agentEntries]);
+  const filteredVip = useMemo(() => q ? vipEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : vipEntries, [q, vipEntries]);
+  const filteredSales = useMemo(() => q ? salesEntries.filter((e: any) => `${e.customer_name || ""} ${e.commodity || ""} ${e.date}`.toLowerCase().includes(q)) : salesEntries, [q, salesEntries]);
+  const filteredExpenses = useMemo(() => q ? expenses.filter((e: any) => `${e.category} ${e.notes || ""} ${e.date}`.toLowerCase().includes(q)) : expenses, [q, expenses]);
+  const filteredWorkers = useMemo(() => q ? workers.filter((w: any) => `${w.name} ${w.role}`.toLowerCase().includes(q)) : workers, [q, workers]);
+  const filteredStock = useMemo(() => q ? stockData.filter((s: any) => s.commodity.toLowerCase().includes(q)) : stockData, [q, stockData]);
+  const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => c.toLowerCase().includes(q))) : commodityBreakdown, [q, commodityBreakdown]);
+  const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => c.commodity.toLowerCase().includes(q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -49,7 +63,18 @@ const ReportSheetView = ({
           <DialogTitle className="text-lg">
             Full Report — {rangeLabel} ({currency})
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Generated: {new Date().toLocaleString()}</p>
+          <div className="flex items-center gap-3 pt-1">
+            <p className="text-xs text-muted-foreground whitespace-nowrap">Generated: {new Date().toLocaleString()}</p>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search entries..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+          </div>
         </DialogHeader>
 
         <Tabs defaultValue="summary" className="flex flex-col flex-1 min-h-0">
@@ -110,10 +135,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {agentEntries.length === 0 && (
+                  {filteredAgents.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
                   )}
-                  {agentEntries.map((e: any) => (
+                  {filteredAgents.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell>{e.customer_name}</TableCell>
                       <TableCell>{e.commodity}</TableCell>
@@ -125,7 +150,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {agentEntries.length > 0 && (
+              {filteredAgents.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono">{symbol}{fmt(agentTotal)}</span></span>
                 </div>
@@ -146,10 +171,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {vipEntries.length === 0 && (
+                  {filteredVip.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
                   )}
-                  {vipEntries.map((e: any) => (
+                  {filteredVip.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell>{e.customer_name}</TableCell>
                       <TableCell>{e.commodity}</TableCell>
@@ -161,7 +186,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {vipEntries.length > 0 && (
+              {filteredVip.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono">{symbol}{fmt(vipTotal)}</span></span>
                 </div>
@@ -183,10 +208,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {salesEntries.length === 0 && (
+                  {filteredSales.length === 0 && (
                     <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
                   )}
-                  {salesEntries.map((e: any) => (
+                  {filteredSales.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell>{e.customer_name || "—"}</TableCell>
                       <TableCell>{e.commodity || "Exchange"}</TableCell>
@@ -199,7 +224,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {salesEntries.length > 0 && (
+              {filteredSales.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono text-success">{symbol}{fmt(salesTotal)}</span></span>
                 </div>
@@ -218,10 +243,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expenses.length === 0 && (
+                  {filteredExpenses.length === 0 && (
                     <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No expenses</TableCell></TableRow>
                   )}
-                  {expenses.map((e: any) => (
+                  {filteredExpenses.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell className="font-medium">{e.category}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">-{symbol}{fmt(Number(e.amount))}</TableCell>
@@ -231,7 +256,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {expenses.length > 0 && (
+              {filteredExpenses.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono text-destructive">-{symbol}{fmt(expenseTotal)}</span></span>
                 </div>
@@ -251,10 +276,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.keys(commodityBreakdown).length === 0 && (
+                  {Object.keys(filteredCommodityBreakdown).length === 0 && (
                     <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No data</TableCell></TableRow>
                   )}
-                  {Object.entries(commodityBreakdown).map(([c, v]) => (
+                  {Object.entries(filteredCommodityBreakdown).map(([c, v]) => (
                     <TableRow key={c}>
                       <TableCell className="font-medium">{c}</TableCell>
                       <TableCell className="text-right font-mono text-info">{fmt(v.bought)}</TableCell>
@@ -274,10 +299,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {stockData.length === 0 && (
+                  {filteredStock.length === 0 && (
                     <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No stock</TableCell></TableRow>
                   )}
-                  {stockData.map((s: any) => (
+                  {filteredStock.map((s: any) => (
                     <TableRow key={s.id}>
                       <TableCell className="font-medium">{s.commodity}</TableCell>
                       <TableCell className="text-right font-mono font-bold">{fmt(Number(s.weight))}</TableCell>
@@ -300,10 +325,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {workers.length === 0 && (
+                  {filteredWorkers.length === 0 && (
                     <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No workers</TableCell></TableRow>
                   )}
-                  {workers.map((w: any) => (
+                  {filteredWorkers.map((w: any) => (
                     <TableRow key={w.id}>
                       <TableCell className="font-medium">{w.name}</TableCell>
                       <TableCell className="text-muted-foreground">{w.role}</TableCell>
@@ -314,7 +339,7 @@ const ReportSheetView = ({
                   ))}
                 </TableBody>
               </Table>
-              {workers.length > 0 && (
+              {filteredWorkers.length > 0 && (
                 <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-border text-sm font-bold text-right">
                   <span className="font-mono">{symbol}{fmt(salaryTotal)}</span>
                   <span className="font-mono text-success">{symbol}{fmt(salaryPaid)}</span>
@@ -337,10 +362,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {commodityProfitBreakdown.length === 0 && (
+                  {filteredProfitBreakdown.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No data</TableCell></TableRow>
                   )}
-                  {commodityProfitBreakdown.map((c) => (
+                  {filteredProfitBreakdown.map((c) => (
                     <TableRow key={c.commodity}>
                       <TableCell className="font-medium">{c.commodity}</TableCell>
                       <TableCell className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</TableCell>
