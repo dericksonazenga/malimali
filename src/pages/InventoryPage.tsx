@@ -35,19 +35,42 @@ const InventoryPage = () => {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Stock by Commodity</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Stock by Commodity</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
-            <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Today In (kg)</TableHead><TableHead className="text-right">Today Out (kg)</TableHead><TableHead className="text-right">Current Stock (kg)</TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Commodity</TableHead>
+                <TableHead className="text-right">Carried Over</TableHead>
+                <TableHead className="text-right">Today In</TableHead>
+                <TableHead className="text-right">Today Out</TableHead>
+                <TableHead className="text-right">Current Stock</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
-              {commodityStock.filter((c) => c.stockIn > 0 || c.stockOut > 0 || c.current > 0).map((c) => (
+              {commodityStock.filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0).map((c) => (
                 <TableRow key={c.name}>
                   <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="text-right font-mono text-success">{c.stockIn.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono text-destructive">{c.stockOut.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold text-primary">{c.current.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-muted-foreground">{c.persistent.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-success">+{c.stockIn.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-destructive">-{c.stockOut.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-bold text-primary">{c.current.toLocaleString()} kg</TableCell>
                 </TableRow>
               ))}
+              {commodityStock.filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stock data yet. Add entries to see commodity breakdown.</TableCell>
+                </TableRow>
+              )}
+              {commodityStock.filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0).length > 0 && (
+                <TableRow className="border-t-2 border-primary/20 bg-accent/50">
+                  <TableCell className="font-bold">Total</TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-muted-foreground">{commodityStock.reduce((s, c) => s + c.persistent, 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-success">+{totalDailyIn.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-semibold text-destructive">-{totalDailyOut.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono font-bold text-primary">{totalCurrent.toLocaleString()} kg</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
