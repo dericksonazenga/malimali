@@ -39,7 +39,7 @@ const SalesEntryPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !weight || !commodity) { toast.error("Fill required fields"); return; }
+    if (!weight || !commodity) { toast.error("Fill required fields"); return; }
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
@@ -60,7 +60,7 @@ const SalesEntryPage = () => {
         <CardHeader><CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> New Sales Entry</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name" className="h-12" /></div>
+            <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
             <div className="space-y-2">
               <Label>Commodity *</Label>
               <Select value={commodity} onValueChange={setCommodity}>
