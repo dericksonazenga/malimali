@@ -48,8 +48,11 @@ const SalesEntryPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
-    if (isExchange && (!exchangeCommodity || !exchangeWeight)) { toast.error("Fill exchange fields"); return; }
+    if (isExchange) {
+      if (!exchangeCommodity || !exchangeWeight) { toast.error("Fill exchange fields"); return; }
+    } else {
+      if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
+    }
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
