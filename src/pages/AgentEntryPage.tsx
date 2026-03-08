@@ -41,7 +41,7 @@ const AgentEntryPage = () => {
 
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + e.amount, 0), [entries]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     const entry: AgentEntry = {
@@ -49,7 +49,7 @@ const AgentEntryPage = () => {
       grossWeight: gross, containerWeight: container, actualWeight, rate, amount,
       createdBy: "current", createdAt: new Date().toISOString().split("T")[0],
     };
-    addAgentEntry(entry);
+    await addAgentEntry(entry);
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     toast.success("Agent entry added!");
   };

@@ -37,10 +37,10 @@ const SalesEntryPage = () => {
   const amount = rate > 0 ? w * rate : undefined;
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !weight || !commodity) { toast.error("Fill required fields"); return; }
-    addSalesEntry({
+    await addSalesEntry({
       id: Date.now().toString(),
       customerName,
       commodity,

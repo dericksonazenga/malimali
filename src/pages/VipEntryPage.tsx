@@ -40,11 +40,11 @@ const VipEntryPage = () => {
   const amount = actualWeight * rate;
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + e.amount, 0), [entries]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     const entry: VipEntry = { id: Date.now().toString(), customerName, commodity, grossWeight: gross, containerWeight: container, actualWeight, rate, amount, createdBy: "current", createdAt: new Date().toISOString().split("T")[0] };
-    addVipEntry(entry);
+    await addVipEntry(entry);
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     toast.success("VIP entry added!");
   };
