@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users } from "lucide-react";
+import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock } from "lucide-react";
 
 interface DailySummary {
   id: string;
@@ -22,23 +22,38 @@ interface DailySummary {
   net_profit: number;
 }
 
+interface EodLog {
+  id: string;
+  triggered_at: string;
+  triggered_by: string | null;
+  date: string;
+}
+
 const DailySummariesPage = () => {
   const { symbol } = useCurrency();
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [eodLogs, setEodLogs] = useState<EodLog[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase
-        .from("daily_summaries")
-        .select("*")
-        .order("date", { ascending: false })
-        .limit(30);
-      if (data) setSummaries(data as any);
+    const fetchAll = async () => {
+      const [summariesRes, logsRes, profilesRes] = await Promise.all([
+        supabase.from("daily_summaries").select("*").order("date", { ascending: false }).limit(30),
+        supabase.from("end_of_day_log").select("*").order("triggered_at", { ascending: false }).limit(30),
+        supabase.from("profiles").select("user_id, display_name"),
+      ]);
+      if (summariesRes.data) setSummaries(summariesRes.data as any);
+      if (logsRes.data) setEodLogs(logsRes.data as any);
+      if (profilesRes.data) {
+        const map: Record<string, string> = {};
+        profilesRes.data.forEach((p: any) => { map[p.user_id] = p.display_name; });
+        setProfiles(map);
+      }
       setLoading(false);
     };
-    fetch();
+    fetchAll();
   }, []);
 
   if (loading) return <p className="text-muted-foreground p-4">Loading summaries…</p>;
@@ -57,6 +72,46 @@ const DailySummariesPage = () => {
       <h1 className="text-2xl font-bold flex items-center gap-2">
         <FileText className="w-6 h-6 text-primary" /> Daily Summaries
       </h1>
+
+      {/* End of Day Trigger Log */}
+      {eodLogs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" /> End of Day History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Triggered By</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {eodLogs.map((log) => {
+                  const dt = new Date(log.triggered_at);
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono text-xs">{log.date}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {dt.toLocaleTimeString()}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {log.triggered_by ? (profiles[log.triggered_by] || "Unknown user") : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {summaries.map((s) => {
         const expanded = expandedId === s.id;
