@@ -43,6 +43,14 @@ function getDateBounds(range: DateRange): { from: string | null; to: string | nu
   }
 }
 
+export interface DailyProfit {
+  date: string;
+  sales: number;
+  purchases: number;
+  expenses: number;
+  profit: number;
+}
+
 export interface AnalyticsData {
   agentEntries: any[];
   vipEntries: any[];
@@ -61,6 +69,7 @@ export interface AnalyticsData {
   grossProfit: number;
   netProfit: number;
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
+  dailyProfitTrend: DailyProfit[];
 }
 
 export function useAnalyticsData(range: DateRange) {
