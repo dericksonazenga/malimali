@@ -36,7 +36,7 @@ const WorkersPage = () => {
   const [salary, setSalary] = useState("");
   const [fpDialogOpen, setFpDialogOpen] = useState(false);
   const [fpDialogWorker, setFpDialogWorker] = useState("");
-  const [pendingAddFp, setPendingAddFp] = useState(false);
+  const [pendingCreds, setPendingCreds] = useState<{ credentialId: string; publicKey: string }[]>([]);
   const [credentials, setCredentials] = useState<StoredCredential[]>(() => {
     const stored = localStorage.getItem("biometric_credentials");
     return stored ? JSON.parse(stored) : [];
