@@ -51,6 +51,15 @@ export interface DailyProfit {
   profit: number;
 }
 
+export interface CommodityProfit {
+  commodity: string;
+  avgBuyRate: number;
+  avgSellRate: number;
+  marginPerKg: number;
+  totalWeightSold: number;
+  totalProfit: number;
+}
+
 export interface AnalyticsData {
   agentEntries: any[];
   vipEntries: any[];
@@ -70,6 +79,7 @@ export interface AnalyticsData {
   netProfit: number;
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   dailyProfitTrend: DailyProfit[];
+  commodityProfitBreakdown: CommodityProfit[];
 }
 
 export function useAnalyticsData(range: DateRange) {
