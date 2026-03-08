@@ -243,7 +243,7 @@ const MessagesPage = () => {
 
   const getRecipientSummary = (msg: Message) => {
     const names = msg.recipientIds
-      .map((id) => mockUsers.find((u) => u.id === id)?.name || "Unknown")
+      .map((id) => allUsers.find((u) => u.id === id)?.name || "Unknown")
       .slice(0, 2);
     const roleLabels = msg.recipientRoles.map(
       (r) => roleCategories.find((rc) => rc.key === r)?.label || r
