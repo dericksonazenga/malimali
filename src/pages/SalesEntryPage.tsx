@@ -39,7 +39,7 @@ const SalesEntryPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !weight || !commodity) { toast.error("Fill required fields"); return; }
+    if (!weight || !commodity) { toast.error("Fill required fields"); return; }
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
