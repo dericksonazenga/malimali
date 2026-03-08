@@ -76,6 +76,7 @@ const App = () => (
                 <BrowserRouter>
                   <Routes>
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/attendance-scan" element={<AttendanceScanPage />} />
                     <Route path="/*" element={<AuthenticatedApp />} />
                   </Routes>
                 </BrowserRouter>
