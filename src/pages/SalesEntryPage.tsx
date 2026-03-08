@@ -70,9 +70,6 @@ const SalesEntryPage = () => {
       createdBy: "current",
       createdAt: new Date().toISOString().split("T")[0],
     });
-      createdBy: "current",
-      createdAt: new Date().toISOString().split("T")[0],
-    });
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
     toast.success("Sales entry added!");
