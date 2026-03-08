@@ -183,13 +183,35 @@ export function useAnalyticsData(range: DateRange) {
         profit: v.sales - v.purchases - v.expenses,
       }));
 
+    // Per-commodity profit breakdown
+    const sellAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
+    const ensureSA = (c: string) => { if (!sellAgg[c]) sellAgg[c] = { totalWeight: 0, totalAmount: 0 }; };
+    salesRows.forEach((e: any) => {
+      if (!e.is_exchange && e.commodity && Number(e.weight || 0) > 0) {
+        ensureSA(e.commodity);
+        sellAgg[e.commodity].totalWeight += Number(e.weight);
+        sellAgg[e.commodity].totalAmount += Number(e.amount || 0);
+      }
+    });
+
+    const allCommodities = new Set([...Object.keys(purchaseWeights), ...Object.keys(sellAgg)]);
+    const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
+      const pw = purchaseWeights[commodity] || { totalWeight: 0, totalCost: 0 };
+      const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
+      const avgBuyRate = pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
+      const avgSellRate = sa.totalWeight > 0 ? sa.totalAmount / sa.totalWeight : 0;
+      const marginPerKg = avgSellRate - avgBuyRate;
+      const totalProfit = sa.totalWeight > 0 ? marginPerKg * sa.totalWeight : 0;
+      return { commodity, avgBuyRate, avgSellRate, marginPerKg, totalWeightSold: sa.totalWeight, totalProfit };
+    }).sort((a, b) => b.totalProfit - a.totalProfit);
+
     setData({
       agentEntries: agentRows, vipEntries: vipRows, salesEntries: salesRows,
       expenses: expRows, workers: workerRows, stockData: stockRows,
       agentTotal, vipTotal, salesTotal, expenseTotal,
       salaryTotal, salaryPaid, salaryBalance,
       totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
-      dailyProfitTrend,
+      dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);
   }, [range]);
