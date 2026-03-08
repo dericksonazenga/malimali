@@ -152,6 +152,57 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_summaries: {
+        Row: {
+          agent_entries: Json
+          created_at: string
+          created_by: string | null
+          date: string
+          expenses: Json
+          id: string
+          net_profit: number
+          sales_entries: Json
+          stock_changes: Json
+          total_agent_amount: number
+          total_expenses: number
+          total_sales_amount: number
+          total_vip_amount: number
+          vip_entries: Json
+        }
+        Insert: {
+          agent_entries?: Json
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          expenses?: Json
+          id?: string
+          net_profit?: number
+          sales_entries?: Json
+          stock_changes?: Json
+          total_agent_amount?: number
+          total_expenses?: number
+          total_sales_amount?: number
+          total_vip_amount?: number
+          vip_entries?: Json
+        }
+        Update: {
+          agent_entries?: Json
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          expenses?: Json
+          id?: string
+          net_profit?: number
+          sales_entries?: Json
+          stock_changes?: Json
+          total_agent_amount?: number
+          total_expenses?: number
+          total_sales_amount?: number
+          total_vip_amount?: number
+          vip_entries?: Json
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
