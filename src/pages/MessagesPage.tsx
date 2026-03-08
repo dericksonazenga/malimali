@@ -431,7 +431,7 @@ const MessagesPage = () => {
                       />
                       {rc.label}
                       <Badge variant="outline" className="ml-auto text-xs">
-                        {mockUsers.filter((u) => u.role === rc.key && u.id !== user?.id).length}
+                        {allUsers.filter((u) => u.role === rc.key && u.id !== user?.id).length}
                       </Badge>
                     </label>
                   ))}
