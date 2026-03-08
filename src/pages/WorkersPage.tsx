@@ -156,16 +156,19 @@ const WorkersPage = () => {
             <div className="md:col-span-3 flex items-center gap-4 flex-wrap">
               <Button
                 type="button"
-                variant={pendingAddFp ? "default" : "outline"}
+                variant={pendingCreds.length > 0 ? "default" : "outline"}
                 className="h-12 gap-2"
                 disabled={!name}
-                onClick={() => setPendingAddFp(!pendingAddFp)}
+                onClick={() => {
+                  setFpDialogWorker(name);
+                  setFpDialogOpen(true);
+                }}
               >
                 <Fingerprint className="w-4 h-4" />
-                {pendingAddFp ? "Fingerprint: ON ✓" : "Register Fingerprint"}
+                {pendingCreds.length > 0 ? `Fingerprint: ${pendingCreds.length} scans ✓` : "Register Fingerprint"}
               </Button>
-              {pendingAddFp && (
-                <p className="text-xs text-primary">Fingerprint dialog will open after adding the worker</p>
+              {pendingCreds.length > 0 && (
+                <p className="text-xs text-primary">Fingerprints captured — click Add Worker to save</p>
               )}
               <div className="flex-1" />
               <Button type="submit" className="h-12 px-8">Add Worker</Button>
