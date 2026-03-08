@@ -94,11 +94,28 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchToday = useCallback(async () => {
     const d = today();
-    const [agentRes, vipRes, salesRes] = await Promise.all([
-      supabase.from("agent_entries").select("*").eq("date", d).order("created_at", { ascending: false }),
-      supabase.from("vip_entries").select("*").eq("date", d).order("created_at", { ascending: false }),
-      supabase.from("sales_entries").select("*").eq("date", d).order("created_at", { ascending: false }),
-    ]);
+
+    // Check if EOD was triggered today — only show entries created after the last trigger
+    const { data: eodData } = await supabase
+      .from("end_of_day_log")
+      .select("triggered_at")
+      .eq("date", d)
+      .order("triggered_at", { ascending: false })
+      .limit(1);
+
+    const lastEod = eodData?.[0]?.triggered_at;
+
+    let agentQuery = supabase.from("agent_entries").select("*").eq("date", d).order("created_at", { ascending: false });
+    let vipQuery = supabase.from("vip_entries").select("*").eq("date", d).order("created_at", { ascending: false });
+    let salesQuery = supabase.from("sales_entries").select("*").eq("date", d).order("created_at", { ascending: false });
+
+    if (lastEod) {
+      agentQuery = agentQuery.gt("created_at", lastEod);
+      vipQuery = vipQuery.gt("created_at", lastEod);
+      salesQuery = salesQuery.gt("created_at", lastEod);
+    }
+
+    const [agentRes, vipRes, salesRes] = await Promise.all([agentQuery, vipQuery, salesQuery]);
     if (agentRes.data) setAgentEntries(agentRes.data.map(mapAgent));
     if (vipRes.data) setVipEntries(vipRes.data.map(mapVip));
     if (salesRes.data) setSalesEntries(salesRes.data.map(mapSales));
