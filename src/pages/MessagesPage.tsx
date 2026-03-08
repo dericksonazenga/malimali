@@ -444,7 +444,7 @@ const MessagesPage = () => {
                 </p>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-1">
-                    {mockUsers
+                    {allUsers
                       .filter((u) => u.id !== user?.id)
                       .map((u) => (
                         <label key={u.id} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-accent">
