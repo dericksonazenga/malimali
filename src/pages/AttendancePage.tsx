@@ -421,6 +421,11 @@ const AttendancePage = () => {
                     <Badge variant="outline" className="px-3 py-1.5">
                       {todayRecords.filter((r) => !r.signOutAt).length} still in
                     </Badge>
+                    {lateCount > 0 && (
+                      <Badge variant="destructive" className="px-3 py-1.5 gap-1">
+                        <AlertTriangle className="w-3 h-3" /> {lateCount} late
+                      </Badge>
+                    )}
                   </div>
                   <Table>
                     <TableHeader>
