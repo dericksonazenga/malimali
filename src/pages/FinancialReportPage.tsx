@@ -11,6 +11,7 @@ import { downloadCSV } from "@/utils/downloadCSV";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
+import ReportSheetView from "@/components/analytics/ReportSheetView";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
@@ -143,9 +144,35 @@ const FinancialReportPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Analytics & Reports</h1>
-        <Button onClick={downloadFullReport} className="h-10 gap-2">
-          <FileSpreadsheet className="w-4 h-4" /> Download Full Report
-        </Button>
+        <div className="flex gap-2">
+          <ReportSheetView
+            symbol={symbol}
+            fmt={fmt}
+            rangeLabel={rangeLabel}
+            currency={currency}
+            salesTotal={salesTotal}
+            agentTotal={agentTotal}
+            vipTotal={vipTotal}
+            totalPurchases={totalPurchases}
+            grossProfit={grossProfit}
+            expenseTotal={expenseTotal}
+            salaryPaid={salaryPaid}
+            salaryTotal={salaryTotal}
+            salaryBalance={salaryBalance}
+            netProfit={netProfit}
+            agentEntries={agentEntries}
+            vipEntries={vipEntries}
+            salesEntries={salesEntries}
+            expenses={expenses}
+            workers={workers}
+            stockData={stockData}
+            commodityBreakdown={commodityBreakdown}
+            commodityProfitBreakdown={commodityProfitBreakdown}
+          />
+          <Button onClick={downloadFullReport} className="h-10 gap-2">
+            <FileSpreadsheet className="w-4 h-4" /> Download Full Report
+          </Button>
+        </div>
       </div>
 
       {/* Date Range */}
