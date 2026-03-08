@@ -71,7 +71,10 @@ const App = () => (
             <InventoryProvider>
               <EndOfDayProvider>
                 <BrowserRouter>
-                  <AuthenticatedApp />
+                  <Routes>
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/*" element={<AuthenticatedApp />} />
+                  </Routes>
                 </BrowserRouter>
               </EndOfDayProvider>
             </InventoryProvider>
