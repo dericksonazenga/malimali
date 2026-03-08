@@ -121,7 +121,7 @@ const PermissionsManager = () => {
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground mt-4">
-          Admin always has all permissions. Changes take effect on next login.
+          Changes take effect on next login.
         </p>
       </CardContent>
     </Card>
