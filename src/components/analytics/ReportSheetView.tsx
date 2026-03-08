@@ -243,10 +243,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {expenses.length === 0 && (
+                  {filteredExpenses.length === 0 && (
                     <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No expenses</TableCell></TableRow>
                   )}
-                  {expenses.map((e: any) => (
+                  {filteredExpenses.map((e: any) => (
                     <TableRow key={e.id}>
                       <TableCell className="font-medium">{e.category}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">-{symbol}{fmt(Number(e.amount))}</TableCell>
