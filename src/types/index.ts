@@ -14,7 +14,8 @@ export type Permission =
   | "view_reports"
   | "manage_workers"
   | "manage_expenses"
-  | "manage_inventory";
+  | "manage_inventory"
+  | "adjust_stock";
 
 export interface Commodity {
   id: string;
