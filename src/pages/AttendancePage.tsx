@@ -362,7 +362,7 @@ const AttendancePage = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSignOutAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <AlertDialogAction onClick={handleSignOutAll} className="bg-green-600 text-white hover:bg-green-700">
                     Sign Out All
                   </AlertDialogAction>
                 </AlertDialogFooter>
