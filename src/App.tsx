@@ -24,6 +24,7 @@ import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
 import DailySummariesPage from "@/pages/DailySummariesPage";
 import AttendancePage from "@/pages/AttendancePage";
+import AttendanceScanPage from "@/pages/AttendanceScanPage";
 import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => (
                 <BrowserRouter>
                   <Routes>
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/attendance-scan" element={<AttendanceScanPage />} />
                     <Route path="/*" element={<AuthenticatedApp />} />
                   </Routes>
                 </BrowserRouter>
