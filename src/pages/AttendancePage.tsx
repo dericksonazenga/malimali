@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { format, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, isWithinInterval, parseISO } from "date-fns";
+import { format, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,12 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Fingerprint, LogIn, LogOut, Clock, CalendarDays, AlertTriangle, CalendarIcon, Users, TrendingUp, BarChart3 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { LogIn, LogOut, Clock, CalendarDays, CalendarIcon, Users, TrendingUp, BarChart3, Search, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { playRejectionAlarm, playSuccessSound } from "@/utils/alarmSound";
 import { supabase } from "@/integrations/supabase/client";
-import { useBiometricCredentials } from "@/hooks/useBiometricCredentials";
 
 interface AttendanceRecord {
   id: string;
@@ -23,16 +23,11 @@ interface AttendanceRecord {
   status: string;
 }
 
-const isWebAuthnSupported = () =>
-  typeof window !== "undefined" &&
-  window.PublicKeyCredential !== undefined &&
-  typeof window.PublicKeyCredential === "function";
-
-const bufferToBase64 = (buffer: ArrayBuffer): string =>
-  btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-const base64ToBuffer = (base64: string): ArrayBuffer =>
-  Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)).buffer;
+interface WorkerRow {
+  id: string;
+  name: string;
+  role: string;
+}
 
 type DateRange = { from: Date; to: Date };
 
@@ -45,13 +40,13 @@ const presetRanges = (today: Date): { label: string; range: DateRange }[] => [
 ];
 
 const AttendancePage = () => {
-  const { credentials } = useBiometricCredentials();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authMode, setAuthMode] = useState<"sign_in" | "sign_out">("sign_in");
+  const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [activeTab, setActiveTab] = useState("today");
+  const [showWorkerPicker, setShowWorkerPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"sign_in" | "sign_out">("sign_in");
+  const [workerSearch, setWorkerSearch] = useState("");
 
-  // Date range for history
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
   const [dateRange, setDateRange] = useState<DateRange>({ from: today, to: today });
@@ -76,26 +71,29 @@ const AttendancePage = () => {
     }
   }, []);
 
+  const fetchWorkers = useCallback(async () => {
+    const { data } = await supabase.from("workers").select("id, name, role").order("name");
+    if (data) setWorkers(data);
+  }, []);
+
   useEffect(() => {
     fetchRecords();
+    fetchWorkers();
     const channel = supabase
       .channel("attendance-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchRecords())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchRecords]);
+  }, [fetchRecords, fetchWorkers]);
 
-  // Today's records
   const todayRecords = useMemo(() => records.filter((r) => r.date === todayStr), [records, todayStr]);
 
-  // History filtered by date range
   const historyRecords = useMemo(() => {
     const fromStr = format(dateRange.from, "yyyy-MM-dd");
     const toStr = format(dateRange.to, "yyyy-MM-dd");
     return records.filter((r) => r.date >= fromStr && r.date <= toStr);
   }, [records, dateRange]);
 
-  // Summary stats for the selected range
   const summaryStats = useMemo(() => {
     const fromStr = format(dateRange.from, "yyyy-MM-dd");
     const toStr = format(dateRange.to, "yyyy-MM-dd");
@@ -107,7 +105,6 @@ const AttendancePage = () => {
     const completedShifts = rangeRecords.filter((r) => r.signInAt && r.signOutAt).length;
     const incompleteShifts = rangeRecords.filter((r) => r.signInAt && !r.signOutAt).length;
 
-    // Per-worker stats
     const workerStats = uniqueWorkers.map((name) => {
       const workerRecords = rangeRecords.filter((r) => r.workerName === name);
       const daysPresent = [...new Set(workerRecords.map((r) => r.date))].length;
@@ -122,7 +119,6 @@ const AttendancePage = () => {
       return { name, daysPresent, completed, totalHours, attendanceRate: totalDays > 0 ? (daysPresent / totalDays) * 100 : 0 };
     }).sort((a, b) => b.daysPresent - a.daysPresent);
 
-    // Per-day breakdown
     const dailyBreakdown = uniqueDates.sort().reverse().map((date) => {
       const dayRecords = rangeRecords.filter((r) => r.date === date);
       return {
@@ -145,91 +141,45 @@ const AttendancePage = () => {
     };
   }, [records, dateRange]);
 
-  const authenticateWorker = async (mode: "sign_in" | "sign_out") => {
-    if (!isWebAuthnSupported()) {
-      playRejectionAlarm();
-      toast.error("Biometric authentication is not supported on this device/browser");
-      return;
-    }
-    if (credentials.length === 0) {
-      playRejectionAlarm();
-      toast.error("No workers have registered fingerprints. Register fingerprints from the Workers page first.");
-      return;
-    }
+  const openPicker = (mode: "sign_in" | "sign_out") => {
+    setPickerMode(mode);
+    setWorkerSearch("");
+    setShowWorkerPicker(true);
+  };
 
-    setIsAuthenticating(true);
-    setAuthMode(mode);
-    try {
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const allowCredentials = credentials.map((c) => ({
-        id: base64ToBuffer(c.credentialId),
-        type: "public-key" as const,
-        transports: ["internal" as const],
-      }));
+  const handleWorkerAction = async (worker: WorkerRow) => {
+    setShowWorkerPicker(false);
+    const now = new Date().toISOString();
+    const userId = (await supabase.auth.getUser()).data.user?.id;
 
-      const assertion = (await navigator.credentials.get({
-        publicKey: { challenge, allowCredentials, userVerification: "required", timeout: 60000 },
-      })) as PublicKeyCredential;
-
-      if (!assertion) {
-        playRejectionAlarm();
-        toast.error("Authentication cancelled");
+    if (pickerMode === "sign_in") {
+      const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
+      if (existing) {
+        toast.error(`${worker.name} has already signed in today!`);
         return;
       }
-
-      const matchedId = bufferToBase64(assertion.rawId);
-      const worker = credentials.find((c) => c.credentialId === matchedId);
-
-      if (!worker) {
-        playRejectionAlarm();
-        toast.error("⛔ Fingerprint NOT recognized!", { duration: 5000 });
+      const { error } = await supabase.from("attendance").insert({
+        worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
+      });
+      if (error) { toast.error("Failed to save attendance"); return; }
+      toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    } else {
+      const todayRecord = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt && !r.signOutAt);
+      if (!todayRecord) {
+        toast.error(`${worker.name} hasn't signed in today or already signed out`);
         return;
       }
-
-      const now = new Date().toISOString();
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-
-      if (mode === "sign_in") {
-        const existing = records.find((r) => r.workerName === worker.workerName && r.date === todayStr && r.signInAt);
-        if (existing) {
-          playRejectionAlarm();
-          toast.error(`⛔ ${worker.workerName} has already signed in today!`, { duration: 5000 });
-          return;
-        }
-        const { error } = await supabase.from("attendance").insert({
-          worker_name: worker.workerName, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
-        });
-        if (error) { toast.error("Failed to save attendance"); return; }
-        playSuccessSound();
-        toast.success(`✅ ${worker.workerName} signed in at ${new Date().toLocaleTimeString()}`);
-      } else {
-        const todayRecord = records.find((r) => r.workerName === worker.workerName && r.date === todayStr && r.signInAt && !r.signOutAt);
-        if (!todayRecord) {
-          playRejectionAlarm();
-          toast.error(`⛔ ${worker.workerName} hasn't signed in today or already signed out`, { duration: 5000 });
-          return;
-        }
-        const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
-        if (error) { toast.error("Failed to save sign-out"); return; }
-        playSuccessSound();
-        toast.success(`✅ ${worker.workerName} signed out at ${new Date().toLocaleTimeString()}`);
-      }
-      await fetchRecords();
-    } catch (err: any) {
-      playRejectionAlarm();
-      if (err.name === "NotAllowedError") toast.error("⛔ Authentication was cancelled or denied");
-      else toast.error(`⛔ Authentication failed: ${err.message}`);
-    } finally {
-      setIsAuthenticating(false);
+      const { error } = await supabase.from("attendance").update({ sign_out_at: now }).eq("id", todayRecord.id);
+      if (error) { toast.error("Failed to save sign-out"); return; }
+      toast.success(`✅ ${worker.name} signed out at ${new Date().toLocaleTimeString()}`);
     }
+    await fetchRecords();
   };
 
   const formatTime = (iso: string | null) => {
     if (!iso) return "—";
     return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
-
-  const uniqueWorkerNames = [...new Set(credentials.map((c) => c.workerName))];
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -238,12 +188,11 @@ const AttendancePage = () => {
         <Card className="border-2 border-primary/20">
           <CardContent className="pt-6">
             <Button
-              onClick={() => authenticateWorker("sign_in")}
-              disabled={isAuthenticating || credentials.length === 0}
+              onClick={() => openPicker("sign_in")}
               className="w-full h-20 text-lg font-bold gap-3 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              <Fingerprint className="w-8 h-8" />
-              {isAuthenticating && authMode === "sign_in" ? "Scanning..." : "Sign In with Fingerprint"}
+              <UserCheck className="w-8 h-8" />
+              Sign In Worker
               <LogIn className="w-6 h-6" />
             </Button>
           </CardContent>
@@ -251,45 +200,49 @@ const AttendancePage = () => {
         <Card className="border-2 border-destructive/20">
           <CardContent className="pt-6">
             <Button
-              onClick={() => authenticateWorker("sign_out")}
-              disabled={isAuthenticating || credentials.length === 0}
+              onClick={() => openPicker("sign_out")}
               className="w-full h-20 text-lg font-bold gap-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              <Fingerprint className="w-8 h-8" />
-              {isAuthenticating && authMode === "sign_out" ? "Scanning..." : "Sign Out with Fingerprint"}
+              <UserCheck className="w-8 h-8" />
+              Sign Out Worker
               <LogOut className="w-6 h-6" />
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {credentials.length === 0 && (
-        <Card className="border-warning/30 bg-warning/5">
-          <CardContent className="pt-6 flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
-            <p className="text-sm text-muted-foreground">
-              No fingerprints registered. Go to the <strong>Workers</strong> page to register fingerprints for each worker.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {uniqueWorkerNames.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Fingerprint className="w-5 h-5" /> Registered Workers ({uniqueWorkerNames.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {uniqueWorkerNames.map((name) => (
-                <Badge key={name} variant="secondary" className="px-3 py-1.5 text-sm">{name}</Badge>
+      {/* Worker Picker Dialog */}
+      <Dialog open={showWorkerPicker} onOpenChange={setShowWorkerPicker}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-primary" />
+              {pickerMode === "sign_in" ? "Select Worker to Sign In" : "Select Worker to Sign Out"}
+            </DialogTitle>
+            <DialogDescription>Choose the worker from the list below.</DialogDescription>
+          </DialogHeader>
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} placeholder="Search worker..." className="pl-9 h-10" autoFocus />
+          </div>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {workers
+              .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
+              .map((w) => (
+                <button key={w.id} type="button" onClick={() => handleWorkerAction(w)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">
+                  <div>
+                    <p className="font-medium text-sm">{w.name}</p>
+                    <p className="text-xs text-muted-foreground">{w.role}</p>
+                  </div>
+                </button>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            {workers.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No workers found. Add workers first.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs: Today / History */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -361,7 +314,6 @@ const AttendancePage = () => {
 
         {/* HISTORY TAB */}
         <TabsContent value="history" className="space-y-4">
-          {/* Date Range Picker */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-wrap items-center gap-3">
@@ -404,7 +356,6 @@ const AttendancePage = () => {
             </CardContent>
           </Card>
 
-          {/* Summary Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="pt-4 pb-3 text-center">
@@ -432,7 +383,6 @@ const AttendancePage = () => {
             </Card>
           </div>
 
-          {/* Worker Performance */}
           {summaryStats.workerStats.length > 0 && (
             <Card>
               <CardHeader>
@@ -471,7 +421,6 @@ const AttendancePage = () => {
             </Card>
           )}
 
-          {/* Daily Breakdown */}
           {summaryStats.dailyBreakdown.length > 0 && (
             <Card>
               <CardHeader>
