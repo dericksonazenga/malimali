@@ -160,6 +160,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       is_exchange: entry.isExchange,
       exchange_commodity: entry.exchangeCommodity || null,
       exchange_weight: entry.exchangeWeight || null,
+      exchange_fee: entry.exchangeFee || 0,
       created_by: (await supabase.auth.getUser()).data.user?.id,
     });
     if (error) console.error("Failed to add sales entry:", error);
