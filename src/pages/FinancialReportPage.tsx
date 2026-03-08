@@ -35,7 +35,9 @@ const FinancialReportPage = () => {
     commodityProfitBreakdown,
   } = data;
 
-  const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const rangeLabel = range.preset === "custom" 
+    ? "Custom" 
+    : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
   // Full report CSV
