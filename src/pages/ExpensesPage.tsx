@@ -6,27 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Plus, Trash2, Fingerprint, Search } from "lucide-react";
+import { Plus, Trash2, Search, UserCheck } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { playRejectionAlarm, playSuccessSound } from "@/utils/alarmSound";
 import { supabase } from "@/integrations/supabase/client";
-import { useBiometricCredentials } from "@/hooks/useBiometricCredentials";
-
-const isWebAuthnSupported = () =>
-  typeof window !== "undefined" &&
-  window.PublicKeyCredential !== undefined &&
-  typeof window.PublicKeyCredential === "function";
-
-const base64ToBuffer = (base64: string): ArrayBuffer => {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-};
-
-const bufferToBase64 = (buffer: ArrayBuffer): string =>
-  btoa(String.fromCharCode(...new Uint8Array(buffer)));
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
@@ -39,11 +22,8 @@ const ExpensesPage = () => {
 
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
-  const [verifying, setVerifying] = useState(false);
   const [workerSearch, setWorkerSearch] = useState("");
   const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
-
-  const { credentials, hasFingerprint } = useBiometricCredentials();
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -87,79 +67,15 @@ const ExpensesPage = () => {
     }
   };
 
-  const verifyFingerprint = async (): Promise<boolean> => {
-    if (!selectedWorker) return false;
-    if (!isWebAuthnSupported()) {
-      toast.error("Biometric not supported on this device");
-      return false;
-    }
-
-    const workerCreds = credentials.filter(c => c.workerName === selectedWorker.name);
-    if (workerCreds.length === 0) {
-      playRejectionAlarm();
-      toast.error(`No fingerprint registered for ${selectedWorker.name}. Register in Workers page first.`);
-      return false;
-    }
-
-    setVerifying(true);
-    try {
-      const allowCredentials = workerCreds.map(c => ({
-        id: base64ToBuffer(c.credentialId),
-        type: "public-key" as const,
-      }));
-
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          rpId: window.location.hostname,
-          allowCredentials,
-          userVerification: "required",
-          timeout: 60000,
-        },
-      }) as PublicKeyCredential | null;
-
-      if (!assertion) {
-        playRejectionAlarm();
-        toast.error("Fingerprint verification cancelled");
-        return false;
-      }
-
-      const matchedId = bufferToBase64(assertion.rawId);
-      const matched = workerCreds.some(c => c.credentialId === matchedId);
-
-      if (matched) {
-        playSuccessSound();
-        return true;
-      } else {
-        playRejectionAlarm();
-        toast.error("Fingerprint does not match! Expense rejected.");
-        return false;
-      }
-    } catch (err: any) {
-      playRejectionAlarm();
-      if (err.name === "NotAllowedError") {
-        toast.error("Fingerprint scan denied or cancelled");
-      } else {
-        toast.error(`Verification failed: ${err.message}`);
-      }
-      return false;
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !amount) { toast.error("Fill required fields"); return; }
 
     if (!selectedWorker) {
       setShowWorkerPicker(true);
-      toast.error("Select the responsible person and verify fingerprint");
+      toast.error("Select the responsible person");
       return;
     }
-
-    const verified = await verifyFingerprint();
-    if (!verified) return;
 
     const isLunch = category.toLowerCase() === "lunch";
     const expenseNotes = isLunch ? `Lunch for ${selectedWorker.name} (${selectedWorker.role})` : (notes || `Verified by ${selectedWorker.name}`);
@@ -187,7 +103,7 @@ const ExpensesPage = () => {
 
     setCategory(""); setAmount(""); setNotes("");
     setSelectedWorker(null);
-    toast.success(`Expense verified & saved — ${selectedWorker.name}`);
+    toast.success(`Expense saved — ${selectedWorker.name}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -211,14 +127,14 @@ const ExpensesPage = () => {
               <Label>Verified By *</Label>
               {selectedWorker ? (
                 <div className="h-12 flex items-center gap-2 rounded-md border border-input bg-muted px-3">
-                  <Fingerprint className="w-4 h-4 text-primary" />
+                  <UserCheck className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">{selectedWorker.name}</span>
                   <span className="text-xs text-muted-foreground">({selectedWorker.role})</span>
                   <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => { setSelectedWorker(null); setShowWorkerPicker(true); }}>Change</Button>
                 </div>
               ) : (
                 <Button type="button" variant="outline" className="h-12 w-full" onClick={() => setShowWorkerPicker(true)}>
-                  <Fingerprint className="w-4 h-4 mr-2" /> Select Person
+                  <UserCheck className="w-4 h-4 mr-2" /> Select Person
                 </Button>
               )}
             </div>
@@ -229,8 +145,8 @@ const ExpensesPage = () => {
               </div>
             )}
             <div className="lg:col-span-4">
-              <Button type="submit" className="h-12 px-8" disabled={verifying}>
-                <Fingerprint className="w-4 h-4 mr-2" />{verifying ? "Verifying..." : "Verify & Add Expense"}
+              <Button type="submit" className="h-12 px-8">
+                <Plus className="w-4 h-4 mr-2" /> Add Expense
               </Button>
             </div>
           </form>
@@ -241,9 +157,9 @@ const ExpensesPage = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Fingerprint className="w-5 h-5 text-primary" /> Select Responsible Person
+              <UserCheck className="w-5 h-5 text-primary" /> Select Responsible Person
             </DialogTitle>
-            <DialogDescription>Choose who is responsible. Fingerprint verification required.</DialogDescription>
+            <DialogDescription>Choose who is responsible for this expense.</DialogDescription>
           </DialogHeader>
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -252,19 +168,15 @@ const ExpensesPage = () => {
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {dbWorkers
               .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
-              .map((w) => {
-              const hasFp = hasFingerprint(w.name);
-              return (
+              .map((w) => (
                 <button key={w.id} type="button" onClick={() => { handleWorkerSelect(w); setWorkerSearch(""); }}
                   className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">
                   <div>
                     <p className="font-medium text-sm">{w.name}</p>
                     <p className="text-xs text-muted-foreground">{w.role}</p>
                   </div>
-                  {hasFp ? <Fingerprint className="w-4 h-4 text-primary" /> : <span className="text-xs text-destructive">No fingerprint</span>}
                 </button>
-              );
-            })}
+              ))}
           </div>
         </DialogContent>
       </Dialog>
