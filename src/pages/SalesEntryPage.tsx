@@ -44,7 +44,7 @@ const SalesEntryPage = () => {
   const actualWeight = Math.max(0, gross - container);
   const amount = rate > 0 ? actualWeight * rate : undefined;
   const exchFee = parseFloat(exchangeFee) || 0;
-  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0) + (e.exchangeFee || 0), 0), [entries]);
+  const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +53,16 @@ const SalesEntryPage = () => {
     } else {
       if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     }
+    const entryAmount = isExchange ? exchFee : amount;
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
-      commodity,
-      grossWeight: gross,
-      containerWeight: container,
-      weight: actualWeight,
-      rate: rate > 0 ? rate : undefined,
-      amount,
+      commodity: isExchange ? exchangeCommodity : commodity,
+      grossWeight: isExchange ? 0 : gross,
+      containerWeight: isExchange ? 0 : container,
+      weight: isExchange ? (parseFloat(exchangeWeight) || 0) : actualWeight,
+      rate: isExchange ? undefined : (rate > 0 ? rate : undefined),
+      amount: entryAmount,
       isExchange,
       exchangeCommodity: isExchange ? exchangeCommodity : undefined,
       exchangeWeight: isExchange ? parseFloat(exchangeWeight) || 0 : undefined,
