@@ -16,10 +16,10 @@ interface Profile {
 }
 
 const roleBadge = (r: string) =>
-  r === "admin" ? "bg-destructive/10 text-destructive" : r === "accountant" ? "bg-primary/10 text-primary" : r === "data_manager" ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground";
+  r === "admin" ? "bg-destructive/10 text-destructive" : r === "accountant" ? "bg-primary/10 text-primary" : r === "data_manager" ? "bg-accent text-accent-foreground" : r === "human_resource" ? "bg-green-500/10 text-green-700" : r === "cashier" ? "bg-yellow-500/10 text-yellow-700" : "bg-muted text-muted-foreground";
 
 const roleLabel = (r: string) =>
-  r === "admin" ? "Admin" : r === "accountant" ? "Accountant" : r === "data_manager" ? "Data Manager" : "Worker";
+  r === "admin" ? "Admin" : r === "accountant" ? "Accountant" : r === "data_manager" ? "Data Manager" : r === "human_resource" ? "Human Resource" : r === "cashier" ? "Cashier" : "Boss";
 
 const AdminPage = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
