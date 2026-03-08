@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
+  Area, AreaChart, ReferenceLine,
 } from "recharts";
+import { DailyProfit } from "@/hooks/useAnalyticsData";
+import { format, parseISO } from "date-fns";
 
 const COLORS = [
   "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)", "hsl(0, 84%, 60%)",
