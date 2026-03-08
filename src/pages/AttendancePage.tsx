@@ -42,9 +42,8 @@ const AttendancePage = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [activeTab, setActiveTab] = useState("today");
-  const [showWorkerPicker, setShowWorkerPicker] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"sign_in" | "sign_out">("sign_in");
-  const [workerSearch, setWorkerSearch] = useState("");
+  const [signInWorker, setSignInWorker] = useState<string>("");
+  const [signOutWorker, setSignOutWorker] = useState<string>("");
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
