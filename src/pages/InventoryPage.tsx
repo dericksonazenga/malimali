@@ -14,7 +14,7 @@ const InventoryPage = () => {
     const dailyIn = agentEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0)
       + vipEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
     // Daily stock out (today's sales)
-    const dailyOut = salesEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.weight, 0);
+    const dailyOut = salesEntries.filter((e) => e.commodity === c.name && !e.isExchange).reduce((s, e) => s + e.weight, 0);
     // Persistent = all previous days accumulated
     const persistent = persistentStock[c.name] || 0;
     // Current = persistent + today's in - today's out
