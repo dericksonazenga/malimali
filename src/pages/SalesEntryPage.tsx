@@ -123,7 +123,8 @@ const SalesEntryPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2"><Label>Exchange Weight (kg) *</Label><Input type="number" value={exchangeWeight} onChange={(e) => setExchangeWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                   <div className="space-y-2"><Label>Exchange Weight (kg) *</Label><Input type="number" value={exchangeWeight} onChange={(e) => setExchangeWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                   <div className="space-y-2"><Label>Exchange Fee ({symbol})</Label><Input type="number" value={exchangeFee} onChange={(e) => setExchangeFee(e.target.value)} placeholder="Extra cash from customer" className="h-12" /></div>
                 </div>
               )}
             </div>
