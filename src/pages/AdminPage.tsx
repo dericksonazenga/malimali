@@ -94,7 +94,9 @@ const AdminPage = () => {
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="accountant">Accountant</SelectItem>
                             <SelectItem value="data_manager">Data Manager</SelectItem>
-                            <SelectItem value="worker">Worker</SelectItem>
+                            <SelectItem value="human_resource">Human Resource</SelectItem>
+                            <SelectItem value="cashier">Cashier</SelectItem>
+                            <SelectItem value="boss">Boss</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : (

@@ -24,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const buildUser = (profile: { user_id: string; display_name: string; role: string }): User => {
-  const role = (profile.role || "worker") as UserRole;
+  const role = (profile.role || "boss") as UserRole;
   return {
     id: profile.user_id,
     name: profile.display_name || "User",
