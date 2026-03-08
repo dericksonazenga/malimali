@@ -362,10 +362,10 @@ const ReportSheetView = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {commodityProfitBreakdown.length === 0 && (
+                  {filteredProfitBreakdown.length === 0 && (
                     <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No data</TableCell></TableRow>
                   )}
-                  {commodityProfitBreakdown.map((c) => (
+                  {filteredProfitBreakdown.map((c) => (
                     <TableRow key={c.commodity}>
                       <TableCell className="font-medium">{c.commodity}</TableCell>
                       <TableCell className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</TableCell>
