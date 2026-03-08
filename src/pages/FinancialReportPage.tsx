@@ -32,6 +32,7 @@ const FinancialReportPage = () => {
     agentTotal, vipTotal, salesTotal, expenseTotal,
     salaryTotal, salaryPaid, salaryBalance,
     totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
+    commodityProfitBreakdown,
   } = data;
 
   const rangeLabel = range.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
