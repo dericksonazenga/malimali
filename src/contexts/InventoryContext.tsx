@@ -224,11 +224,14 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       );
     }
 
-    // Clear local display
+    // Clear local display of daily entries
     setAgentEntries([]);
     setVipEntries([]);
     setSalesEntries([]);
-  }, [agentEntries, vipEntries, salesEntries, persistentStock]);
+
+    // Immediately refresh persistent stock so Current Stock stays accurate
+    await fetchPersistentStock();
+  }, [agentEntries, vipEntries, salesEntries, persistentStock, fetchPersistentStock]);
 
   return (
     <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll }}>
