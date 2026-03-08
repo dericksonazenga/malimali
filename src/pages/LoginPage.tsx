@@ -3,20 +3,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Recycle, LogIn, UserPlus, Mail, Phone } from "lucide-react";
+import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const LoginPage = () => {
   const { login, signup } = useAuth();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("email");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const isEmail = (val: string) => val.includes("@");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +24,7 @@ const LoginPage = () => {
     setSubmitting(true);
 
     if (mode === "forgot") {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(identifier.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) {
@@ -38,10 +38,9 @@ const LoginPage = () => {
     }
 
     if (mode === "signup") {
-      // Validate against pre-registered workers
-      const identifier = loginMethod === "email" ? email.trim().toLowerCase() : phone.trim();
-      if (!identifier) {
-        setError(loginMethod === "email" ? "Please enter your email" : "Please enter your phone number");
+      const email = identifier.trim().toLowerCase();
+      if (!email || !isEmail(email)) {
+        setError("Please enter a valid email address");
         setSubmitting(false);
         return;
       }
@@ -51,37 +50,26 @@ const LoginPage = () => {
         return;
       }
 
-      // Check if pre-registered
-      let query = supabase
+      // Check if pre-registered by admin
+      const { data: recruits, error: checkError } = await supabase
         .from("recruited_workers")
         .select("*")
+        .eq("email", email)
         .eq("claimed", false);
 
-      if (loginMethod === "email") {
-        query = query.eq("email", identifier);
-      } else {
-        query = query.eq("phone", identifier);
-      }
-
-      const { data: recruits, error: checkError } = await query;
       if (checkError) {
         setError("Failed to verify registration. Try again.");
         setSubmitting(false);
         return;
       }
       if (!recruits || recruits.length === 0) {
-        setError("Your " + (loginMethod === "email" ? "email" : "phone number") + " has not been pre-registered by an admin. Please contact your administrator.");
+        setError("Your email has not been pre-registered by an admin. Please contact your administrator.");
         setSubmitting(false);
         return;
       }
 
       const recruit = recruits[0];
-
-      // For phone signup, we still need an email for Supabase auth
-      // Use a generated email if signing up via phone
-      const authEmail = loginMethod === "email" ? identifier : `${identifier.replace(/[^a-zA-Z0-9]/g, "")}@phone.local`;
-
-      const err = await signup(authEmail, password, displayName.trim(), recruit.role as any);
+      const err = await signup(email, password, displayName.trim(), recruit.role as any);
       if (err) {
         setError(err);
       } else {
@@ -91,21 +79,52 @@ const LoginPage = () => {
           .update({ claimed: true })
           .eq("id", recruit.id);
 
-        if (loginMethod === "phone") {
-          toast.success("Account created! You can now sign in with your phone number.");
-        } else {
-          toast.success("Account created! Please check your email to verify your account before signing in.");
-        }
+        toast.success("Account created! Please check your email to verify your account before signing in.");
         setMode("login");
         setDisplayName("");
       }
     } else {
-      // Login
-      let authEmail = email.trim();
-      if (loginMethod === "phone") {
-        // For phone login, reconstruct the generated email
-        authEmail = `${phone.trim().replace(/[^a-zA-Z0-9]/g, "")}@phone.local`;
+      // Login - accept email or phone
+      const value = identifier.trim();
+      if (!value) {
+        setError("Please enter your email or phone number");
+        setSubmitting(false);
+        return;
       }
+
+      let authEmail = value;
+
+      // If it looks like a phone number (not an email), look up the profile to find the auth email
+      if (!isEmail(value)) {
+        // Look up profile by phone to get user_id, then get auth email
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("phone", value)
+          .single();
+
+        if (profileError || !profile) {
+          setError("No account found with that phone number.");
+          setSubmitting(false);
+          return;
+        }
+
+        // Get the auth user's email via recruited_workers or use the phone-based email
+        const { data: recruit } = await supabase
+          .from("recruited_workers")
+          .select("email")
+          .eq("phone", value)
+          .single();
+
+        if (recruit?.email) {
+          authEmail = recruit.email;
+        } else {
+          setError("No account found with that phone number.");
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const ok = await login(authEmail, password);
       if (!ok) {
         setError("Invalid credentials or email not verified.");
@@ -128,30 +147,6 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-2xl space-y-5">
-          {/* Login method toggle */}
-          {mode !== "forgot" && (
-            <div className="flex gap-2 justify-center">
-              <Button
-                type="button"
-                variant={loginMethod === "email" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setLoginMethod("email")}
-                className="gap-1"
-              >
-                <Mail className="w-4 h-4" /> Email
-              </Button>
-              <Button
-                type="button"
-                variant={loginMethod === "phone" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setLoginMethod("phone")}
-                className="gap-1"
-              >
-                <Phone className="w-4 h-4" /> Phone
-              </Button>
-            </div>
-          )}
-
           {mode === "signup" && (
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -167,33 +162,20 @@ const LoginPage = () => {
             </div>
           )}
 
-          {loginMethod === "email" || mode === "forgot" ? (
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12"
-                required
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+254..."
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="h-12"
-                required
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="identifier">
+              {mode === "signup" ? "Email" : mode === "forgot" ? "Email" : "Email or Phone Number"}
+            </Label>
+            <Input
+              id="identifier"
+              type={mode === "signup" || mode === "forgot" ? "email" : "text"}
+              placeholder={mode === "signup" || mode === "forgot" ? "you@example.com" : "Email or phone number"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              className="h-12"
+              required
+            />
+          </div>
 
           {mode !== "forgot" && (
             <div className="space-y-2">
@@ -222,7 +204,7 @@ const LoginPage = () => {
 
           {mode === "signup" && (
             <p className="text-xs text-muted-foreground text-center">
-              Only pre-registered workers can sign up. Contact your admin if you're not registered.
+              Only pre-registered workers can sign up. Your role is assigned by your admin.
             </p>
           )}
 
