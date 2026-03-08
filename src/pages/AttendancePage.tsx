@@ -192,7 +192,11 @@ const AttendancePage = () => {
       worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
     });
     if (error) { toast.error("Failed to save attendance"); return; }
-    toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    if (isLate(now)) {
+      toast.warning(`⚠️ ${worker.name} signed in LATE (after ${shiftStartTime})`, { duration: 5000 });
+    } else {
+      toast.success(`✅ ${worker.name} signed in at ${new Date().toLocaleTimeString()}`);
+    }
     setSignInWorker("");
     await fetchRecords();
   };
