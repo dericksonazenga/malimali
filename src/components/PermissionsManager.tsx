@@ -49,10 +49,6 @@ const PermissionsManager = () => {
   }, [fetchPermissions]);
 
   const toggle = async (role: string, permission: string) => {
-    if (role === "admin") {
-      toast.info("Admin always has all permissions");
-      return;
-    }
 
     const has = matrix[role]?.has(permission);
     if (has) {
