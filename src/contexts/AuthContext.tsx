@@ -3,7 +3,8 @@ import { User, UserRole, Permission } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+// Fallback used only if DB has no entries for a role
+const ROLE_PERMISSIONS_FALLBACK: Record<UserRole, Permission[]> = {
   admin: ["update_rates", "delete_entries", "view_reports", "manage_workers", "manage_expenses", "manage_inventory"],
   accountant: ["view_reports", "manage_expenses", "manage_workers"],
   data_manager: ["update_rates", "delete_entries", "manage_inventory"],
@@ -23,14 +24,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const buildUser = (profile: { user_id: string; display_name: string; role: string }): User => {
+const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
+  const { data, error } = await supabase
+    .from("role_permissions")
+    .select("permission")
+    .eq("role", role);
+  if (error || !data || data.length === 0) return ROLE_PERMISSIONS_FALLBACK[role] || [];
+  return data.map((r: any) => r.permission as Permission);
+};
+
+const buildUser = async (profile: { user_id: string; display_name: string; role: string }): Promise<User> => {
   const role = (profile.role || "boss") as UserRole;
+  const permissions = await fetchRolePermissions(role);
   return {
     id: profile.user_id,
     name: profile.display_name || "User",
     email: "",
     role,
-    permissions: ROLE_PERMISSIONS[role] || [],
+    permissions,
   };
 };
 
