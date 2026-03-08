@@ -22,6 +22,13 @@ interface DailySummary {
   net_profit: number;
 }
 
+interface EodLog {
+  id: string;
+  triggered_at: string;
+  triggered_by: string | null;
+  date: string;
+}
+
 const DailySummariesPage = () => {
   const { symbol } = useCurrency();
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
