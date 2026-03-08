@@ -151,7 +151,7 @@ const SalesEntryPage = () => {
               <TableHead>Customer</TableHead><TableHead>Commodity</TableHead>
               <TableHead className="text-right">Gross</TableHead><TableHead className="text-right">Container</TableHead>
               <TableHead className="text-right">Actual Wt</TableHead><TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">Amount</TableHead><TableHead className="text-right">Ex. Fee</TableHead><TableHead>Exchange</TableHead>
+              <TableHead className="text-right">Amount</TableHead><TableHead>Exchange</TableHead>
               <TableHead>Date</TableHead>{hasPermission("delete_entries") && <TableHead />}
             </TableRow></TableHeader>
             <TableBody>
@@ -164,7 +164,6 @@ const SalesEntryPage = () => {
                   <TableCell className="text-right font-mono font-semibold">{entry.weight}</TableCell>
                   <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
                   <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
-                  <TableCell className="text-right font-mono">{entry.exchangeFee ? <span className="text-primary">{symbol}{entry.exchangeFee.toLocaleString()}</span> : "—"}</TableCell>
                   <TableCell>{entry.isExchange ? <span className="text-xs bg-accent px-2 py-1 rounded">{entry.exchangeCommodity} ({entry.exchangeWeight}kg)</span> : "—"}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{entry.createdAt}</TableCell>
                   {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
