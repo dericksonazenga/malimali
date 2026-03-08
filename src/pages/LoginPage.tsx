@@ -3,9 +3,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { UserRole } from "@/types";
 
 const LoginPage = () => {
   const { login, signup } = useAuth();
@@ -13,6 +15,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("boss");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,7 +44,7 @@ const LoginPage = () => {
         setSubmitting(false);
         return;
       }
-      const err = await signup(email, password, displayName.trim());
+      const err = await signup(email, password, displayName.trim(), selectedRole);
       if (err) {
         setError(err);
       } else {
@@ -84,6 +87,24 @@ const LoginPage = () => {
                 className="h-12"
                 required
               />
+            </div>
+          )}
+          {mode === "signup" && (
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="data_manager">Data Manager</SelectItem>
+                  <SelectItem value="human_resource">Human Resource</SelectItem>
+                  <SelectItem value="cashier">Cashier</SelectItem>
+                  <SelectItem value="boss">Boss</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
           <div className="space-y-2">
