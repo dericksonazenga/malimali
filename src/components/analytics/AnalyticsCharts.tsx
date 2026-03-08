@@ -235,6 +235,7 @@ const AnalyticsCharts = ({
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
