@@ -16,7 +16,7 @@ const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 
 
 const FinancialReportPage = () => {
   const { symbol, currency } = useCurrency();
-  const [range, setRange] = useState<DateRange>("today");
+  const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
   if (loading || !data) {
