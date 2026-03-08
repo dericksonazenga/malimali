@@ -31,11 +31,18 @@ interface Message {
   readBy: string[];
 }
 
+interface ProfileUser {
+  id: string;
+  name: string;
+  role: string;
+}
+
 const roleCategories = [
   { key: "admin", label: "Admin" },
   { key: "accountant", label: "Accountant" },
   { key: "data_manager", label: "Data Manager" },
   { key: "worker", label: "Worker" },
+  { key: "boss", label: "Boss" },
 ];
 
 const MessagesPage = () => {
