@@ -9,6 +9,7 @@ import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { CommodityProvider } from "@/contexts/CommodityContext";
 import AppLayout from "@/components/AppLayout";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import DataEntryPage from "@/pages/DataEntryPage";
