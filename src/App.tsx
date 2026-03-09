@@ -58,6 +58,7 @@ const AuthenticatedApp = () => {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/daily-summaries" element={<ProtectedRoute permission="view_reports"><DailySummariesPage /></ProtectedRoute>} />
         <Route path="/attendance" element={<AttendancePage />} />
+        <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

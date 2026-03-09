@@ -30,7 +30,8 @@ const navItems: NavItem[] = [
   { label: "Financial Report", path: "/financial-report", icon: <BarChart3 className="w-5 h-5" />, permission: "view_reports" },
   { label: "Daily Summaries", path: "/daily-summaries", icon: <FileBarChart className="w-5 h-5" />, permission: "view_reports" },
   { label: "Messages", path: "/messages", icon: <MessageSquare className="w-5 h-5" /> },
-  { label: "Attendance", path: "/attendance", icon: <ClipboardList className="w-5 h-5" /> },
+  { label: "Attendance", path: "/attendance", icon: <ClipboardList className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "My Info", path: "/my-info", icon: <UserCircle className="w-5 h-5" /> },
   { label: "Settings", path: "/settings", icon: <Cog className="w-5 h-5" /> },
 ];
 
