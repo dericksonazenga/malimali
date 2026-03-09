@@ -67,9 +67,9 @@ const AdminPage = () => {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newIdNumber, setNewIdNumber] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("boss");
   const [newSalary, setNewSalary] = useState("");
-  const [contactType, setContactType] = useState<"email" | "phone">("email");
   const [recruiting, setRecruiting] = useState(false);
 
   // Salary editing
@@ -124,27 +124,20 @@ const AdminPage = () => {
 
   const addRecruit = async () => {
     if (!newName.trim()) { toast.error("Please enter worker name"); return; }
-    const email = contactType === "email" ? newEmail.trim() : null;
-    const phone = contactType === "phone" ? newPhone.trim() : null;
-    if (!email && !phone) { toast.error("Please enter email or phone number"); return; }
+    const email = newEmail.trim() || null;
+    const phone = newPhone.trim() || null;
+    const identification_number = newIdNumber.trim() || null;
 
     setRecruiting(true);
 
-    // Insert into recruited_workers
     const { error: recruitErr } = await supabase.from("recruited_workers").insert({
-      name: newName.trim(), email, phone, role: newRole, recruited_by: user?.id,
+      name: newName.trim(), email, phone, role: newRole, recruited_by: user?.id, identification_number,
     });
     if (recruitErr) { toast.error("Failed to add worker: " + recruitErr.message); setRecruiting(false); return; }
 
-    // Also create worker record with salary
     const salary = parseFloat(newSalary) || 0;
     const { error: workerErr } = await supabase.from("workers").insert({
-      name: newName.trim(),
-      role: newRole,
-      salary,
-      paid: 0,
-      balance: salary,
-      created_by: user?.id,
+      name: newName.trim(), role: newRole, salary, paid: 0, balance: salary, created_by: user?.id,
     });
     if (workerErr) {
       toast.error("Recruited but failed to create salary record: " + workerErr.message);
@@ -152,7 +145,7 @@ const AdminPage = () => {
       toast.success("Worker recruited and salary record created!");
     }
 
-    setNewName(""); setNewEmail(""); setNewPhone(""); setNewRole("boss"); setNewSalary("");
+    setNewName(""); setNewEmail(""); setNewPhone(""); setNewIdNumber(""); setNewRole("boss"); setNewSalary("");
     setRecruiting(false);
     fetchRecruits();
     fetchWorkers();
@@ -237,29 +230,20 @@ const AdminPage = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Contact Type</Label>
-            <div className="flex gap-2">
-              <Button type="button" variant={contactType === "email" ? "default" : "outline"} size="sm" onClick={() => setContactType("email")} className="gap-1">
-                <Mail className="w-4 h-4" /> Email
-              </Button>
-              <Button type="button" variant={contactType === "phone" ? "default" : "outline"} size="sm" onClick={() => setContactType("phone")} className="gap-1">
-                <Phone className="w-4 h-4" /> Phone
-              </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>ID Number</Label>
+              <Input placeholder="Identification number" value={newIdNumber} onChange={e => setNewIdNumber(e.target.value)} />
             </div>
-          </div>
-
-          {contactType === "email" ? (
             <div className="space-y-2">
               <Label>Email Address</Label>
               <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
             </div>
-          ) : (
             <div className="space-y-2">
               <Label>Phone Number</Label>
               <Input type="tel" placeholder="+254..." value={newPhone} onChange={e => setNewPhone(e.target.value)} />
             </div>
-          )}
+          </div>
 
           <Button onClick={addRecruit} disabled={recruiting} className="gap-2">
             <UserPlus className="w-4 h-4" />
