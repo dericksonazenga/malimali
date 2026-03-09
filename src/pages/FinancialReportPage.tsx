@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
+import * as XLSX from "xlsx";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
