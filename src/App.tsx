@@ -28,6 +28,7 @@ import AttendancePage from "@/pages/AttendancePage";
 import AttendanceScanPage from "@/pages/AttendanceScanPage";
 import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import MyInfoPage from "@/pages/MyInfoPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
