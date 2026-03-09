@@ -67,9 +67,9 @@ const AdminPage = () => {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newIdNumber, setNewIdNumber] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("boss");
   const [newSalary, setNewSalary] = useState("");
-  const [contactType, setContactType] = useState<"email" | "phone">("email");
   const [recruiting, setRecruiting] = useState(false);
 
   // Salary editing
