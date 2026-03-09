@@ -73,25 +73,128 @@ const FinancialReportPage = () => {
     ];
     XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(summaryData), summaryData), "Summary");
 
-    // Agent Entries sheet
-    const agentRows = agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]);
-    const agentData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
-      ...agentRows,
-      [],
-      ["TOTAL", "", agentRows.reduce((s, r) => s + Number(r[2]), 0), "", agentRows.reduce((s, r) => s + Number(r[4]), 0), ""],
-    ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(agentData), agentData), "Agent Entries");
+    // Helper to build commodity-column sheet for Agent/VIP entries
+    const buildCommoditySheet = (entries: any[], sheetName: string) => {
+      // Get unique commodities and their rates
+      const commoditySet = new Map<string, number>();
+      entries.forEach((e: any) => {
+        if (!commoditySet.has(e.commodity)) {
+          commoditySet.set(e.commodity, Number(e.rate));
+        }
+      });
+      const commodityNames = Array.from(commoditySet.keys());
 
-    // VIP Entries sheet
-    const vipRows = vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]);
-    const vipData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
-      ...vipRows,
-      [],
-      ["TOTAL", "", vipRows.reduce((s, r) => s + Number(r[2]), 0), "", vipRows.reduce((s, r) => s + Number(r[4]), 0), ""],
-    ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(vipData), vipData), "VIP Entries");
+      // Header row: Date | Customer | Commodity1 Weight | Commodity1 Amount | Commodity2 Weight | ...
+      const header: string[] = ["Date", "Customer"];
+      commodityNames.forEach(c => {
+        header.push(`${c} (kg)`, `${c} Amount`);
+      });
+      header.push("Total Amount");
+
+      // Rate row
+      const rateRow: any[] = ["", "Rate →"];
+      commodityNames.forEach(c => {
+        rateRow.push("", commoditySet.get(c) || 0);
+      });
+      rateRow.push("");
+
+      // Group entries by date+customer
+      const groupKey = (e: any) => `${e.date}|||${e.customer_name}`;
+      const groups = new Map<string, any[]>();
+      entries.forEach((e: any) => {
+        const k = groupKey(e);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k)!.push(e);
+      });
+
+      // Build data rows with formulas
+      const dataRows: any[][] = [];
+      const sortedKeys = Array.from(groups.keys()).sort();
+      sortedKeys.forEach(key => {
+        const [date, customer] = key.split("|||");
+        const row: any[] = [date, customer];
+        const group = groups.get(key)!;
+
+        // Aggregate weights per commodity for this group
+        const weightByCommodity: Record<string, number> = {};
+        group.forEach((e: any) => {
+          weightByCommodity[e.commodity] = (weightByCommodity[e.commodity] || 0) + Number(e.actual_weight);
+        });
+
+        commodityNames.forEach(c => {
+          const weight = weightByCommodity[c] || 0;
+          row.push(weight > 0 ? weight : "");
+          row.push(""); // placeholder for formula
+        });
+        row.push(""); // placeholder for total formula
+        dataRows.push(row);
+      });
+
+      // Build full AOA (header + rate + data + blank + total)
+      const aoa: any[][] = [header, rateRow, ...dataRows, []];
+      // Total row
+      const totalRow: any[] = ["TOTAL", ""];
+      commodityNames.forEach(() => {
+        totalRow.push("", ""); // placeholders
+      });
+      totalRow.push("");
+      aoa.push(totalRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      // Now inject formulas
+      // Row 0 = header, Row 1 = rate row, Row 2+ = data rows
+      // Rate for commodity i is at column (2 + i*2 + 1) in row 2 (0-indexed row 1)
+      const dataStartRow = 3; // 1-indexed (row 3 in Excel)
+      const totalExcelRow = dataStartRow + dataRows.length + 1; // after blank row
+
+      dataRows.forEach((_, rowIdx) => {
+        const excelRow = dataStartRow + rowIdx;
+        let amountCols: string[] = [];
+
+        commodityNames.forEach((_, cIdx) => {
+          const weightCol = XLSX.utils.encode_col(2 + cIdx * 2);     // weight column
+          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1); // amount column
+          const rateCell = `${amountCol}$2`; // rate is in row 2, same column as amount
+          const weightCell = `${weightCol}${excelRow}`;
+          const amountCellRef = `${amountCol}${excelRow}`;
+
+          // Formula: weight * rate
+          ws[amountCellRef] = { t: 'n', f: `IF(${weightCell}="",0,${weightCell}*${rateCell})` };
+          amountCols.push(amountCellRef);
+        });
+
+        // Total Amount formula = sum of all amount cells in this row
+        const totalCol = XLSX.utils.encode_col(2 + commodityNames.length * 2);
+        const totalCell = `${totalCol}${excelRow}`;
+        const sumParts = commodityNames.map((_, cIdx) => {
+          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1);
+          return `${amountCol}${excelRow}`;
+        });
+        ws[totalCell] = { t: 'n', f: sumParts.join("+") };
+      });
+
+      // Total row formulas
+      if (dataRows.length > 0) {
+        commodityNames.forEach((_, cIdx) => {
+          // Sum weight column
+          const weightCol = XLSX.utils.encode_col(2 + cIdx * 2);
+          ws[`${weightCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${weightCol}${dataStartRow}:${weightCol}${dataStartRow + dataRows.length - 1})` };
+          // Sum amount column
+          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1);
+          ws[`${amountCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${amountCol}${dataStartRow}:${amountCol}${dataStartRow + dataRows.length - 1})` };
+        });
+        // Grand total
+        const totalCol = XLSX.utils.encode_col(2 + commodityNames.length * 2);
+        ws[`${totalCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${totalCol}${dataStartRow}:${totalCol}${dataStartRow + dataRows.length - 1})` };
+      }
+
+      autoFitColumns(ws, aoa);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    };
+
+    buildCommoditySheet(agentEntries, "Agent Entries");
+    buildCommoditySheet(vipEntries, "VIP Entries");
 
     // Sales Entries sheet
     const salesRows = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
