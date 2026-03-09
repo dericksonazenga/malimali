@@ -141,21 +141,12 @@ export function useAnalyticsData(range: DateRangeValue) {
 
     const totalPurchases = agentTotal + vipTotal;
 
-    // Calculate weighted average purchase rate per commodity
-    const purchaseWeights: Record<string, { totalWeight: number; totalCost: number }> = {};
-    const ensurePW = (c: string) => { if (!purchaseWeights[c]) purchaseWeights[c] = { totalWeight: 0, totalCost: 0 }; };
-    agentRows.forEach((e: any) => {
-      ensurePW(e.commodity);
-      purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight);
-      purchaseWeights[e.commodity].totalCost += Number(e.amount);
-    });
-    vipRows.forEach((e: any) => {
-      ensurePW(e.commodity);
-      purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight);
-      purchaseWeights[e.commodity].totalCost += Number(e.amount);
-    });
+    // Build a map of current agent rates from commodities table
+    const commodityRows = commodities.data || [];
+    const agentRateMap: Record<string, number> = {};
+    commodityRows.forEach((c: any) => { agentRateMap[c.name] = Number(c.agent_rate || 0); });
 
-    // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
+    // Gross profit = for each sale, (sale_rate - current_agent_rate) × weight
     // For exchanges (no rate/weight), just count the exchange fee as revenue
     let grossProfit = 0;
     salesRows.forEach((e: any) => {
@@ -165,13 +156,10 @@ export function useAnalyticsData(range: DateRangeValue) {
       const saleAmount = Number(e.amount || 0);
 
       if (e.is_exchange || !commodity || saleWeight === 0) {
-        // Exchange entries: fee is pure revenue (no commodity cost)
         grossProfit += saleAmount;
       } else {
-        // Regular sale: profit = (sell_rate - avg_buy_rate) × weight
-        const pw = purchaseWeights[commodity];
-        const avgBuyRate = pw && pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
-        grossProfit += (saleRate - avgBuyRate) * saleWeight;
+        const agentRate = agentRateMap[commodity] || 0;
+        grossProfit += (saleRate - agentRate) * saleWeight;
       }
     });
 
