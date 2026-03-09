@@ -45,15 +45,15 @@ const AuthenticatedApp = () => {
     <AppLayout>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/accountant" element={<AccountantPage />} />
+        <Route path="/admin" element={<ProtectedRoute permission="manage_workers"><AdminPage /></ProtectedRoute>} />
+        <Route path="/accountant" element={<ProtectedRoute permission="view_reports"><AccountantPage /></ProtectedRoute>} />
         <Route path="/data-entry" element={<DataEntryPage />} />
-        <Route path="/rates" element={<RatesPage />} />
-        <Route path="/inventory" element={<InventoryPage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/workers" element={<WorkersPage />} />
-        <Route path="/salary" element={<SalaryPage />} />
-        <Route path="/financial-report" element={<FinancialReportPage />} />
+        <Route path="/rates" element={<ProtectedRoute permission="update_rates"><RatesPage /></ProtectedRoute>} />
+        <Route path="/inventory" element={<ProtectedRoute permission="manage_inventory"><InventoryPage /></ProtectedRoute>} />
+        <Route path="/expenses" element={<ProtectedRoute permission="manage_expenses"><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/workers" element={<ProtectedRoute permission="manage_workers"><WorkersPage /></ProtectedRoute>} />
+        <Route path="/salary" element={<ProtectedRoute permission="manage_workers"><SalaryPage /></ProtectedRoute>} />
+        <Route path="/financial-report" element={<ProtectedRoute permission="view_reports"><FinancialReportPage /></ProtectedRoute>} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/daily-summaries" element={<DailySummariesPage />} />
         <Route path="/attendance" element={<AttendancePage />} />
