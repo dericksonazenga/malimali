@@ -230,29 +230,20 @@ const AdminPage = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Contact Type</Label>
-            <div className="flex gap-2">
-              <Button type="button" variant={contactType === "email" ? "default" : "outline"} size="sm" onClick={() => setContactType("email")} className="gap-1">
-                <Mail className="w-4 h-4" /> Email
-              </Button>
-              <Button type="button" variant={contactType === "phone" ? "default" : "outline"} size="sm" onClick={() => setContactType("phone")} className="gap-1">
-                <Phone className="w-4 h-4" /> Phone
-              </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>ID Number</Label>
+              <Input placeholder="Identification number" value={newIdNumber} onChange={e => setNewIdNumber(e.target.value)} />
             </div>
-          </div>
-
-          {contactType === "email" ? (
             <div className="space-y-2">
               <Label>Email Address</Label>
               <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
             </div>
-          ) : (
             <div className="space-y-2">
               <Label>Phone Number</Label>
               <Input type="tel" placeholder="+254..." value={newPhone} onChange={e => setNewPhone(e.target.value)} />
             </div>
-          )}
+          </div>
 
           <Button onClick={addRecruit} disabled={recruiting} className="gap-2">
             <UserPlus className="w-4 h-4" />
