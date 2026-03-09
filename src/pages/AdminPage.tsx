@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UserRole } from "@/types";
-import { Shield, Save, UserPlus, Trash2, Phone, Mail } from "lucide-react";
+import { Shield, Save, UserPlus, Trash2, Phone, Mail, Banknote, Pencil, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Profile {
   id: string;
@@ -28,14 +29,33 @@ interface RecruitedWorker {
   created_at: string;
 }
 
+interface WorkerRow {
+  id: string;
+  name: string;
+  role: string;
+  salary: number;
+  paid: number;
+  balance: number;
+}
+
 const roleBadge = (r: string) =>
-  r === "admin" ? "bg-destructive/10 text-destructive" : r === "accountant" ? "bg-primary/10 text-primary" : r === "data_manager" ? "bg-accent text-accent-foreground" : r === "human_resource" ? "bg-green-500/10 text-green-700" : r === "cashier" ? "bg-yellow-500/10 text-yellow-700" : "bg-muted text-muted-foreground";
+  r === "admin" ? "bg-destructive/10 text-destructive" :
+  r === "accountant" ? "bg-primary/10 text-primary" :
+  r === "data_manager" ? "bg-accent text-accent-foreground" :
+  r === "human_resource" ? "bg-green-500/10 text-green-700" :
+  r === "cashier" ? "bg-yellow-500/10 text-yellow-700" :
+  "bg-muted text-muted-foreground";
 
 const roleLabel = (r: string) =>
-  r === "admin" ? "Admin" : r === "accountant" ? "Accountant" : r === "data_manager" ? "Data Manager" : r === "human_resource" ? "Human Resource" : r === "cashier" ? "Cashier" : "Boss";
+  r === "admin" ? "Admin" :
+  r === "accountant" ? "Accountant" :
+  r === "data_manager" ? "Data Manager" :
+  r === "human_resource" ? "Human Resource" :
+  r === "cashier" ? "Cashier" : "Boss";
 
 const AdminPage = () => {
   const { user } = useAuth();
+  const { symbol } = useCurrency();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState<UserRole>("boss");
@@ -43,22 +63,26 @@ const AdminPage = () => {
 
   // Recruitment state
   const [recruits, setRecruits] = useState<RecruitedWorker[]>([]);
+  const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newRole, setNewRole] = useState<UserRole>("boss");
+  const [newSalary, setNewSalary] = useState("");
   const [contactType, setContactType] = useState<"email" | "phone">("email");
   const [recruiting, setRecruiting] = useState(false);
+
+  // Salary editing
+  const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
+  const [editSalaryValue, setEditSalaryValue] = useState("");
+  const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
 
   const fetchProfiles = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, user_id, display_name, role")
       .order("created_at", { ascending: true });
-    if (error) {
-      console.error("Failed to fetch profiles:", error);
-      return;
-    }
+    if (error) { console.error("Failed to fetch profiles:", error); return; }
     setProfiles(data || []);
     setLoading(false);
   }, []);
@@ -68,85 +92,119 @@ const AdminPage = () => {
       .from("recruited_workers")
       .select("*")
       .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Failed to fetch recruits:", error);
-      return;
-    }
+    if (error) { console.error("Failed to fetch recruits:", error); return; }
     setRecruits((data as RecruitedWorker[]) || []);
+  }, []);
+
+  const fetchWorkers = useCallback(async () => {
+    const { data } = await supabase.from("workers").select("*").order("name");
+    if (data) {
+      setWorkers(data.map((w: any) => ({
+        id: w.id, name: w.name, role: w.role,
+        salary: Number(w.salary), paid: Number(w.paid), balance: Number(w.balance),
+      })));
+    }
   }, []);
 
   useEffect(() => {
     fetchProfiles();
     fetchRecruits();
-  }, [fetchProfiles, fetchRecruits]);
+    fetchWorkers();
+  }, [fetchProfiles, fetchRecruits, fetchWorkers]);
 
-  const startEdit = (p: Profile) => {
-    setEditingId(p.id);
-    setEditRole(p.role as UserRole);
-  };
+  const startEdit = (p: Profile) => { setEditingId(p.id); setEditRole(p.role as UserRole); };
 
   const saveRole = async (profileId: string) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: editRole })
-      .eq("id", profileId);
-    if (error) {
-      toast.error("Failed to update role");
-      console.error(error);
-      return;
-    }
+    const { error } = await supabase.from("profiles").update({ role: editRole }).eq("id", profileId);
+    if (error) { toast.error("Failed to update role"); return; }
     toast.success("Role updated!");
     setEditingId(null);
     fetchProfiles();
   };
 
   const addRecruit = async () => {
-    if (!newName.trim()) {
-      toast.error("Please enter worker name");
-      return;
-    }
+    if (!newName.trim()) { toast.error("Please enter worker name"); return; }
     const email = contactType === "email" ? newEmail.trim() : null;
     const phone = contactType === "phone" ? newPhone.trim() : null;
-    if (!email && !phone) {
-      toast.error("Please enter email or phone number");
-      return;
-    }
+    if (!email && !phone) { toast.error("Please enter email or phone number"); return; }
 
     setRecruiting(true);
-    const { error } = await supabase.from("recruited_workers").insert({
-      name: newName.trim(),
-      email,
-      phone,
-      role: newRole,
-      recruited_by: user?.id,
+
+    // Insert into recruited_workers
+    const { error: recruitErr } = await supabase.from("recruited_workers").insert({
+      name: newName.trim(), email, phone, role: newRole, recruited_by: user?.id,
     });
-    if (error) {
-      toast.error("Failed to add worker: " + error.message);
-      setRecruiting(false);
-      return;
+    if (recruitErr) { toast.error("Failed to add worker: " + recruitErr.message); setRecruiting(false); return; }
+
+    // Also create worker record with salary
+    const salary = parseFloat(newSalary) || 0;
+    const { error: workerErr } = await supabase.from("workers").insert({
+      name: newName.trim(),
+      role: newRole,
+      salary,
+      paid: 0,
+      balance: salary,
+      created_by: user?.id,
+    });
+    if (workerErr) {
+      toast.error("Recruited but failed to create salary record: " + workerErr.message);
+    } else {
+      toast.success("Worker recruited and salary record created!");
     }
-    toast.success("Worker pre-registered! They can now sign up.");
-    setNewName("");
-    setNewEmail("");
-    setNewPhone("");
-    setNewRole("boss");
+
+    setNewName(""); setNewEmail(""); setNewPhone(""); setNewRole("boss"); setNewSalary("");
     setRecruiting(false);
     fetchRecruits();
+    fetchWorkers();
   };
 
-  const deleteRecruit = async (id: string) => {
+  const deleteRecruit = async (id: string, name: string) => {
     const { error } = await supabase.from("recruited_workers").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to remove");
-      return;
-    }
-    toast.success("Removed");
+    if (error) { toast.error("Failed to remove"); return; }
+    // Also remove from workers if exists
+    await supabase.from("workers").delete().eq("name", name);
+    toast.success("Worker removed");
     fetchRecruits();
+    fetchWorkers();
   };
+
+  const saveSalary = async (workerId: string) => {
+    const salary = parseFloat(editSalaryValue) || 0;
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) return;
+    const newBalance = salary - worker.paid;
+    const { error } = await supabase.from("workers").update({ salary, balance: newBalance }).eq("id", workerId);
+    if (error) { toast.error("Failed to update salary"); return; }
+    toast.success("Salary updated");
+    setEditingSalaryId(null);
+    fetchWorkers();
+  };
+
+  const handlePay = async (workerId: string) => {
+    const amount = parseFloat(payAmounts[workerId] || "0");
+    if (amount <= 0) { toast.error("Enter a valid amount"); return; }
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) return;
+    const newPaid = worker.paid + amount;
+    const newBalance = worker.salary - newPaid;
+    const { error } = await supabase.from("workers").update({ paid: newPaid, balance: newBalance }).eq("id", workerId);
+    if (error) { toast.error("Failed to record payment"); return; }
+    setPayAmounts(prev => ({ ...prev, [workerId]: "" }));
+    toast.success(`Payment of ${symbol}${amount.toLocaleString()} recorded`);
+    fetchWorkers();
+  };
+
+  // Map recruit names to worker records
+  const workerByName = (name: string) => workers.find(w => w.name.toLowerCase() === name.toLowerCase());
+
+  const totalSalary = workers.reduce((s, w) => s + w.salary, 0);
+  const totalPaid = workers.reduce((s, w) => s + w.paid, 0);
+  const totalBalance = workers.reduce((s, w) => s + w.balance, 0);
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {/* Recruit Workers */}
+
+      {/* ── Recruit Worker ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -154,18 +212,14 @@ const AdminPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Worker Name</Label>
-              <Input
-                placeholder="Full name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-              />
+              <Input placeholder="Full name" value={newName} onChange={e => setNewName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={newRole} onValueChange={(v) => setNewRole(v as UserRole)}>
+              <Select value={newRole} onValueChange={v => setNewRole(v as UserRole)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
@@ -177,27 +231,19 @@ const AdminPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Monthly Salary ({symbol})</Label>
+              <Input type="number" placeholder="0" value={newSalary} onChange={e => setNewSalary(e.target.value)} />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Contact Type</Label>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={contactType === "email" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setContactType("email")}
-                className="gap-1"
-              >
+              <Button type="button" variant={contactType === "email" ? "default" : "outline"} size="sm" onClick={() => setContactType("email")} className="gap-1">
                 <Mail className="w-4 h-4" /> Email
               </Button>
-              <Button
-                type="button"
-                variant={contactType === "phone" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setContactType("phone")}
-                className="gap-1"
-              >
+              <Button type="button" variant={contactType === "phone" ? "default" : "outline"} size="sm" onClick={() => setContactType("phone")} className="gap-1">
                 <Phone className="w-4 h-4" /> Phone
               </Button>
             </div>
@@ -206,34 +252,48 @@ const AdminPage = () => {
           {contactType === "email" ? (
             <div className="space-y-2">
               <Label>Email Address</Label>
-              <Input
-                type="email"
-                placeholder="worker@example.com"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-              />
+              <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
             </div>
           ) : (
             <div className="space-y-2">
               <Label>Phone Number</Label>
-              <Input
-                type="tel"
-                placeholder="+254..."
-                value={newPhone}
-                onChange={(e) => setNewPhone(e.target.value)}
-              />
+              <Input type="tel" placeholder="+254..." value={newPhone} onChange={e => setNewPhone(e.target.value)} />
             </div>
           )}
 
           <Button onClick={addRecruit} disabled={recruiting} className="gap-2">
             <UserPlus className="w-4 h-4" />
-            {recruiting ? "Adding..." : "Add Worker"}
+            {recruiting ? "Adding..." : "Recruit & Add to Payroll"}
           </Button>
+        </CardContent>
+      </Card>
 
-          {/* Recruited workers list */}
-          {recruits.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-muted-foreground mb-2">Pre-registered Workers</h4>
+      {/* ── Recruited Workers + Salary ── */}
+      {recruits.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Banknote className="w-5 h-5 text-primary" /> Workers & Payroll
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Totals */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg bg-muted/40 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Salary</p>
+                <p className="font-mono font-bold text-primary">{symbol}{totalSalary.toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg bg-muted/40 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Paid</p>
+                <p className="font-mono font-bold text-success">{symbol}{totalPaid.toLocaleString()}</p>
+              </div>
+              <div className="rounded-lg bg-muted/40 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Total Owed</p>
+                <p className="font-mono font-bold text-destructive">{symbol}{totalBalance.toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -241,44 +301,109 @@ const AdminPage = () => {
                     <TableHead>Contact</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Salary</TableHead>
+                    <TableHead>Paid</TableHead>
+                    <TableHead>Balance</TableHead>
+                    <TableHead>Pay</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recruits.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.name}</TableCell>
-                      <TableCell className="text-sm">
-                        {r.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {r.email}</span>}
-                        {r.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {r.phone}</span>}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>
-                          {roleLabel(r.role)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                          {r.claimed ? "Signed Up" : "Pending"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {!r.claimed && (
-                          <Button variant="ghost" size="icon" onClick={() => deleteRecruit(r.id)}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {recruits.map(r => {
+                    const worker = workerByName(r.name);
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {r.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {r.email}</span>}
+                          {r.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {r.phone}</span>}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                            {r.claimed ? "Active" : "Pending"}
+                          </span>
+                        </TableCell>
+
+                        {/* Salary column */}
+                        <TableCell className="font-mono">
+                          {worker ? (
+                            editingSalaryId === worker.id ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  className="w-24 h-8 text-sm"
+                                  value={editSalaryValue}
+                                  onChange={e => setEditSalaryValue(e.target.value)}
+                                  autoFocus
+                                />
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveSalary(worker.id)}>
+                                  <Check className="w-3 h-3 text-success" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingSalaryId(null)}>
+                                  <X className="w-3 h-3 text-destructive" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <span
+                                className="cursor-pointer hover:underline flex items-center gap-1 text-sm"
+                                onClick={() => { setEditingSalaryId(worker.id); setEditSalaryValue(String(worker.salary)); }}
+                              >
+                                {symbol}{worker.salary.toLocaleString()}
+                                <Pencil className="w-3 h-3 text-muted-foreground" />
+                              </span>
+                            )
+                          ) : <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
+
+                        {/* Paid */}
+                        <TableCell className="font-mono text-success text-sm">
+                          {worker ? `${symbol}${worker.paid.toLocaleString()}` : "—"}
+                        </TableCell>
+
+                        {/* Balance */}
+                        <TableCell className="font-mono text-destructive text-sm">
+                          {worker ? `${symbol}${worker.balance.toLocaleString()}` : "—"}
+                        </TableCell>
+
+                        {/* Pay input */}
+                        <TableCell>
+                          {worker && (
+                            <div className="flex gap-1">
+                              <Input
+                                type="number"
+                                placeholder="Amt"
+                                className="w-20 h-8 text-sm"
+                                value={payAmounts[worker.id] || ""}
+                                onChange={e => setPayAmounts(prev => ({ ...prev, [worker.id]: e.target.value }))}
+                              />
+                              <Button size="sm" className="h-8 px-2" onClick={() => handlePay(worker.id)}>
+                                Pay
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+
+                        <TableCell>
+                          {!r.claimed && (
+                            <Button variant="ghost" size="icon" onClick={() => deleteRecruit(r.id, r.name)}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* User Management */}
+      {/* ── User Management ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -298,12 +423,12 @@ const AdminPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {profiles.map((p) => (
+                {profiles.map(p => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.display_name}</TableCell>
                     <TableCell>
                       {editingId === p.id ? (
-                        <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
+                        <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
                           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
