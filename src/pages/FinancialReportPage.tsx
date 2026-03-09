@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
+import * as XLSX from "xlsx";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
@@ -41,52 +42,81 @@ const FinancialReportPage = () => {
     : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
-  // Full report CSV
+  // Full report as multi-sheet Excel
   const downloadFullReport = () => {
-    const rows: string[][] = [
-      ["RACHEL SCRAP LTD - FULL ANALYTICS REPORT"],
-      [`Period: ${rangeLabel}`, `Currency: ${currency}`, `Generated: ${new Date().toLocaleString()}`],
-      [],
-      ["=== SUMMARY ==="],
+    const wb = XLSX.utils.book_new();
+
+    // Summary sheet
+    const summaryData = [
       ["Metric", "Amount"],
-      ["Sales Revenue", fmt(salesTotal)],
-      ["Agent Purchases", fmt(agentTotal)],
-      ["VIP Purchases", fmt(vipTotal)],
-      ["Total Purchases", fmt(totalPurchases)],
-      ["Gross Profit", fmt(grossProfit)],
-      ["Total Expenses", fmt(expenseTotal)],
-      ["Salary Paid", fmt(salaryPaid)],
-      ["Net Profit", fmt(netProfit)],
-      [],
-      ["=== AGENT ENTRIES ==="],
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount"],
-      ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount]),
-      [],
-      ["=== VIP ENTRIES ==="],
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount"],
-      ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount]),
-      [],
-      ["=== SALES ENTRIES ==="],
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange"],
-      ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No"]),
-      [],
-      ["=== EXPENSES ==="],
-      ["Category", "Amount", "Notes"],
-      ...expenses.map((e: any) => [e.category, e.amount, e.notes || ""]),
-      [],
-      ["=== INVENTORY ==="],
+      ["Sales Revenue", salesTotal],
+      ["Agent Purchases", agentTotal],
+      ["VIP Purchases", vipTotal],
+      ["Total Purchases", totalPurchases],
+      ["Gross Profit", grossProfit],
+      ["Total Expenses", expenseTotal],
+      ["Salary Paid", salaryPaid],
+      ["Net Profit", netProfit],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), "Summary");
+
+    // Agent Entries sheet
+    const agentData = [
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
+      ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(agentData), "Agent Entries");
+
+    // VIP Entries sheet
+    const vipData = [
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
+      ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vipData), "VIP Entries");
+
+    // Sales Entries sheet
+    const salesData = [
+      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
+      ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No", e.date]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(salesData), "Sales Entries");
+
+    // Expenses sheet
+    const expData = [
+      ["Category", "Amount", "Notes", "Date"],
+      ...expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expData), "Expenses");
+
+    // Commodity Flow sheet
+    const flowData = [
       ["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"],
-      ...Object.entries(commodityBreakdown).map(([c, v]) => [c, fmt(v.bought), fmt(v.sold), fmt(v.net)]),
-      [],
-      ["=== CURRENT STOCK ==="],
+      ...Object.entries(commodityBreakdown).map(([c, v]) => [c, v.bought, v.sold, v.net]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(flowData), "Commodity Flow");
+
+    // Current Stock sheet
+    const stockSheetData = [
       ["Commodity", "Weight (kg)"],
       ...stockData.map((s: any) => [s.commodity, s.weight]),
-      [],
-      ["=== PAYROLL ==="],
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(stockSheetData), "Current Stock");
+
+    // Payroll sheet
+    const payrollData = [
       ["Worker", "Role", "Salary", "Paid", "Balance"],
       ...workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]),
     ];
-    downloadCSV(rows, `${filePrefix}_FullReport.csv`);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payrollData), "Payroll");
+
+    // Commodity Profit sheet
+    const profitData = [
+      ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
+      ...commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]),
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(profitData), "Commodity Profit");
+
+    XLSX.writeFile(wb, `${filePrefix}_FullReport.xlsx`);
     toast.success("Full report downloaded!");
   };
 
