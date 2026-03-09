@@ -4,12 +4,13 @@ export const generateDailySummary = async () => {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch today's data in parallel
-  const [agentRes, vipRes, salesRes, expensesRes, workersRes] = await Promise.all([
+  const [agentRes, vipRes, salesRes, expensesRes, workersRes, commoditiesRes] = await Promise.all([
     supabase.from("agent_entries").select("*").eq("date", today),
     supabase.from("vip_entries").select("*").eq("date", today),
     supabase.from("sales_entries").select("*").eq("date", today),
     supabase.from("expenses").select("*").eq("date", today),
     supabase.from("workers").select("*"),
+    supabase.from("commodities").select("*"),
   ]);
 
   const agentEntries = agentRes.data || [];
@@ -17,6 +18,7 @@ export const generateDailySummary = async () => {
   const salesEntries = salesRes.data || [];
   const expenses = expensesRes.data || [];
   const workers = workersRes.data || [];
+  const commodityRows = commoditiesRes.data || [];
 
   const totalAgent = agentEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalVip = vipEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -24,21 +26,11 @@ export const generateDailySummary = async () => {
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const salaryPaid = workers.reduce((s, w) => s + Number(w.paid || 0), 0);
 
-  // Calculate weighted average purchase rate per commodity
-  const purchaseWeights: Record<string, { totalWeight: number; totalCost: number }> = {};
-  const ensurePW = (c: string) => { if (!purchaseWeights[c]) purchaseWeights[c] = { totalWeight: 0, totalCost: 0 }; };
-  agentEntries.forEach((e) => {
-    ensurePW(e.commodity);
-    purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight || 0);
-    purchaseWeights[e.commodity].totalCost += Number(e.amount || 0);
-  });
-  vipEntries.forEach((e) => {
-    ensurePW(e.commodity);
-    purchaseWeights[e.commodity].totalWeight += Number(e.actual_weight || 0);
-    purchaseWeights[e.commodity].totalCost += Number(e.amount || 0);
-  });
+  // Build current agent rate map from commodities table
+  const agentRateMap: Record<string, number> = {};
+  commodityRows.forEach((c: any) => { agentRateMap[c.name] = Number(c.agent_rate || 0); });
 
-  // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
+  // Gross profit = for each sale, (sale_rate - current_agent_rate) × weight
   let grossProfit = 0;
   salesEntries.forEach((e) => {
     const commodity = e.commodity;
@@ -49,9 +41,8 @@ export const generateDailySummary = async () => {
     if (e.is_exchange || !commodity || saleWeight === 0) {
       grossProfit += saleAmount;
     } else {
-      const pw = purchaseWeights[commodity];
-      const avgBuyRate = pw && pw.totalWeight > 0 ? pw.totalCost / pw.totalWeight : 0;
-      grossProfit += (saleRate - avgBuyRate) * saleWeight;
+      const agentRate = agentRateMap[commodity] || 0;
+      grossProfit += (saleRate - agentRate) * saleWeight;
     }
   });
 
