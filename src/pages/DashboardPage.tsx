@@ -83,7 +83,7 @@ const DashboardPage = () => {
         <p className="text-muted-foreground">Here's your scrap yard overview</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
         <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
         <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
