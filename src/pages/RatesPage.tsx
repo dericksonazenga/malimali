@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Commodity } from "@/types";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,9 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Settings, Save, Plus, X } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import RateHistory from "@/components/RateHistory";
 
 const RatesPage = () => {
   const { symbol } = useCurrency();
+  const { user } = useAuth();
   const { commodities, addCommodity, updateCommodity } = useCommodities();
   const [editing, setEditing] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ agentRate: 0, vipRate: 0, salesRate: 0 });
@@ -22,7 +26,28 @@ const RatesPage = () => {
   const [newSales, setNewSales] = useState("");
 
   const startEdit = (c: Commodity) => { setEditing(c.id); setEditValues({ agentRate: c.agentRate, vipRate: c.vipRate, salesRate: c.salesRate }); };
-  const saveEdit = async (id: string) => { await updateCommodity(id, editValues); setEditing(null); toast.success("Rates updated!"); };
+
+  const saveEdit = async (id: string) => {
+    const old = commodities.find(c => c.id === id);
+    if (old) {
+      // Log rate change history
+      await supabase.from("rate_change_history").insert({
+        commodity_id: id,
+        commodity_name: old.name,
+        old_agent_rate: old.agentRate,
+        old_vip_rate: old.vipRate,
+        old_sales_rate: old.salesRate,
+        new_agent_rate: editValues.agentRate,
+        new_vip_rate: editValues.vipRate,
+        new_sales_rate: editValues.salesRate,
+        changed_by: user?.id,
+        changed_by_name: user?.name || "",
+      });
+    }
+    await updateCommodity(id, editValues);
+    setEditing(null);
+    toast.success("Rates updated!");
+  };
 
   const handleAdd = async () => {
     if (!newName.trim()) { toast.error("Enter commodity name"); return; }
@@ -43,7 +68,7 @@ const RatesPage = () => {
     <div className="space-y-6 max-w-4xl">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2">
             <span className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Rate Management</span>
             <Button size="sm" className="gap-1" onClick={() => setShowAdd(!showAdd)}>
               {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -104,6 +129,8 @@ const RatesPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <RateHistory />
     </div>
   );
 };

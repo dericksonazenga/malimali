@@ -29,6 +29,7 @@ import AttendanceScanPage from "@/pages/AttendanceScanPage";
 import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MyInfoPage from "@/pages/MyInfoPage";
+import DebtManagementPage from "@/pages/DebtManagementPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/daily-summaries" element={<ProtectedRoute permission="view_reports"><DailySummariesPage /></ProtectedRoute>} />
         <Route path="/attendance" element={<AttendancePage />} />
+        <Route path="/debts" element={<DebtManagementPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />

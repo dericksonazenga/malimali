@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Expense, Worker } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
+  const { hasPermission } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -25,27 +27,34 @@ const ExpensesPage = () => {
   const [workerSearch, setWorkerSearch] = useState("");
   const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
 
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const { data } = await supabase
-        .from("expenses")
-        .select("*")
-        .eq("date", today)
-        .order("created_at", { ascending: false });
-      if (data) {
-        setExpenses(data.map((d: any) => ({
-          id: d.id,
-          category: d.category,
-          amount: Number(d.amount),
-          date: d.date,
-          notes: d.notes || "",
-        })));
-      }
-      setLoading(false);
-    };
-    fetchExpenses();
+  const fetchExpenses = useCallback(async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("expenses")
+      .select("*")
+      .eq("date", today)
+      .order("created_at", { ascending: false });
+    if (data) {
+      setExpenses(data.map((d: any) => ({
+        id: d.id,
+        category: d.category,
+        amount: Number(d.amount),
+        date: d.date,
+        notes: d.notes || "",
+      })));
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+    // Realtime subscription for expenses
+    const channel = supabase
+      .channel("expenses-page-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchExpenses]);
 
   useEffect(() => {
     const fetchWorkers = async () => {
@@ -80,7 +89,6 @@ const ExpensesPage = () => {
     const isLunch = category.toLowerCase() === "lunch";
     const expenseNotes = isLunch ? `Lunch for ${selectedWorker.name} (${selectedWorker.role})` : (notes || `Verified by ${selectedWorker.name}`);
 
-    // Prevent duplicate lunch entry for the same worker on the same date
     if (isLunch) {
       const alreadyHasLunch = expenses.some(
         (exp) => exp.category.toLowerCase() === "lunch" && exp.notes?.includes(`Lunch for ${selectedWorker.name}`)
@@ -91,26 +99,18 @@ const ExpensesPage = () => {
       }
     }
 
-    const { data, error } = await supabase.from("expenses").insert({
+    const { error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
       date,
       notes: expenseNotes,
       verified_by: selectedWorker.name,
-    }).select().single();
+    });
 
     if (error) {
       toast.error("Failed to save expense");
       return;
     }
-
-    setExpenses(prev => [{
-      id: data.id,
-      category,
-      amount: parseFloat(amount),
-      date,
-      notes: expenseNotes,
-    }, ...prev]);
 
     setCategory(""); setAmount(""); setNotes("");
     setSelectedWorker(null);
@@ -119,45 +119,45 @@ const ExpensesPage = () => {
 
   const handleDelete = async (id: string) => {
     await supabase.from("expenses").delete().eq("id", id);
-    setExpenses(p => p.filter(x => x.id !== id));
   };
 
+  const canDelete = hasPermission("delete_expenses") || hasPermission("delete_entries");
+
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-4 max-w-4xl">
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> Add Expense</CardTitle></CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Category *</Label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Transport, Lunch, Fuel..." className="h-12" />
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Category *</Label>
+              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Transport, Lunch, Fuel..." className="h-10" />
             </div>
-            <div className="space-y-2"><Label>Amount ({symbol}) *</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-12" /></div>
-            <div className="space-y-2"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12" /></div>
-            <div className="space-y-2">
-              <Label>Verified By *</Label>
+            <div className="space-y-1"><Label className="text-xs">Amount ({symbol}) *</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="h-10" /></div>
+            <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Verified By *</Label>
               {selectedWorker ? (
-                <div className="h-12 flex items-center gap-2 rounded-md border border-input bg-muted px-3">
+                <div className="h-10 flex items-center gap-2 rounded-md border border-input bg-muted px-3">
                   <UserCheck className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium">{selectedWorker.name}</span>
-                  <span className="text-xs text-muted-foreground">({selectedWorker.role})</span>
-                  <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => { setSelectedWorker(null); setShowWorkerPicker(true); }}>Change</Button>
+                  <span className="text-xs font-medium truncate">{selectedWorker.name}</span>
+                  <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 text-xs p-1" onClick={() => { setSelectedWorker(null); setShowWorkerPicker(true); }}>Change</Button>
                 </div>
               ) : (
-                <Button type="button" variant="outline" className="h-12 w-full" onClick={() => setShowWorkerPicker(true)}>
-                  <UserCheck className="w-4 h-4 mr-2" /> Select Person
+                <Button type="button" variant="outline" className="h-10 w-full text-xs" onClick={() => setShowWorkerPicker(true)}>
+                  <UserCheck className="w-4 h-4 mr-1" /> Select Person
                 </Button>
               )}
             </div>
             {category.toLowerCase() !== "lunch" && (
-              <div className="space-y-2 lg:col-span-2">
-                <Label>Notes</Label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" className="h-12" />
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs">Notes</Label>
+                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes" className="h-10" />
               </div>
             )}
-            <div className="lg:col-span-4">
-              <Button type="submit" className="h-12 px-8">
-                <Plus className="w-4 h-4 mr-2" /> Add Expense
+            <div className="sm:col-span-2 lg:col-span-4">
+              <Button type="submit" className="h-10 px-6 w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-1" /> Add Expense
               </Button>
             </div>
           </form>
@@ -167,9 +167,7 @@ const ExpensesPage = () => {
       <Dialog open={showWorkerPicker} onOpenChange={setShowWorkerPicker}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-primary" /> Select Responsible Person
-            </DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><UserCheck className="w-5 h-5 text-primary" /> Select Responsible Person</DialogTitle>
             <DialogDescription>Choose who is responsible for this expense.</DialogDescription>
           </DialogHeader>
           <div className="relative mb-2">
@@ -193,19 +191,21 @@ const ExpensesPage = () => {
       </Dialog>
 
       <Card>
-        <CardHeader><CardTitle className="flex justify-between"><span>Today's Expenses</span><span className="text-destructive font-mono">Total: {symbol}{total.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex flex-col sm:flex-row justify-between gap-1"><span>Today's Expenses</span><span className="text-destructive font-mono">Total: {symbol}{total.toLocaleString()}</span></CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           {loading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : (
             <Table>
-              <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Verified By</TableHead><TableHead>Notes</TableHead><TableHead /></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Verified By</TableHead><TableHead>Notes</TableHead>{canDelete && <TableHead />}</TableRow></TableHeader>
               <TableBody>
                 {expenses.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">{e.category}</TableCell>
                     <TableCell className="text-right font-mono font-semibold text-destructive">{symbol}{e.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-muted-foreground">{e.notes}</TableCell>
-                    <TableCell className="text-muted-foreground">{e.date}</TableCell>
-                    <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(e.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{e.notes}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{e.date}</TableCell>
+                    {canDelete && (
+                      <TableCell><Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => handleDelete(e.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
