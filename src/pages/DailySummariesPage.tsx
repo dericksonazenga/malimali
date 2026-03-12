@@ -91,6 +91,7 @@ const DailySummariesPage = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Triggered By</TableHead>
+                  {hasPermission("delete_entries") && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -107,6 +108,23 @@ const DailySummariesPage = () => {
                       <TableCell className="text-sm">
                         {log.triggered_by ? (profiles[log.triggered_by] || "Unknown user") : "—"}
                       </TableCell>
+                      {hasPermission("delete_entries") && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive h-8 w-8"
+                            onClick={async () => {
+                              const { error } = await supabase.from("end_of_day_log").delete().eq("id", log.id);
+                              if (error) { toast.error("Failed to delete"); return; }
+                              setEodLogs((prev) => prev.filter((l) => l.id !== log.id));
+                              toast.success("EOD log deleted");
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
