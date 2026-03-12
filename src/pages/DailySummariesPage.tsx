@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock } from "lucide-react";
+import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DailySummary {
   id: string;
