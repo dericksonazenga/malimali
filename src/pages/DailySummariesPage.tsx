@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock } from "lucide-react";
+import { FileText, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Package, Wallet, ShoppingCart, Users, Clock, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DailySummary {
   id: string;
@@ -31,6 +33,7 @@ interface EodLog {
 
 const DailySummariesPage = () => {
   const { symbol } = useCurrency();
+  const { hasPermission } = useAuth();
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -88,6 +91,7 @@ const DailySummariesPage = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Triggered By</TableHead>
+                  {hasPermission("delete_entries") && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,6 +108,23 @@ const DailySummariesPage = () => {
                       <TableCell className="text-sm">
                         {log.triggered_by ? (profiles[log.triggered_by] || "Unknown user") : "—"}
                       </TableCell>
+                      {hasPermission("delete_entries") && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive h-8 w-8"
+                            onClick={async () => {
+                              const { error } = await supabase.from("end_of_day_log").delete().eq("id", log.id);
+                              if (error) { toast.error("Failed to delete"); return; }
+                              setEodLogs((prev) => prev.filter((l) => l.id !== log.id));
+                              toast.success("EOD log deleted");
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}
