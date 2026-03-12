@@ -13,9 +13,9 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
     <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className={`text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
+          <p className={`text-lg sm:text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
+          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
         <div className="p-2.5 rounded-lg bg-accent">{icon}</div>
       </div>
@@ -77,13 +77,13 @@ const DashboardPage = () => {
   const currentStock = persistentTotal + stockIn - stockOut;
 
   return (
-    <div className="space-y-6 max-w-6xl p-6 rounded-2xl bg-[linear-gradient(135deg,#0f2027_0%,#203a43_40%,#2c5364_70%,#1a3a2a_100%)] min-h-screen">
+    <div className="space-y-4 lg:space-y-6 max-w-6xl p-3 lg:p-6 rounded-2xl bg-[linear-gradient(135deg,#0f2027_0%,#203a43_40%,#2c5364_70%,#1a3a2a_100%)] min-h-screen">
       <div>
         <h1 className="text-2xl font-bold">Welcome back, Rachel Scrap Ltd.</h1>
         <p className="text-muted-foreground">Here's your scrap yard overview</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
         <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
         <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
