@@ -13,9 +13,9 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
     <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className={`text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
+          <p className={`text-lg sm:text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
+          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{subtitle}</p>}
         </div>
         <div className="p-2.5 rounded-lg bg-accent">{icon}</div>
       </div>
