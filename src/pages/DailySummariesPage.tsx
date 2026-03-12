@@ -33,6 +33,7 @@ interface EodLog {
 
 const DailySummariesPage = () => {
   const { symbol } = useCurrency();
+  const { hasPermission } = useAuth();
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
