@@ -77,7 +77,7 @@ const DashboardPage = () => {
   const currentStock = persistentTotal + stockIn - stockOut;
 
   return (
-    <div className="space-y-6 max-w-6xl p-6 rounded-2xl bg-[linear-gradient(135deg,#0f2027_0%,#203a43_40%,#2c5364_70%,#1a3a2a_100%)] min-h-screen">
+    <div className="space-y-4 lg:space-y-6 max-w-6xl p-3 lg:p-6 rounded-2xl bg-[linear-gradient(135deg,#0f2027_0%,#203a43_40%,#2c5364_70%,#1a3a2a_100%)] min-h-screen">
       <div>
         <h1 className="text-2xl font-bold">Welcome back, Rachel Scrap Ltd.</h1>
         <p className="text-muted-foreground">Here's your scrap yard overview</p>
