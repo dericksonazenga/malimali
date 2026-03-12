@@ -227,6 +227,80 @@ export type Database = {
         }
         Relationships: []
       }
+      debt_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          debt_id: string
+          id: string
+          notes: string | null
+          paid_by: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          debt_id: string
+          id?: string
+          notes?: string | null
+          paid_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          debt_id?: string
+          id?: string
+          notes?: string | null
+          paid_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debt_payments_debt_id_fkey"
+            columns: ["debt_id"]
+            isOneToOne: false
+            referencedRelation: "debts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      debts: {
+        Row: {
+          balance: number
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          description: string
+          id: string
+          paid_amount: number
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          description?: string
+          id?: string
+          paid_amount?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          description?: string
+          id?: string
+          paid_amount?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       end_of_day_log: {
         Row: {
           date: string
