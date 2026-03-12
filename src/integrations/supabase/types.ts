@@ -406,6 +406,51 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_change_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string
+          commodity_id: string
+          commodity_name: string
+          created_at: string
+          id: string
+          new_agent_rate: number
+          new_sales_rate: number
+          new_vip_rate: number
+          old_agent_rate: number
+          old_sales_rate: number
+          old_vip_rate: number
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string
+          commodity_id: string
+          commodity_name: string
+          created_at?: string
+          id?: string
+          new_agent_rate?: number
+          new_sales_rate?: number
+          new_vip_rate?: number
+          old_agent_rate?: number
+          old_sales_rate?: number
+          old_vip_rate?: number
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string
+          commodity_id?: string
+          commodity_name?: string
+          created_at?: string
+          id?: string
+          new_agent_rate?: number
+          new_sales_rate?: number
+          new_vip_rate?: number
+          old_agent_rate?: number
+          old_sales_rate?: number
+          old_vip_rate?: number
+        }
+        Relationships: []
+      }
       recruited_workers: {
         Row: {
           claimed: boolean
