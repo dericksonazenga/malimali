@@ -8,12 +8,18 @@ import { toast } from "sonner";
 const ALL_ROLES = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"] as const;
 const ALL_PERMISSIONS = [
   { key: "update_rates", label: "Update Rates" },
-  { key: "delete_entries", label: "Delete Entries" },
+  { key: "delete_entries", label: "Delete All Entries" },
+  { key: "delete_agent_entries", label: "Delete Agent Entries" },
+  { key: "delete_vip_entries", label: "Delete VIP Entries" },
+  { key: "delete_sales_entries", label: "Delete Sales Entries" },
+  { key: "delete_expenses", label: "Delete Expenses" },
+  { key: "delete_rates", label: "Delete Rate History" },
   { key: "view_reports", label: "View Reports" },
   { key: "manage_workers", label: "Manage Workers" },
   { key: "manage_expenses", label: "Manage Expenses" },
   { key: "manage_inventory", label: "Manage Inventory" },
   { key: "adjust_stock", label: "Adjust Stock" },
+  { key: "manage_debts", label: "Manage Debts" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

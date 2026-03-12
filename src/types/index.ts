@@ -15,7 +15,13 @@ export type Permission =
   | "manage_workers"
   | "manage_expenses"
   | "manage_inventory"
-  | "adjust_stock";
+  | "adjust_stock"
+  | "delete_agent_entries"
+  | "delete_vip_entries"
+  | "delete_sales_entries"
+  | "delete_expenses"
+  | "delete_rates"
+  | "manage_debts";
 
 export interface Commodity {
   id: string;
