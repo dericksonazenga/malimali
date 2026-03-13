@@ -122,23 +122,29 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           })}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border shrink-0">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-              {user?.name?.charAt(0)}
+        <div className={cn("border-t border-sidebar-border shrink-0", sidebarCollapsed ? "p-2" : "p-3")}>
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                {user?.name?.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.name}</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{roleBadge}</span>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.name}</p>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{roleBadge}</span>
-            </div>
-          </div>
+          )}
           <Button
             variant="ghost"
-            className="w-full justify-start gap-2 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent h-8 text-xs"
+            className={cn(
+              "w-full text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent h-8 text-xs",
+              sidebarCollapsed ? "justify-center px-0" : "justify-start gap-2"
+            )}
             onClick={logout}
+            title={sidebarCollapsed ? "Sign Out" : undefined}
           >
             <LogOut className="w-3.5 h-3.5" />
-            Sign Out
+            {!sidebarCollapsed && "Sign Out"}
           </Button>
         </div>
       </aside>

@@ -268,12 +268,32 @@ const MyInfoPage = () => {
       <Card>
         <CardContent className="p-5">
           <div className="flex items-start gap-4 flex-wrap">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
-              ) : (
-                user?.name?.charAt(0)
-              )}
+            <div className="relative group shrink-0">
+              <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl overflow-hidden">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+                ) : (
+                  user?.name?.charAt(0)
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
             </div>
             <div className="flex-1 min-w-0 space-y-2">
               <h2 className="text-xl font-bold">{profile?.display_name || user?.name}</h2>
