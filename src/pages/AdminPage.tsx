@@ -325,8 +325,8 @@ const AdminPage = () => {
                     {r.phone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> {r.phone}</div>}
                     {r.identification_number && <div>ID: {r.identification_number}</div>}
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                    {r.claimed ? "Active" : "Pending"}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
+                    {r.claimed ? "Registered" : "Active"}
                   </span>
                 </div>
               ))}
