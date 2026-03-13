@@ -19,7 +19,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
+  { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" />, permission: "view_dashboard" },
   { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "__admin_only__" },
   { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_reports" },
   { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" /> },
