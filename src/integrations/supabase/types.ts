@@ -62,6 +62,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -451,6 +475,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          currency_preference: string | null
           display_name: string
           id: string
           phone: string | null
@@ -461,6 +486,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          currency_preference?: string | null
           display_name?: string
           id?: string
           phone?: string | null
@@ -471,6 +497,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          currency_preference?: string | null
           display_name?: string
           id?: string
           phone?: string | null
