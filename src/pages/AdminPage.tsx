@@ -168,10 +168,10 @@ const AdminPage = () => {
       identification_number: editRecruitValues.id_number || null,
     }).eq("id", r.id);
     if (error) { toast.error("Failed to update"); return; }
-    // Sync name to workers table and profiles table
-    await supabase.from("workers").update({ name: editRecruitValues.name }).eq("name", r.name);
-    if (r.name !== editRecruitValues.name) {
-      await supabase.from("profiles").update({ display_name: editRecruitValues.name }).eq("display_name", r.name);
+    // Sync name to workers table and profiles table (case-insensitive)
+    await supabase.from("workers").update({ name: editRecruitValues.name }).ilike("name", r.name);
+    if (r.name.toLowerCase() !== editRecruitValues.name.toLowerCase()) {
+      await supabase.from("profiles").update({ display_name: editRecruitValues.name }).ilike("display_name", r.name);
     }
     toast.success("Worker details updated");
     setEditingRecruitId(null);
