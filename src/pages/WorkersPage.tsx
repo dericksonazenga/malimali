@@ -153,29 +153,31 @@ const WorkersPage = () => {
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(w.created_at), "MMM dd, yyyy")}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {editingId === w.id ? (
-                              <>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEdit(w)}>
-                                  <Check className="w-4 h-4 text-success" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
-                                  <X className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(w)}>
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteWorker(w)}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
+                        {canEdit && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {editingId === w.id ? (
+                                <>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEdit(w)}>
+                                    <Check className="w-4 h-4 text-success" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
+                                    <X className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(w)}>
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteWorker(w)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
