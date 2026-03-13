@@ -104,8 +104,11 @@ const WorkersPage = () => {
     // Update in workers table by original name
     await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).eq("name", w.name);
     // Sync name and role to profiles table
-    if (w.name !== editValues.name) {
-      await supabase.from("profiles").update({ display_name: editValues.name }).eq("display_name", w.name);
+    const profileUpdate: Record<string, string> = {};
+    if (w.name !== editValues.name) profileUpdate.display_name = editValues.name;
+    if (w.role !== editValues.role) profileUpdate.role = editValues.role;
+    if (Object.keys(profileUpdate).length > 0) {
+      await supabase.from("profiles").update(profileUpdate).eq("display_name", w.name);
     }
     toast.success("Worker details updated");
     setEditingId(null);
