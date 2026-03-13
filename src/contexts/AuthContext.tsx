@@ -15,7 +15,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const ALL_PERMISSIONS: Permission[] = [
+  "update_rates", "delete_entries", "view_reports", "manage_workers",
+  "manage_expenses", "manage_inventory", "adjust_stock",
+  "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses",
+  "delete_rates", "manage_debts", "edit_records",
+];
+
 const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
+  // Admins get all permissions automatically
+  if (role === "admin") return ALL_PERMISSIONS;
+
   const { data, error } = await supabase
     .from("role_permissions")
     .select("permission")
