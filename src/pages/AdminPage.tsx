@@ -107,10 +107,10 @@ const AdminPage = () => {
     const profile = profiles.find(p => p.id === profileId);
     const { error } = await supabase.from("profiles").update({ role: editRole }).eq("id", profileId);
     if (error) { toast.error("Failed to update role"); return; }
-    // Sync role to recruited_workers and workers tables by display_name
+    // Sync role to recruited_workers and workers tables by display_name (case-insensitive)
     if (profile) {
-      await supabase.from("recruited_workers").update({ role: editRole }).eq("name", profile.display_name);
-      await supabase.from("workers").update({ role: editRole }).eq("name", profile.display_name);
+      await supabase.from("recruited_workers").update({ role: editRole }).ilike("name", profile.display_name);
+      await supabase.from("workers").update({ role: editRole }).ilike("name", profile.display_name);
     }
     toast.success("Role updated!");
     setEditingId(null);
