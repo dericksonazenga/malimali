@@ -276,8 +276,8 @@ const AdminPage = () => {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                          {r.claimed ? "Active" : "Pending"}
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
+                          {r.claimed ? "Registered" : "Active"}
                         </span>
                       </TableCell>
                       <TableCell>
