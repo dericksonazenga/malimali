@@ -233,7 +233,8 @@ const DebtManagementPage = () => {
                         {canEdit && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
                             <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
