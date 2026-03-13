@@ -20,7 +20,7 @@ const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
     .from("role_permissions")
     .select("permission")
     .eq("role", role);
-  if (error || !data || data.length === 0) return ROLE_PERMISSIONS_FALLBACK[role] || [];
+  if (error || !data || data.length === 0) return [];
   return data.map((r: any) => r.permission as Permission);
 };
 
