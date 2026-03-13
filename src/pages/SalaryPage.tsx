@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Banknote, Plus, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,8 @@ interface WorkerRow {
 
 const SalaryPage = () => {
   const { symbol } = useCurrency();
+  const { user, hasPermission } = useAuth();
+  const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
   const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
@@ -193,33 +196,39 @@ const SalaryPage = () => {
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {editingSalaryId === w.id ? (
+                        {canEdit && editingSalaryId === w.id ? (
                           <div className="flex items-center gap-1 justify-end">
                             <Input type="number" className="w-24 h-8 text-sm" value={editSalaryValue} onChange={e => setEditSalaryValue(e.target.value)} autoFocus />
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveSalary(w.id)}><Check className="w-3 h-3 text-success" /></Button>
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingSalaryId(null)}><X className="w-3 h-3 text-destructive" /></Button>
                           </div>
-                        ) : (
+                        ) : canEdit ? (
                           <span className="cursor-pointer hover:underline flex items-center gap-1 justify-end" onClick={() => { setEditingSalaryId(w.id); setEditSalaryValue(String(w.salary)); }}>
                             {symbol}{w.salary.toLocaleString()} <Pencil className="w-3 h-3 text-muted-foreground" />
                           </span>
+                        ) : (
+                          <span>{symbol}{w.salary.toLocaleString()}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-success">{symbol}{w.paid.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">{symbol}{w.balance.toLocaleString()}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="Amount"
-                            className="w-24 h-9"
-                            value={payAmounts[w.id] || ""}
-                            onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
-                          />
-                          <Button size="sm" className="h-9" onClick={() => handlePay(w.id)}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        {canEdit ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              placeholder="Amount"
+                              className="w-24 h-9"
+                              value={payAmounts[w.id] || ""}
+                              onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
+                            />
+                            <Button size="sm" className="h-9" onClick={() => handlePay(w.id)}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No access</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -245,16 +254,18 @@ const SalaryPage = () => {
                     <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-success">{symbol}{w.paid.toLocaleString()}</p></div>
                     <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive">{symbol}{w.balance.toLocaleString()}</p></div>
                   </div>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Amount"
-                      className="h-8 flex-1 text-sm"
-                      value={payAmounts[w.id] || ""}
-                      onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
-                    />
-                    <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
-                  </div>
+                  {canEdit && (
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        className="h-8 flex-1 text-sm"
+                        value={payAmounts[w.id] || ""}
+                        onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
+                      />
+                      <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
+                    </div>
+                  )}
                 </div>
               );
             })}

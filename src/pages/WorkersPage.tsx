@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Users, Trash2, Pencil, Check, X, Mail, Phone, IdCard } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface WorkerRow {
   id: string;
@@ -19,6 +20,8 @@ interface WorkerRow {
 }
 
 const WorkersPage = () => {
+  const { user, hasPermission } = useAuth();
+  const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -121,7 +124,7 @@ const WorkersPage = () => {
                       <TableHead>Contact</TableHead>
                       <TableHead>ID Number</TableHead>
                       <TableHead>Date Employed</TableHead>
-                      <TableHead />
+                      {canEdit && <TableHead />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -150,29 +153,31 @@ const WorkersPage = () => {
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(w.created_at), "MMM dd, yyyy")}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {editingId === w.id ? (
-                              <>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEdit(w)}>
-                                  <Check className="w-4 h-4 text-success" />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
-                                  <X className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(w)}>
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteWorker(w)}>
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
+                        {canEdit && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              {editingId === w.id ? (
+                                <>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveEdit(w)}>
+                                    <Check className="w-4 h-4 text-success" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
+                                    <X className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(w)}>
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteWorker(w)}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -188,12 +193,16 @@ const WorkersPage = () => {
                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(w)}>
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteWorker(w)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        {canEdit && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(w)}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteWorker(w)}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
