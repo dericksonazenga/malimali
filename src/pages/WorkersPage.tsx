@@ -17,6 +17,7 @@ interface WorkerRow {
   email?: string | null;
   phone?: string | null;
   identification_number?: string | null;
+  avatar_url?: string | null;
 }
 
 const WorkersPage = () => {
@@ -40,6 +41,16 @@ const WorkersPage = () => {
       .select("id, name, role, created_at")
       .order("created_at", { ascending: true });
 
+    // Get all profiles for avatar mapping (by display_name)
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url");
+
+    const avatarMap = new Map<string, string>();
+    profiles?.forEach((p: any) => {
+      if (p.avatar_url) avatarMap.set(p.display_name?.toLowerCase(), p.avatar_url);
+    });
+
     // Merge: prefer recruited_workers data, add any workers not in recruits
     const recruitMap = new Map<string, WorkerRow>();
     recruits?.forEach((r: any) => {
@@ -51,6 +62,7 @@ const WorkersPage = () => {
         email: r.email,
         phone: r.phone,
         identification_number: r.identification_number,
+        avatar_url: avatarMap.get(r.name.toLowerCase()) || null,
       });
     });
 
@@ -61,6 +73,7 @@ const WorkersPage = () => {
           name: w.name,
           role: w.role,
           created_at: w.created_at,
+          avatar_url: avatarMap.get(w.name.toLowerCase()) || null,
         });
       }
     });
@@ -75,6 +88,7 @@ const WorkersPage = () => {
       .channel("workers-list-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "recruited_workers" }, () => fetchWorkers())
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchWorkers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchWorkers())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchWorkers]);
@@ -119,6 +133,7 @@ const WorkersPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Contact</TableHead>
@@ -130,6 +145,15 @@ const WorkersPage = () => {
                   <TableBody>
                     {workers.map((w) => (
                       <TableRow key={w.id}>
+                        <TableCell>
+                          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
+                            {w.avatar_url ? (
+                              <img src={w.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
+                            ) : (
+                              w.name.charAt(0)
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">
                           {editingId === w.id ? (
                             <Input className="h-8 w-32" value={editValues.name} onChange={(e) => setEditValues(v => ({ ...v, name: e.target.value }))} />
@@ -188,9 +212,18 @@ const WorkersPage = () => {
                 {workers.map((w) => (
                   <div key={w.id} className="border border-border rounded-lg p-3 space-y-2">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{w.name}</p>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
+                          {w.avatar_url ? (
+                            <img src={w.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            w.name.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{w.name}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         {canEdit && (
