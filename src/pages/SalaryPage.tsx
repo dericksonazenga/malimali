@@ -254,6 +254,7 @@ const SalaryPage = () => {
                     <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-success">{symbol}{w.paid.toLocaleString()}</p></div>
                     <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive">{symbol}{w.balance.toLocaleString()}</p></div>
                   </div>
+                  {canEdit && (
                   <div className="flex gap-2">
                     <Input
                       type="number"
