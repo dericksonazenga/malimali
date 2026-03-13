@@ -75,13 +75,14 @@ const LoginPage = () => {
         setSubmitting(false);
         return;
       }
-      if (!checkResult || !checkResult.found) {
+      const result = checkResult as any;
+      if (!result || !result.found) {
         setError("Your email has not been pre-registered by an admin. Please contact your administrator.");
         setSubmitting(false);
         return;
       }
 
-      const err = await signup(email, password, displayName.trim(), checkResult.role as any);
+      const err = await signup(email, password, displayName.trim(), result.role as any);
       if (err) {
         setError(err);
       } else {
