@@ -3,15 +3,6 @@ import { User, UserRole, Permission } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-// Fallback used only if DB has no entries for a role
-const ROLE_PERMISSIONS_FALLBACK: Record<UserRole, Permission[]> = {
-  admin: ["update_rates", "delete_entries", "view_reports", "manage_workers", "manage_expenses", "manage_inventory", "adjust_stock", "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses", "delete_rates", "manage_debts", "edit_records"],
-  accountant: ["view_reports", "manage_expenses", "manage_workers"],
-  data_manager: ["update_rates", "delete_entries", "manage_inventory"],
-  human_resource: ["manage_workers"],
-  cashier: ["manage_expenses", "view_reports"],
-  boss: [],
-};
 
 interface AuthContextType {
   user: User | null;
