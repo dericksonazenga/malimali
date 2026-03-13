@@ -88,6 +88,7 @@ const WorkersPage = () => {
       .channel("workers-list-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "recruited_workers" }, () => fetchWorkers())
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchWorkers())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchWorkers())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchWorkers]);
