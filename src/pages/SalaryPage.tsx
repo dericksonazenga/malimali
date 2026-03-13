@@ -255,18 +255,18 @@ const SalaryPage = () => {
                     <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive">{symbol}{w.balance.toLocaleString()}</p></div>
                   </div>
                   {canEdit && (
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Amount"
-                      className="h-8 flex-1 text-sm"
-                      value={payAmounts[w.id] || ""}
-                      onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
-                    />
-                    <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
-                  </div>
-                  </div>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Amount"
+                        className="h-8 flex-1 text-sm"
+                        value={payAmounts[w.id] || ""}
+                        onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
+                      />
+                      <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
+                    </div>
                   )}
+                </div>
               );
             })}
           </div>
