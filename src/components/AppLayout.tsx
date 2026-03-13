@@ -105,16 +105,18 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
+                title={sidebarCollapsed ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all group",
+                  "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-all group",
+                  sidebarCollapsed ? "px-2 py-2 justify-center" : "px-3 py-2",
                   active
                     ? "bg-primary text-primary-foreground"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 )}
               >
                 {item.icon}
-                <span className="truncate">{item.label}</span>
-                {active && <ChevronRight className="w-4 h-4 ml-auto shrink-0" />}
+                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                {active && !sidebarCollapsed && <ChevronRight className="w-4 h-4 ml-auto shrink-0" />}
               </Link>
             );
           })}
