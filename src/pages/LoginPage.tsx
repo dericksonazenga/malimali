@@ -195,6 +195,26 @@ const LoginPage = () => {
             </div>
           )}
 
+          {mode === "login" && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => {
+                  setRememberMe(checked === true);
+                  if (checked) {
+                    localStorage.setItem("scrapflow_remember_email", identifier);
+                  } else {
+                    localStorage.removeItem("scrapflow_remember_email");
+                  }
+                }}
+              />
+              <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                Remember my email
+              </Label>
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</p>
           )}
