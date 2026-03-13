@@ -220,16 +220,19 @@ const DebtManagementPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        {d.status !== "paid" && (
+                        {d.status !== "paid" && canEdit && (
                           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>
                             Pay
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}>
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
+                            <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </TableCell>
