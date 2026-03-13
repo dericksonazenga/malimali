@@ -194,8 +194,8 @@ const AdminPage = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Email Address</Label>
-              <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+              <Label>Email Address *</Label>
+              <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Phone Number</Label>
