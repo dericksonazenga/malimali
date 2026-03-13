@@ -143,7 +143,9 @@ const LoginPage = () => {
 
       const ok = await login(authEmail, password);
       if (!ok) {
-        setError("Invalid credentials or email not verified.");
+        setError("Invalid credentials.");
+      } else {
+        saveRememberedEmail();
       }
     }
     setSubmitting(false);
