@@ -113,6 +113,7 @@ const AdminPage = () => {
 
   const addRecruit = async () => {
     if (!newName.trim()) { toast.error("Please enter worker name"); return; }
+    if (!newEmail.trim() || !newEmail.includes("@")) { toast.error("Please enter a valid email address so the worker can create an account"); return; }
 
     setRecruiting(true);
 
