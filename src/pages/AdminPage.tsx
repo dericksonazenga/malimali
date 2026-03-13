@@ -150,7 +150,7 @@ const AdminPage = () => {
   const deleteRecruit = async (id: string, name: string) => {
     const { error } = await supabase.from("recruited_workers").delete().eq("id", id);
     if (error) { toast.error("Failed to remove"); return; }
-    await supabase.from("workers").delete().eq("name", name);
+    await supabase.from("workers").delete().ilike("name", name);
     // Also update profile if the user had registered (don't delete profile, just log)
     toast.success("Worker removed");
   };
