@@ -73,9 +73,9 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <CurrencyProvider>
-        <CommodityProvider>
-          <AuthProvider>
+      <CommodityProvider>
+        <AuthProvider>
+          <CurrencyProvider>
             <InventoryProvider>
               <EndOfDayProvider>
                 <BrowserRouter>
@@ -87,9 +87,9 @@ const App = () => (
                 </BrowserRouter>
               </EndOfDayProvider>
             </InventoryProvider>
-          </AuthProvider>
-        </CommodityProvider>
-      </CurrencyProvider>
+          </CurrencyProvider>
+        </AuthProvider>
+      </CommodityProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
