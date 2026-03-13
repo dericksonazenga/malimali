@@ -758,6 +758,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_pre_registration: { Args: { check_email: string }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

@@ -66,35 +66,26 @@ const LoginPage = () => {
         return;
       }
 
-      // Check if pre-registered by admin
-      const { data: recruits, error: checkError } = await supabase
-        .from("recruited_workers")
-        .select("*")
-        .eq("email", email)
-        .eq("claimed", false);
+      // Check if pre-registered by admin using RPC (works for unauthenticated users)
+      const { data: checkResult, error: checkError } = await supabase
+        .rpc("check_pre_registration", { check_email: email });
 
       if (checkError) {
         setError("Failed to verify registration. Try again.");
         setSubmitting(false);
         return;
       }
-      if (!recruits || recruits.length === 0) {
+      const result = checkResult as any;
+      if (!result || !result.found) {
         setError("Your email has not been pre-registered by an admin. Please contact your administrator.");
         setSubmitting(false);
         return;
       }
 
-      const recruit = recruits[0];
-      const err = await signup(email, password, displayName.trim(), recruit.role as any);
+      const err = await signup(email, password, displayName.trim(), result.role as any);
       if (err) {
         setError(err);
       } else {
-        // Mark recruit as claimed
-        await supabase
-          .from("recruited_workers")
-          .update({ claimed: true })
-          .eq("id", recruit.id);
-
         toast.success("Account created successfully! You can now sign in.");
         setMode("login");
         setDisplayName("");
