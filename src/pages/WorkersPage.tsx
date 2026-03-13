@@ -20,6 +20,8 @@ interface WorkerRow {
 }
 
 const WorkersPage = () => {
+  const { user, hasPermission } = useAuth();
+  const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
