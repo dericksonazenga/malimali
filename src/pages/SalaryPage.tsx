@@ -24,6 +24,8 @@ interface WorkerRow {
 
 const SalaryPage = () => {
   const { symbol } = useCurrency();
+  const { user, hasPermission } = useAuth();
+  const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
   const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
