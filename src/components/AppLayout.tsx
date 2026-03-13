@@ -67,15 +67,18 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static",
+          "fixed inset-y-0 left-0 z-50 bg-sidebar flex flex-col transition-all duration-300 lg:translate-x-0 lg:static",
+          sidebarCollapsed ? "lg:w-16 w-64" : "w-64",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex items-center gap-3 px-5 h-14 border-b border-sidebar-border shrink-0">
+        <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-5 gap-3")}>
           <Recycle className="w-6 h-6 text-primary shrink-0" />
-          <span className="text-base font-bold text-sidebar-foreground">
-            Scrap<span className="text-primary">Flow</span>
-          </span>
+          {!sidebarCollapsed && (
+            <span className="text-base font-bold text-sidebar-foreground">
+              Scrap<span className="text-primary">Flow</span>
+            </span>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -83,6 +86,14 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             onClick={() => setSidebarOpen(false)}
           >
             <X className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("hidden lg:flex text-sidebar-foreground/60 hover:text-sidebar-foreground", sidebarCollapsed ? "ml-0" : "ml-auto")}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </Button>
         </div>
 
