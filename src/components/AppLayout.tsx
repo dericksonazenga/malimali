@@ -149,12 +149,27 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
         <div className={cn("border-t border-sidebar-border shrink-0", sidebarCollapsed ? "p-2" : "p-3")}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                {user?.name?.charAt(0)}
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  user?.name?.charAt(0)
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-sidebar-foreground truncate">{user?.name}</p>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{roleBadge}</span>
+              </div>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <div className="flex justify-center mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs overflow-hidden">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  user?.name?.charAt(0)
+                )}
               </div>
             </div>
           )}
