@@ -41,6 +41,16 @@ const WorkersPage = () => {
       .select("id, name, role, created_at")
       .order("created_at", { ascending: true });
 
+    // Get all profiles for avatar mapping (by display_name)
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url");
+
+    const avatarMap = new Map<string, string>();
+    profiles?.forEach((p: any) => {
+      if (p.avatar_url) avatarMap.set(p.display_name?.toLowerCase(), p.avatar_url);
+    });
+
     // Merge: prefer recruited_workers data, add any workers not in recruits
     const recruitMap = new Map<string, WorkerRow>();
     recruits?.forEach((r: any) => {
@@ -52,6 +62,7 @@ const WorkersPage = () => {
         email: r.email,
         phone: r.phone,
         identification_number: r.identification_number,
+        avatar_url: avatarMap.get(r.name.toLowerCase()) || null,
       });
     });
 
@@ -62,6 +73,7 @@ const WorkersPage = () => {
           name: w.name,
           role: w.role,
           created_at: w.created_at,
+          avatar_url: avatarMap.get(w.name.toLowerCase()) || null,
         });
       }
     });
