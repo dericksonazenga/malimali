@@ -9,6 +9,7 @@ export interface User {
 }
 
 export type Permission =
+  | "view_dashboard"
   | "update_rates"
   | "delete_entries"
   | "view_reports"
