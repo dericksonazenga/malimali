@@ -164,7 +164,7 @@ const PermissionsManager = () => {
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground mt-4">
-          Changes take effect on next login.
+          Changes take effect instantly on all users.
         </p>
       </CardContent>
     </Card>

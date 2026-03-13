@@ -101,6 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, async () => {
+        if (currentUserId) {
+          const session = (await supabase.auth.getSession()).data.session;
+          if (session?.user) {
+            fetchProfile(session.user);
+          }
+        }
+      })
       .subscribe();
 
     return () => {
