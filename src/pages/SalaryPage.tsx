@@ -213,18 +213,22 @@ const SalaryPage = () => {
                       <TableCell className="text-right font-mono text-success">{symbol}{w.paid.toLocaleString()}</TableCell>
                       <TableCell className="text-right font-mono text-destructive">{symbol}{w.balance.toLocaleString()}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            placeholder="Amount"
-                            className="w-24 h-9"
-                            value={payAmounts[w.id] || ""}
-                            onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
-                          />
-                          <Button size="sm" className="h-9" onClick={() => handlePay(w.id)}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        {canEdit ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              placeholder="Amount"
+                              className="w-24 h-9"
+                              value={payAmounts[w.id] || ""}
+                              onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))}
+                            />
+                            <Button size="sm" className="h-9" onClick={() => handlePay(w.id)}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No access</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
