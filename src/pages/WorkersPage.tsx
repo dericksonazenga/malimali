@@ -193,12 +193,16 @@ const WorkersPage = () => {
                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(w)}>
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteWorker(w)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        {canEdit && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(w)}>
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteWorker(w)}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">

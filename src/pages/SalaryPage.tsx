@@ -265,7 +265,8 @@ const SalaryPage = () => {
                     />
                     <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
                   </div>
-                </div>
+                  </div>
+                  )}
               );
             })}
           </div>
