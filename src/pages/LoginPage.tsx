@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Recycle, LogIn, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +14,24 @@ const LoginPage = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("scrapflow_remember_email");
+    if (saved) {
+      setIdentifier(saved);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Save email when submitting login with remember me
+  const saveRememberedEmail = () => {
+    if (rememberMe && mode === "login") {
+      localStorage.setItem("scrapflow_remember_email", identifier.trim());
+    }
+  };
   const isEmail = (val: string) => val.includes("@");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +95,7 @@ const LoginPage = () => {
           .update({ claimed: true })
           .eq("id", recruit.id);
 
-        toast.success("Account created! Please check your email to verify your account before signing in.");
+        toast.success("Account created successfully! You can now sign in.");
         setMode("login");
         setDisplayName("");
       }
@@ -127,7 +143,9 @@ const LoginPage = () => {
 
       const ok = await login(authEmail, password);
       if (!ok) {
-        setError("Invalid credentials or email not verified.");
+        setError("Invalid credentials.");
+      } else {
+        saveRememberedEmail();
       }
     }
     setSubmitting(false);
@@ -190,6 +208,26 @@ const LoginPage = () => {
                 required
                 minLength={6}
               />
+            </div>
+          )}
+
+          {mode === "login" && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => {
+                  setRememberMe(checked === true);
+                  if (checked) {
+                    localStorage.setItem("scrapflow_remember_email", identifier);
+                  } else {
+                    localStorage.removeItem("scrapflow_remember_email");
+                  }
+                }}
+              />
+              <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
+                Remember my email
+              </Label>
             </div>
           )}
 
