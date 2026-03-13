@@ -33,7 +33,8 @@ interface DebtPayment {
 
 const DebtManagementPage = () => {
   const { symbol } = useCurrency();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
