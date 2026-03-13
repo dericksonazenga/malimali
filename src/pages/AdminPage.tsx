@@ -113,6 +113,7 @@ const AdminPage = () => {
 
   const addRecruit = async () => {
     if (!newName.trim()) { toast.error("Please enter worker name"); return; }
+    if (!newEmail.trim() || !newEmail.includes("@")) { toast.error("Please enter a valid email address so the worker can create an account"); return; }
 
     setRecruiting(true);
 
@@ -193,8 +194,8 @@ const AdminPage = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Email Address</Label>
-              <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+              <Label>Email Address *</Label>
+              <Input type="email" placeholder="worker@example.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Phone Number</Label>
@@ -275,8 +276,8 @@ const AdminPage = () => {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                          {r.claimed ? "Active" : "Pending"}
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
+                          {r.claimed ? "Registered" : "Active"}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -324,8 +325,8 @@ const AdminPage = () => {
                     {r.phone && <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> {r.phone}</div>}
                     {r.identification_number && <div>ID: {r.identification_number}</div>}
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                    {r.claimed ? "Active" : "Pending"}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
+                    {r.claimed ? "Registered" : "Active"}
                   </span>
                 </div>
               ))}
