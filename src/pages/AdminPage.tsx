@@ -107,10 +107,10 @@ const AdminPage = () => {
     const profile = profiles.find(p => p.id === profileId);
     const { error } = await supabase.from("profiles").update({ role: editRole }).eq("id", profileId);
     if (error) { toast.error("Failed to update role"); return; }
-    // Sync role to recruited_workers and workers tables by display_name
+    // Sync role to recruited_workers and workers tables by display_name (case-insensitive)
     if (profile) {
-      await supabase.from("recruited_workers").update({ role: editRole }).eq("name", profile.display_name);
-      await supabase.from("workers").update({ role: editRole }).eq("name", profile.display_name);
+      await supabase.from("recruited_workers").update({ role: editRole }).ilike("name", profile.display_name);
+      await supabase.from("workers").update({ role: editRole }).ilike("name", profile.display_name);
     }
     toast.success("Role updated!");
     setEditingId(null);
@@ -150,7 +150,7 @@ const AdminPage = () => {
   const deleteRecruit = async (id: string, name: string) => {
     const { error } = await supabase.from("recruited_workers").delete().eq("id", id);
     if (error) { toast.error("Failed to remove"); return; }
-    await supabase.from("workers").delete().eq("name", name);
+    await supabase.from("workers").delete().ilike("name", name);
     // Also update profile if the user had registered (don't delete profile, just log)
     toast.success("Worker removed");
   };
@@ -168,10 +168,10 @@ const AdminPage = () => {
       identification_number: editRecruitValues.id_number || null,
     }).eq("id", r.id);
     if (error) { toast.error("Failed to update"); return; }
-    // Sync name to workers table and profiles table
-    await supabase.from("workers").update({ name: editRecruitValues.name }).eq("name", r.name);
-    if (r.name !== editRecruitValues.name) {
-      await supabase.from("profiles").update({ display_name: editRecruitValues.name }).eq("display_name", r.name);
+    // Sync name to workers table and profiles table (case-insensitive)
+    await supabase.from("workers").update({ name: editRecruitValues.name }).ilike("name", r.name);
+    if (r.name.toLowerCase() !== editRecruitValues.name.toLowerCase()) {
+      await supabase.from("profiles").update({ display_name: editRecruitValues.name }).ilike("display_name", r.name);
     }
     toast.success("Worker details updated");
     setEditingRecruitId(null);

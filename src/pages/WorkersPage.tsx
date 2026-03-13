@@ -101,14 +101,14 @@ const WorkersPage = () => {
   const saveEdit = async (w: WorkerRow) => {
     // Update in recruited_workers
     await supabase.from("recruited_workers").update({ name: editValues.name, role: editValues.role }).eq("id", w.id);
-    // Update in workers table by original name
-    await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).eq("name", w.name);
-    // Sync name and role to profiles table
+    // Update in workers table by original name (case-insensitive)
+    await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).ilike("name", w.name);
+    // Sync name and role to profiles table (case-insensitive)
     const profileUpdate: Record<string, string> = {};
-    if (w.name !== editValues.name) profileUpdate.display_name = editValues.name;
+    if (w.name.toLowerCase() !== editValues.name.toLowerCase()) profileUpdate.display_name = editValues.name;
     if (w.role !== editValues.role) profileUpdate.role = editValues.role;
     if (Object.keys(profileUpdate).length > 0) {
-      await supabase.from("profiles").update(profileUpdate).eq("display_name", w.name);
+      await supabase.from("profiles").update(profileUpdate).ilike("display_name", w.name);
     }
     toast.success("Worker details updated");
     setEditingId(null);
@@ -117,7 +117,7 @@ const WorkersPage = () => {
 
   const deleteWorker = async (w: WorkerRow) => {
     await supabase.from("recruited_workers").delete().eq("id", w.id);
-    await supabase.from("workers").delete().eq("name", w.name);
+    await supabase.from("workers").delete().ilike("name", w.name);
     toast.success("Worker removed");
     fetchWorkers();
   };
