@@ -18,6 +18,20 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    const saved = localStorage.getItem("scrapflow_remember_email");
+    if (saved) {
+      setIdentifier(saved);
+      setRememberMe(true);
+    }
+  }, []);
+
+  // Save email when submitting login with remember me
+  const saveRememberedEmail = () => {
+    if (rememberMe && mode === "login") {
+      localStorage.setItem("scrapflow_remember_email", identifier.trim());
+    }
+  };
   const isEmail = (val: string) => val.includes("@");
 
   const handleSubmit = async (e: React.FormEvent) => {
