@@ -101,8 +101,12 @@ const WorkersPage = () => {
   const saveEdit = async (w: WorkerRow) => {
     // Update in recruited_workers
     await supabase.from("recruited_workers").update({ name: editValues.name, role: editValues.role }).eq("id", w.id);
-    // Also update in workers table by original name
+    // Update in workers table by original name
     await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).eq("name", w.name);
+    // Sync name and role to profiles table
+    if (w.name !== editValues.name) {
+      await supabase.from("profiles").update({ display_name: editValues.name }).eq("display_name", w.name);
+    }
     toast.success("Worker details updated");
     setEditingId(null);
     fetchWorkers();
