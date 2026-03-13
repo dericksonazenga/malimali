@@ -1,10 +1,10 @@
 import { ReactNode, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard,
+  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,11 +39,14 @@ const navItems: NavItem[] = [
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const { user, logout, hasPermission } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const filteredNav = navItems.filter(
     (item) => !item.permission || hasPermission(item.permission)
   );
+
+  const isHome = location.pathname === "/";
 
   const roleBadge = user?.role === "admin" ? "Admin" : user?.role === "accountant" ? "Accountant" : user?.role === "data_manager" ? "Data Manager" : user?.role === "human_resource" ? "Human Resource" : user?.role === "cashier" ? "Cashier" : "Boss";
 
@@ -125,7 +128,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-card border-b border-border flex items-center px-3 lg:px-6 gap-3 sticky top-0 z-30 shrink-0">
+        <header className="h-14 bg-card border-b border-border flex items-center px-3 lg:px-6 gap-2 sticky top-0 z-30 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -134,6 +137,16 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           >
             <Menu className="w-5 h-5" />
           </Button>
+          {!isHome && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => navigate(-1)}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
           <h2 className="text-base font-semibold truncate">
             {filteredNav.find((n) => n.path === location.pathname)?.label || "Dashboard"}
           </h2>
