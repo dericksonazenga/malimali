@@ -16,7 +16,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const ALL_PERMISSIONS: Permission[] = [
-  "view_dashboard", "update_rates", "delete_entries", "view_reports", "manage_workers",
+  "view_dashboard", "view_data_entry", "view_debts", "view_messages", "view_my_info", "view_settings",
+  "update_rates", "delete_entries", "view_reports", "manage_workers",
   "manage_expenses", "manage_inventory", "adjust_stock",
   "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses",
   "delete_rates", "manage_debts", "edit_records",
