@@ -145,6 +145,15 @@ const WorkersPage = () => {
                   <TableBody>
                     {workers.map((w) => (
                       <TableRow key={w.id}>
+                        <TableCell>
+                          <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
+                            {w.avatar_url ? (
+                              <img src={w.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
+                            ) : (
+                              w.name.charAt(0)
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">
                           {editingId === w.id ? (
                             <Input className="h-8 w-32" value={editValues.name} onChange={(e) => setEditValues(v => ({ ...v, name: e.target.value }))} />
