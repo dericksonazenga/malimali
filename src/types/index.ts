@@ -10,6 +10,11 @@ export interface User {
 
 export type Permission =
   | "view_dashboard"
+  | "view_data_entry"
+  | "view_debts"
+  | "view_messages"
+  | "view_my_info"
+  | "view_settings"
   | "update_rates"
   | "delete_entries"
   | "view_reports"
