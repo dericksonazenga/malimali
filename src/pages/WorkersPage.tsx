@@ -124,7 +124,7 @@ const WorkersPage = () => {
                       <TableHead>Contact</TableHead>
                       <TableHead>ID Number</TableHead>
                       <TableHead>Date Employed</TableHead>
-                      <TableHead />
+                      {canEdit && <TableHead />}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
