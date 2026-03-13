@@ -80,7 +80,7 @@ const LoginPage = () => {
           .update({ claimed: true })
           .eq("id", recruit.id);
 
-        toast.success("Account created! Please check your email to verify your account before signing in.");
+        toast.success("Account created successfully! You can now sign in.");
         setMode("login");
         setDisplayName("");
       }
