@@ -38,7 +38,6 @@ const InventoryPage = () => {
       .limit(50);
 
     if (data) {
-      // Fetch profile names for adjusters
       const userIds = [...new Set(data.map((d: any) => d.adjusted_by).filter(Boolean))];
       let profileMap: Record<string, string> = {};
       if (userIds.length > 0) {
@@ -101,7 +100,7 @@ const InventoryPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2">
             <span className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Stock by Commodity</span>
             {hasPermission("adjust_stock") && (
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setAdjustOpen(true)}>
@@ -133,7 +132,7 @@ const InventoryPage = () => {
               ))}
               {!hasData && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stock data yet. Add entries to see commodity breakdown.</TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stock data yet.</TableCell>
                 </TableRow>
               )}
               {hasData && (
@@ -150,63 +149,103 @@ const InventoryPage = () => {
         </CardContent>
       </Card>
 
-      {/* Stock Adjustment History */}
+      {/* Stock Adjustment History - responsive card layout on mobile */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="w-5 h-5 text-primary" /> Stock Adjustment History
           </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           {loadingLogs ? (
             <p className="text-sm text-muted-foreground py-4 text-center">Loading history…</p>
           ) : adjustments.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No manual adjustments recorded yet.</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Commodity</TableHead>
-                  <TableHead className="text-right">Before</TableHead>
-                  <TableHead className="text-right">After</TableHead>
-                  <TableHead className="text-right">Change</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>By</TableHead>
-                  {isAdmin && <TableHead />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Commodity</TableHead>
+                      <TableHead className="text-right">Before</TableHead>
+                      <TableHead className="text-right">After</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>By</TableHead>
+                      {isAdmin && <TableHead />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adjustments.map((a) => {
+                      const diff = a.new_weight - a.previous_weight;
+                      return (
+                        <TableRow key={a.id}>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {new Date(a.created_at).toLocaleDateString()}{" "}
+                            {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </TableCell>
+                          <TableCell className="font-medium">{a.commodity}</TableCell>
+                          <TableCell className="text-right font-mono text-muted-foreground">{a.previous_weight.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono">{a.new_weight.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            <Badge variant={diff > 0 ? "default" : diff < 0 ? "destructive" : "secondary"} className="font-mono">
+                              {diff > 0 ? "+" : ""}{diff.toLocaleString()} kg
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm max-w-[200px] truncate" title={a.reason}>{a.reason}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{a.adjuster_name}</TableCell>
+                          {isAdmin && (
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteAdjustment(a.id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile card layout */}
+              <div className="md:hidden space-y-3">
                 {adjustments.map((a) => {
                   const diff = a.new_weight - a.previous_weight;
                   return (
-                    <TableRow key={a.id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {new Date(a.created_at).toLocaleDateString()}{" "}
-                        {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </TableCell>
-                      <TableCell className="font-medium">{a.commodity}</TableCell>
-                      <TableCell className="text-right font-mono text-muted-foreground">{a.previous_weight.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-mono">{a.new_weight.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        <Badge variant={diff > 0 ? "default" : diff < 0 ? "destructive" : "secondary"} className="font-mono">
+                    <div key={a.id} className="border border-border rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-sm">{a.commodity}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(a.created_at).toLocaleDateString()}{" "}
+                            {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <Badge variant={diff > 0 ? "default" : diff < 0 ? "destructive" : "secondary"} className="font-mono text-xs">
                           {diff > 0 ? "+" : ""}{diff.toLocaleString()} kg
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm max-w-[200px] truncate" title={a.reason}>{a.reason}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.adjuster_name}</TableCell>
-                      {isAdmin && (
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteAdjustment(a.id)}>
-                            <Trash2 className="w-4 h-4" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div><span className="text-muted-foreground">Before:</span> <span className="font-mono">{a.previous_weight.toLocaleString()}</span></div>
+                        <div><span className="text-muted-foreground">After:</span> <span className="font-mono">{a.new_weight.toLocaleString()}</span></div>
+                      </div>
+                      {a.reason && <p className="text-xs text-muted-foreground">Reason: {a.reason}</p>}
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">By: {a.adjuster_name}</p>
+                        {isAdmin && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteAdjustment(a.id)}>
+                            <Trash2 className="w-3 h-3" />
                           </Button>
-                        </TableCell>
-                      )}
-                    </TableRow>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

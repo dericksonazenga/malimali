@@ -9,8 +9,7 @@ const ALL_ROLES = ["admin", "accountant", "data_manager", "human_resource", "cas
 const ALL_PERMISSIONS = [
   { key: "update_rates", label: "Update Rates" },
   { key: "delete_entries", label: "Delete All Entries" },
-  { key: "delete_agent_entries", label: "Delete Agent Entries" },
-  { key: "delete_vip_entries", label: "Delete VIP Entries" },
+  { key: "delete_agent_vip_entries", label: "Delete Agent & VIP Entries" },
   { key: "delete_sales_entries", label: "Delete Sales Entries" },
   { key: "delete_expenses", label: "Delete Expenses" },
   { key: "delete_rates", label: "Delete Rate History" },
@@ -57,14 +56,12 @@ const PermissionsManager = () => {
   const toggleAll = async (role: string) => {
     const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
     if (allSelected) {
-      // Remove all
       for (const perm of ALL_PERMISSIONS) {
         if (matrix[role]?.has(perm.key)) {
           await supabase.from("role_permissions").delete().eq("role", role).eq("permission", perm.key);
         }
       }
     } else {
-      // Add missing
       for (const perm of ALL_PERMISSIONS) {
         if (!matrix[role]?.has(perm.key)) {
           await supabase.from("role_permissions").insert({ role, permission: perm.key });
@@ -80,7 +77,6 @@ const PermissionsManager = () => {
   };
 
   const toggle = async (role: string, permission: string) => {
-
     const has = matrix[role]?.has(permission);
     if (has) {
       const { error } = await supabase
@@ -124,9 +120,9 @@ const PermissionsManager = () => {
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b">
-              <th className="text-left py-3 pr-4 font-semibold text-muted-foreground">Permission</th>
+              <th className="text-left py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20 min-w-[160px]">Permission</th>
               {ALL_ROLES.map((role) => (
                 <th key={role} className="text-center py-3 px-2 font-semibold text-muted-foreground whitespace-nowrap">
                   {ROLE_LABELS[role]}
@@ -137,7 +133,7 @@ const PermissionsManager = () => {
           <tbody>
             {ALL_PERMISSIONS.map((perm) => (
               <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                <td className="py-3 pr-4 font-medium">{perm.label}</td>
+                <td className="py-3 pr-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
                 {ALL_ROLES.map((role) => (
                   <td key={role} className="text-center py-3 px-2">
                     <Switch
@@ -149,8 +145,8 @@ const PermissionsManager = () => {
                 ))}
               </tr>
             ))}
-            <tr className="border-t-2 border-border">
-              <td className="py-3 pr-4 font-semibold text-muted-foreground">Select All</td>
+            <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
+              <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
               {ALL_ROLES.map((role) => {
                 const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
                 return (
