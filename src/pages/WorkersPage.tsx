@@ -133,6 +133,7 @@ const WorkersPage = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Contact</TableHead>
