@@ -207,10 +207,11 @@ const AdminPage = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="boss">Boss (Default)</SelectItem>
-                  <SelectItem value="accountant">Accountant</SelectItem>
-                  <SelectItem value="data_manager">Data Manager</SelectItem>
-                  <SelectItem value="human_resource">Human Resource</SelectItem>
-                  <SelectItem value="cashier">Cashier</SelectItem>
+                   <SelectItem value="accountant">Accountant</SelectItem>
+                   <SelectItem value="data_manager">Data Manager</SelectItem>
+                   <SelectItem value="human_resource">Human Resource</SelectItem>
+                   <SelectItem value="cashier">Cashier</SelectItem>
+                   {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Only Admin can assign the Admin role after recruitment.</p>
