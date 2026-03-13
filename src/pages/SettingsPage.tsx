@@ -3,12 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Settings } from "lucide-react";
-import PermissionsManager from "@/components/PermissionsManager";
-import { useAuth } from "@/contexts/AuthContext";
 
 const SettingsPage = () => {
   const { currency, symbol, setCurrencyCode } = useCurrency();
-  const { user } = useAuth();
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -39,8 +36,6 @@ const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
-
-      {user?.role === "admin" && <PermissionsManager />}
     </div>
   );
 };
