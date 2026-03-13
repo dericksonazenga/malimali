@@ -391,18 +391,40 @@ const AdminPage = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          {editingId === p.id ? (
-                            <div className="flex gap-1">
-                              <Button size="sm" onClick={() => saveRole(p.id)} className="gap-1">
-                                <Save className="w-3 h-3" /> Save
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
-                            </div>
-                          ) : (
-                            <Button variant="outline" size="sm" onClick={() => startEdit(p)}>
-                              Change Role
-                            </Button>
-                          )}
+                          <div className="flex gap-1">
+                            {editingId === p.id ? (
+                              <>
+                                <Button size="sm" onClick={() => saveRole(p.id)} className="gap-1">
+                                  <Save className="w-3 h-3" /> Save
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button variant="outline" size="sm" onClick={() => startEdit(p)}>
+                                  Change Role
+                                </Button>
+                                {p.user_id !== user?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={async () => {
+                                      if (!confirm(`Remove "${p.display_name}" from the system? This deletes their profile, recruited record, and worker entry.`)) return;
+                                      const { error } = await supabase.from("profiles").delete().eq("id", p.id);
+                                      if (error) { toast.error("Failed to delete profile"); return; }
+                                      await supabase.from("recruited_workers").delete().ilike("name", p.display_name);
+                                      await supabase.from("workers").delete().ilike("name", p.display_name);
+                                      toast.success(`${p.display_name} removed`);
+                                      fetchProfiles();
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
