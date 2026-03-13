@@ -203,9 +203,20 @@ const LoginPage = () => {
           </Button>
 
           {mode === "signup" && (
-            <p className="text-xs text-muted-foreground text-center">
-              Only pre-registered workers can sign up. Your role is assigned by your admin.
-            </p>
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-center space-y-1">
+              <p className="text-sm font-medium text-primary">🎉 Pre-registered workers only</p>
+              <p className="text-xs text-muted-foreground">
+                If your admin has added your email, you can create your account here. Your role and permissions are already set.
+              </p>
+            </div>
+          )}
+
+          {mode === "login" && (
+            <div className="bg-accent/50 border border-border rounded-lg p-3 text-center">
+              <p className="text-xs text-muted-foreground">
+                 Been pre-registered by your admin? <button type="button" onClick={() => { setMode("signup"); setError(""); }} className="text-primary font-medium hover:underline">Create your account →</button>
+              </p>
+            </div>
           )}
 
           <div className="text-center space-y-2">
