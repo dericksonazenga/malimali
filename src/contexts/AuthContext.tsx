@@ -67,11 +67,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    let currentUserId: string | null = null;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Use setTimeout to avoid potential deadlock with Supabase client
+        currentUserId = session.user.id;
         setTimeout(() => fetchProfile(session.user), 0);
       } else {
+        currentUserId = null;
         setUser(null);
       }
       setLoading(false);
@@ -79,13 +82,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        currentUserId = session.user.id;
         fetchProfile(session.user);
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Realtime listener for profile changes (e.g. role updated by admin)
+    const channel = supabase
+      .channel("auth-profile-sync")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, async (payload) => {
+        if (currentUserId && payload.new && (payload.new as any).user_id === currentUserId) {
+          const session = (await supabase.auth.getSession()).data.session;
+          if (session?.user) {
+            fetchProfile(session.user);
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
