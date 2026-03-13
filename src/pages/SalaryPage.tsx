@@ -196,16 +196,18 @@ const SalaryPage = () => {
                         <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {editingSalaryId === w.id ? (
+                        {canEdit && editingSalaryId === w.id ? (
                           <div className="flex items-center gap-1 justify-end">
                             <Input type="number" className="w-24 h-8 text-sm" value={editSalaryValue} onChange={e => setEditSalaryValue(e.target.value)} autoFocus />
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => saveSalary(w.id)}><Check className="w-3 h-3 text-success" /></Button>
                             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingSalaryId(null)}><X className="w-3 h-3 text-destructive" /></Button>
                           </div>
-                        ) : (
+                        ) : canEdit ? (
                           <span className="cursor-pointer hover:underline flex items-center gap-1 justify-end" onClick={() => { setEditingSalaryId(w.id); setEditSalaryValue(String(w.salary)); }}>
                             {symbol}{w.salary.toLocaleString()} <Pencil className="w-3 h-3 text-muted-foreground" />
                           </span>
+                        ) : (
+                          <span>{symbol}{w.salary.toLocaleString()}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-success">{symbol}{w.paid.toLocaleString()}</TableCell>
