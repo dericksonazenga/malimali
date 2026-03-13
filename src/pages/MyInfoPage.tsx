@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Banknote, ClipboardList, Clock, CalendarDays, CheckCircle, UserCircle, MessageSquare, Mail, Phone, IdCard } from "lucide-react";
+import { Banknote, ClipboardList, Clock, CalendarDays, CheckCircle, UserCircle, MessageSquare, Mail, Phone, IdCard, Camera, Loader2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface SalaryInfo {
   salary: number;
