@@ -43,7 +43,10 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const filteredNav = navItems.filter(
-    (item) => !item.permission || hasPermission(item.permission)
+    (item) => {
+      if (item.permission === "__admin_only__") return user?.role === "admin";
+      return !item.permission || hasPermission(item.permission);
+    }
   );
 
   const isHome = location.pathname === "/";
