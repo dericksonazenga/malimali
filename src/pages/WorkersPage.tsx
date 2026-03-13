@@ -17,6 +17,7 @@ interface WorkerRow {
   email?: string | null;
   phone?: string | null;
   identification_number?: string | null;
+  avatar_url?: string | null;
 }
 
 const WorkersPage = () => {
