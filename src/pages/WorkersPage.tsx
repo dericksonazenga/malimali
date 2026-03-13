@@ -212,9 +212,18 @@ const WorkersPage = () => {
                 {workers.map((w) => (
                   <div key={w.id} className="border border-border rounded-lg p-3 space-y-2">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{w.name}</p>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0 overflow-hidden">
+                          {w.avatar_url ? (
+                            <img src={w.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            w.name.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{w.name}</p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         {canEdit && (
