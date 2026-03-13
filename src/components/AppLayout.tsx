@@ -19,7 +19,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" /> },
-  { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "manage_workers" },
+  { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "__admin_only__" },
   { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_reports" },
   { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" /> },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
@@ -43,7 +43,10 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const filteredNav = navItems.filter(
-    (item) => !item.permission || hasPermission(item.permission)
+    (item) => {
+      if (item.permission === "__admin_only__") return user?.role === "admin";
+      return !item.permission || hasPermission(item.permission);
+    }
   );
 
   const isHome = location.pathname === "/";
