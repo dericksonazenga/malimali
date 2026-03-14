@@ -212,6 +212,20 @@ const DebtManagementPage = () => {
 
   const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
 
+  // Parse deduction amount from description for Money Out debts
+  const parseDeductionAmount = (description: string): number => {
+    const match = description.match(/Deductions:[^|]*\|/);
+    if (!match) return 0;
+    const deductionText = match[0];
+    // Extract amounts from deduction items like "Fee: KSh1,000, Tax: KSh200"
+    const amounts = deductionText.match(/:\s*[^\s:,]+/g);
+    if (!amounts) return 0;
+    return amounts.reduce((sum, amt) => {
+      const num = parseFloat(amt.replace(/[:\s,]/g, "").replace(/[^\d.]/g, ""));
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+  };
+
   const getStatusBadge = (status: string) => {
     if (status === "paid") return <Badge variant="default" className="text-xs">Paid</Badge>;
     if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30">Money Out</Badge>;
@@ -277,7 +291,9 @@ const DebtManagementPage = () => {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Gross Amount</TableHead>
+                  <TableHead className="text-right">Deducted Fee</TableHead>
+                  <TableHead className="text-right">Net Amount</TableHead>
                   <TableHead className="text-right">Paid</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
                   <TableHead>Type</TableHead>
@@ -285,37 +301,55 @@ const DebtManagementPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.customer_name}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-[150px] truncate">{d.description}</TableCell>
-                    <TableCell className="text-right font-mono">{symbol}{d.total_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono text-success">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</TableCell>
-                    <TableCell>{getStatusBadge(d.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        {d.status !== "paid" && canEdit && (
-                          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>
-                            Pay
-                          </Button>
-                        )}
-                        {canEdit && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}>
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {canEdit && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map(d => {
+                  const isMoneyOut = d.status === "money_out";
+                  const deductionAmount = isMoneyOut ? parseDeductionAmount(d.description) : 0;
+                  const grossAmount = isMoneyOut ? d.total_amount + deductionAmount : d.total_amount;
+
+                  return (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.customer_name}</TableCell>
+                      <TableCell className="text-muted-foreground max-w-[150px] truncate" title={d.description}>
+                        {isMoneyOut && deductionAmount > 0
+                          ? d.description.split(" | ")[0] || d.description
+                          : d.description}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {isMoneyOut ? symbol + grossAmount.toLocaleString() : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-destructive">
+                        {isMoneyOut && deductionAmount > 0 ? "-" + symbol + deductionAmount.toLocaleString() : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-semibold">
+                        {symbol}{d.total_amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-success">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</TableCell>
+                      <TableCell>{getStatusBadge(d.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          {d.status !== "paid" && canEdit && (
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>
+                              Pay
+                            </Button>
+                          )}
+                          {canEdit && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}>
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {canEdit && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No debts found</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No debts found</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -402,8 +436,13 @@ const DebtManagementPage = () => {
       <Dialog open={!!payDebt} onOpenChange={() => setPayDebt(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Payment for {payDebt?.customer_name}</DialogTitle>
-            <DialogDescription>Balance: {symbol}{payDebt?.balance.toLocaleString()}</DialogDescription>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-sm text-muted-foreground">Balance</span>
+                <span className="font-semibold">{symbol}{payDebt?.balance.toLocaleString()}</span>
+              </div>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1"><Label>Amount ({symbol})</Label><Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="0" /></div>
@@ -412,15 +451,12 @@ const DebtManagementPage = () => {
           </div>
           {payments.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm font-semibold mb-2">Payment History</p>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <h4 className="text-sm font-semibold mb-2">Payment History</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
                 {payments.map(p => (
                   <div key={p.id} className="flex items-center justify-between p-2 bg-accent rounded text-sm">
-                    <div>
-                      <span className="font-mono font-semibold text-success">{symbol}{p.amount.toLocaleString()}</span>
-                      {p.notes && <span className="text-muted-foreground ml-2">— {p.notes}</span>}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</span>
+                    <span>{new Date(p.created_at).toLocaleDateString()}</span>
+                    <span className="font-mono font-semibold">{symbol}{p.amount.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
