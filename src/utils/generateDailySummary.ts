@@ -4,13 +4,12 @@ export const generateDailySummary = async () => {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch today's data in parallel
-  const [agentRes, vipRes, salesRes, expensesRes, workersRes, commoditiesRes] = await Promise.all([
+  const [agentRes, vipRes, salesRes, expensesRes, workersRes] = await Promise.all([
     supabase.from("agent_entries").select("*").eq("date", today),
     supabase.from("vip_entries").select("*").eq("date", today),
     supabase.from("sales_entries").select("*").eq("date", today),
     supabase.from("expenses").select("*").eq("date", today),
     supabase.from("workers").select("*"),
-    supabase.from("commodities").select("*"),
   ]);
 
   const agentEntries = agentRes.data || [];
