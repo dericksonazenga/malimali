@@ -141,12 +141,26 @@ export function useAnalyticsData(range: DateRangeValue) {
 
     const totalPurchases = agentTotal + vipTotal;
 
-    // Build a map of current agent rates from commodities table
-    const commodityRows = commodities.data || [];
-    const agentRateMap: Record<string, number> = {};
-    commodityRows.forEach((c: any) => { agentRateMap[c.name] = Number(c.agent_rate || 0); });
+    // Build average buying price per commodity from actual agent + VIP entries
+    const buyAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
+    const ensureBuy = (c: string) => { if (!buyAgg[c]) buyAgg[c] = { totalWeight: 0, totalAmount: 0 }; };
+    agentRows.forEach((e: any) => {
+      ensureBuy(e.commodity);
+      buyAgg[e.commodity].totalWeight += Number(e.actual_weight);
+      buyAgg[e.commodity].totalAmount += Number(e.amount);
+    });
+    vipRows.forEach((e: any) => {
+      ensureBuy(e.commodity);
+      buyAgg[e.commodity].totalWeight += Number(e.actual_weight);
+      buyAgg[e.commodity].totalAmount += Number(e.amount);
+    });
+    // Average buying rate per commodity
+    const avgBuyRateMap: Record<string, number> = {};
+    Object.entries(buyAgg).forEach(([c, v]) => {
+      avgBuyRateMap[c] = v.totalWeight > 0 ? v.totalAmount / v.totalWeight : 0;
+    });
 
-    // Gross profit = for each sale, (sale_rate - current_agent_rate) × weight
+    // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
     // For exchanges (no rate/weight), just count the exchange fee as revenue
     let grossProfit = 0;
     salesRows.forEach((e: any) => {
@@ -158,8 +172,8 @@ export function useAnalyticsData(range: DateRangeValue) {
       if (e.is_exchange || !commodity || saleWeight === 0) {
         grossProfit += saleAmount;
       } else {
-        const agentRate = agentRateMap[commodity] || 0;
-        grossProfit += (saleRate - agentRate) * saleWeight;
+        const buyRate = avgBuyRateMap[commodity] || 0;
+        grossProfit += (saleRate - buyRate) * saleWeight;
       }
     });
 
