@@ -212,6 +212,19 @@ const DebtManagementPage = () => {
 
   const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
 
+  // Parse deduction amount from description for Money Out debts
+  const parseDeductionAmount = (description: string): number => {
+    const match = description.match(/Deductions:[^|]*\|/);
+    if (!match) return 0;
+    const deductionText = match[0];
+    const amounts = deductionText.match(/:\s*[^\s:,]+/g);
+    if (!amounts) return 0;
+    return amounts.reduce((sum, amt) => {
+      const num = parseFloat(amt.replace(/[:\s,]/g, "").replace(/[^\d.]/g, ""));
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+  };
+
   const getStatusBadge = (status: string) => {
     if (status === "paid") return <Badge variant="default" className="text-xs">Paid</Badge>;
     if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30">Money Out</Badge>;
