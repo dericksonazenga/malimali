@@ -116,7 +116,7 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/rates")}>
+        <Card className={cn("transition-all", hasPermission("update_rates") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("update_rates") ? () => navigate("/rates") : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
