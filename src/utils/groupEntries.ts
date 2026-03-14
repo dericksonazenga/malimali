@@ -10,7 +10,7 @@ export interface EntryGroup {
 export function groupEntriesByCustomer(entries: any[], weightKey = "actual_weight"): EntryGroup[] {
   const map = new Map<string, any[]>();
   entries.forEach((e: any) => {
-    const key = (e.customer_name || "Unknown").trim().toLowerCase();
+    const key = (e.customer_name || "").trim().toLowerCase() || "unknown";
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(e);
   });
