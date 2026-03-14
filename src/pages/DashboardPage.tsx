@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
-  <Card className="animate-fade-in cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={onClick}>
+  <Card className={cn("animate-fade-in transition-all", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
     <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div>
@@ -24,7 +25,7 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
 );
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
@@ -84,14 +85,14 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={() => navigate("/data-entry?tab=agent")} />
-        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={() => navigate("/data-entry?tab=vip")} />
-        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={() => navigate("/data-entry?tab=sales")} />
-        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={() => navigate("/expenses")} />
+        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
+        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
+        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
+        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/inventory")}>
+        <Card className={cn("transition-all", hasPermission("manage_inventory") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("manage_inventory") ? () => navigate("/inventory") : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Inventory Overview</CardTitle>
           </CardHeader>
@@ -116,7 +117,7 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/rates")}>
+        <Card className={cn("transition-all", hasPermission("update_rates") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("update_rates") ? () => navigate("/rates") : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
