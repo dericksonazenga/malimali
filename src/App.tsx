@@ -73,8 +73,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <CommodityProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <CommodityProvider>
           <CurrencyProvider>
             <InventoryProvider>
               <EndOfDayProvider>
@@ -88,8 +88,8 @@ const App = () => (
               </EndOfDayProvider>
             </InventoryProvider>
           </CurrencyProvider>
-        </AuthProvider>
-      </CommodityProvider>
+        </CommodityProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
