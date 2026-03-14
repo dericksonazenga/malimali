@@ -101,6 +101,16 @@ const RatesPage = () => {
             </div>
           )}
           <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Loading commodities...</span>
+              </div>
+            ) : commodities.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p className="text-sm">No commodities found. Add one above or check your connection.</p>
+              </div>
+            ) : (
             <Table>
               <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent Rate ({symbol}/kg)</TableHead><TableHead className="text-right">VIP Rate ({symbol}/kg)</TableHead><TableHead className="text-right">Sales Rate ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
               <TableBody>
@@ -126,6 +136,7 @@ const RatesPage = () => {
                 ))}
               </TableBody>
             </Table>
+            )}
           </div>
         </CardContent>
       </Card>
