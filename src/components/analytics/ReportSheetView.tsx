@@ -204,41 +204,64 @@ const ReportSheetView = ({
               )}
             </TabsContent>
 
-            {/* Sales Entries */}
+            {/* Sales Entries - Grouped */}
             <TabsContent value="sales" className="p-4 m-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Commodity</TableHead>
-                    <TableHead className="text-right">Weight (kg)</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Exchange</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSales.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
-                  )}
-                  {filteredSales.map((e: any) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.customer_name || "—"}</TableCell>
-                      <TableCell>{e.commodity || "Exchange"}</TableCell>
-                      <TableCell className="text-right font-mono">{fmt(Number(e.weight))}</TableCell>
-                      <TableCell className="text-right font-mono">{e.rate ? `${symbol}${fmt(Number(e.rate))}` : "—"}</TableCell>
-                      <TableCell className="text-right font-mono text-success">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "—"}</TableCell>
-                      <TableCell>{e.is_exchange ? "Yes" : "No"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {filteredSales.length > 0 && (
-                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
-                  <span>Total: <span className="font-mono text-success">{symbol}{fmt(salesTotal)}</span></span>
-                </div>
+              {salesGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
+              ) : (
+                <>
+                  <Accordion type="multiple" className="w-full">
+                    {salesGroups.map((g) => (
+                      <AccordionItem key={g.customerName || "no-name"} value={g.customerName || "no-name"}>
+                        <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="font-medium truncate">{g.customerName || "No Name"}</span>
+                            <Badge variant="secondary" className="text-[10px] h-5">{g.count} entries</Badge>
+                            <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                            <span className="ml-auto font-mono text-success whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Commodity</TableHead>
+                                <TableHead className="text-right">Weight (kg)</TableHead>
+                                <TableHead className="text-right">Rate</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead>Exchange</TableHead>
+                                <TableHead>Date</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {g.entries.map((e: any) => (
+                                <TableRow key={e.id}>
+                                  <TableCell>{e.commodity || "Exchange"}</TableCell>
+                                  <TableCell className="text-right font-mono">{fmt(Number(e.weight))}</TableCell>
+                                  <TableCell className="text-right font-mono">{e.rate ? `${symbol}${fmt(Number(e.rate))}` : "—"}</TableCell>
+                                  <TableCell className="text-right font-mono text-success">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "—"}</TableCell>
+                                  <TableCell>{e.is_exchange ? "Yes" : "No"}</TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                                </TableRow>
+                              ))}
+                              <TableRow className="font-bold bg-muted/50">
+                                <TableCell>Subtotal</TableCell>
+                                <TableCell className="text-right font-mono">{fmt(g.totalWeight)}</TableCell>
+                                <TableCell></TableCell>
+                                <TableCell className="text-right font-mono text-success">{symbol}{fmt(g.totalAmount)}</TableCell>
+                                <TableCell></TableCell>
+                                <TableCell></TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                  <div className="flex justify-end mt-3 pt-2 border-t border-border text-sm font-bold">
+                    <span>Grand Total: <span className="font-mono text-success">{symbol}{fmt(salesTotal)}</span></span>
+                  </div>
+                </>
               )}
             </TabsContent>
 

@@ -146,18 +146,37 @@ const FinancialReportPage = () => {
     buildGroupedSheet(agentEntries, "Agent Entries");
     buildGroupedSheet(vipEntries, "VIP Entries");
 
-    // Sales Entries sheet
-    const salesRows2 = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
-    const salesData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ...salesRows2,
-      [],
-      ["TOTAL", "", salesRows2.reduce((s, r) => s + Number(r[2]), 0), "", salesRows2.reduce((s, r) => s + Number(r[4]), 0), "", ""],
-    ];
-    const salesWs = XLSX.utils.aoa_to_sheet(salesData);
-    autoFitColumns(salesWs, salesData);
-    styleSheet(salesWs, 1, salesData.length - 1, 7);
-    XLSX.utils.book_append_sheet(wb, salesWs, "Sales Entries");
+    // Sales Entries sheet - grouped by customer
+    {
+      const salesGroups = groupEntriesByCustomer(salesEntries, "weight");
+      const aoa: any[][] = [
+        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
+      ];
+      salesGroups.forEach(g => {
+        g.entries.forEach((e: any) => {
+          aoa.push([e.customer_name || "", e.commodity || "", Number(e.weight), e.rate ? Number(e.rate) : "", Number(e.amount || 0), e.is_exchange ? "Yes" : "No", e.date]);
+        });
+        aoa.push([`${g.customerName || "No Name"} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, "", ""]);
+        aoa.push([]);
+      });
+      const grandWeight = salesEntries.reduce((s: number, e: any) => s + Number(e.weight || 0), 0);
+      const grandAmount = salesEntries.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      autoFitColumns(ws, aoa);
+      styleSheet(ws, 1, aoa.length - 1, 7);
+      let rowIdx = 1;
+      salesGroups.forEach(g => {
+        rowIdx += g.entries.length;
+        for (let c = 0; c < 7; c++) {
+          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
+          if (ws[addr]) ws[addr].s = { font: { bold: true } };
+        }
+        rowIdx += 2;
+      });
+      XLSX.utils.book_append_sheet(wb, ws, "Sales Entries");
+    }
 
     // Expenses sheet
     const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
