@@ -93,7 +93,24 @@ const VipEntryPage = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center justify-between"><span>VIP Entries</span><span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>VIP Entries</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh entries"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+              <span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto">
           {(() => {
             const grouped = entries.reduce((acc, entry) => {
