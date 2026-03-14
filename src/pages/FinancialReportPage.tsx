@@ -445,22 +445,37 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Sales Entries */}
+        {/* Sales Entries - Grouped */}
         <AnalyticsSection
           title={`Sales Entries (${salesEntries.length})`}
           icon={<TrendingUp className="w-4 h-4 text-success" />}
           csvRows={salesCSV()}
           csvFilename={`${filePrefix}_Sales.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {salesEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {salesEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name || "—"} · {e.commodity || "Exchange"} · {e.weight}kg</span>
-                <span className="font-mono text-success whitespace-nowrap">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "Exchange"}</span>
-              </div>
-            ))}
-            {salesEntries.length > 50 && <p className="text-xs text-muted-foreground">+{salesEntries.length - 50} more</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(salesEntries, "weight").map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName || "No Name"}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-success whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity || "Exchange"} · {e.weight}kg {e.rate ? `@ ${symbol}${fmt(Number(e.rate))}` : ""}</span>
+                        <span className="font-mono text-success whitespace-nowrap">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "Exchange"}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(salesTotal)}</span>
