@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
-  <Card className="animate-fade-in cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={onClick}>
+  <Card className={cn("animate-fade-in transition-all", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
     <CardContent className="p-5">
       <div className="flex items-start justify-between">
         <div>
