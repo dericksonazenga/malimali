@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { ShoppingCart, Trash2, ArrowLeftRight } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -20,7 +20,7 @@ const SalesEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
-  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll } = useInventory();
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll, refresh } = useInventory();
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
@@ -31,6 +31,14 @@ const SalesEntryPage = () => {
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
   const [exchangeFee, setExchangeFee] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+    toast.success("Entries refreshed");
+  };
 
   useEffect(() => {
     if (resetSignal === 0) return;
@@ -144,7 +152,24 @@ const SalesEntryPage = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center justify-between"><span>Sales Entries</span><span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Sales Entries</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh entries"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+              <span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader><TableRow>

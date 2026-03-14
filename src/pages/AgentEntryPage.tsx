@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, RefreshCw } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,12 +21,20 @@ const AgentEntryPage = () => {
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
-  const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll } = useInventory();
+  const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
   const [containerWeight, setContainerWeight] = useState("");
   const [rateOverride, setRateOverride] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+    toast.success("Entries refreshed");
+  };
 
   useEffect(() => {
     if (resetSignal === 0) return;
@@ -97,7 +105,24 @@ const AgentEntryPage = () => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center justify-between"><span>Recent Agent Entries</span><span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Recent Agent Entries</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh entries"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+              </Button>
+              <span className="text-primary font-mono">Total: {symbol}{totalAmount.toLocaleString()}</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto">
           {(() => {
             const grouped = entries.reduce((acc, entry) => {

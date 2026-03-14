@@ -15,6 +15,7 @@ interface InventoryContextType {
   removeVipEntry: (id: string) => Promise<void>;
   removeSalesEntry: (id: string) => Promise<void>;
   clearAll: () => void;
+  refresh: () => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | null>(null);
@@ -234,7 +235,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [agentEntries, vipEntries, salesEntries, persistentStock, fetchPersistentStock]);
 
   return (
-    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll }}>
+    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll, refresh: fetchToday }}>
       {children}
     </InventoryContext.Provider>
   );
