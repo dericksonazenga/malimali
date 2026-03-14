@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
   BarChart3, Package, Users, Receipt, Loader2
@@ -8,11 +9,13 @@ import {
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
+import { groupEntriesByCustomer } from "@/utils/groupEntries";
 import * as XLSX from "xlsx";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
 import ReportSheetView from "@/components/analytics/ReportSheetView";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
