@@ -19,8 +19,8 @@ import { toast } from "sonner";
 const SalesEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { resetSignal, refresh } = useEndOfDay();
-  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll } = useInventory();
+  const { resetSignal } = useEndOfDay();
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll, refresh } = useInventory();
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");

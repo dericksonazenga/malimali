@@ -20,8 +20,8 @@ const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { resetSignal, refresh } = useEndOfDay();
-  const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll } = useInventory();
+  const { resetSignal } = useEndOfDay();
+  const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
   const [grossWeight, setGrossWeight] = useState("");

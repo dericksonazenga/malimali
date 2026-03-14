@@ -20,8 +20,8 @@ const VipEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { resetSignal, refresh } = useEndOfDay();
-  const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll } = useInventory();
+  const { resetSignal } = useEndOfDay();
+  const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
   const [grossWeight, setGrossWeight] = useState("");
