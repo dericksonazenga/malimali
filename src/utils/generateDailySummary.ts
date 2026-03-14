@@ -58,7 +58,7 @@ export const generateDailySummary = async () => {
     }
   });
 
-  const netProfit = grossProfit - totalExpenses - salaryPaid;
+  const netProfit = grossProfit - totalExpenses;
 
   // Stock changes: commodity -> { in, out }
   const stockChanges: Record<string, { in: number; out: number }> = {};
