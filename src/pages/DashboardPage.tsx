@@ -91,7 +91,7 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all" onClick={() => navigate("/inventory")}>
+        <Card className={cn("transition-all", hasPermission("manage_inventory") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("manage_inventory") ? () => navigate("/inventory") : undefined}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Inventory Overview</CardTitle>
           </CardHeader>
