@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
