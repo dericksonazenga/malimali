@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
