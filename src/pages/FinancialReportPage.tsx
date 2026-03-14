@@ -146,18 +146,37 @@ const FinancialReportPage = () => {
     buildGroupedSheet(agentEntries, "Agent Entries");
     buildGroupedSheet(vipEntries, "VIP Entries");
 
-    // Sales Entries sheet
-    const salesRows2 = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
-    const salesData = [
-      ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ...salesRows2,
-      [],
-      ["TOTAL", "", salesRows2.reduce((s, r) => s + Number(r[2]), 0), "", salesRows2.reduce((s, r) => s + Number(r[4]), 0), "", ""],
-    ];
-    const salesWs = XLSX.utils.aoa_to_sheet(salesData);
-    autoFitColumns(salesWs, salesData);
-    styleSheet(salesWs, 1, salesData.length - 1, 7);
-    XLSX.utils.book_append_sheet(wb, salesWs, "Sales Entries");
+    // Sales Entries sheet - grouped by customer
+    {
+      const salesGroups = groupEntriesByCustomer(salesEntries, "weight");
+      const aoa: any[][] = [
+        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
+      ];
+      salesGroups.forEach(g => {
+        g.entries.forEach((e: any) => {
+          aoa.push([e.customer_name || "", e.commodity || "", Number(e.weight), e.rate ? Number(e.rate) : "", Number(e.amount || 0), e.is_exchange ? "Yes" : "No", e.date]);
+        });
+        aoa.push([`${g.customerName || "No Name"} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, "", ""]);
+        aoa.push([]);
+      });
+      const grandWeight = salesEntries.reduce((s: number, e: any) => s + Number(e.weight || 0), 0);
+      const grandAmount = salesEntries.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      autoFitColumns(ws, aoa);
+      styleSheet(ws, 1, aoa.length - 1, 7);
+      let rowIdx = 1;
+      salesGroups.forEach(g => {
+        rowIdx += g.entries.length;
+        for (let c = 0; c < 7; c++) {
+          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
+          if (ws[addr]) ws[addr].s = { font: { bold: true } };
+        }
+        rowIdx += 2;
+      });
+      XLSX.utils.book_append_sheet(wb, ws, "Sales Entries");
+    }
 
     // Expenses sheet
     const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
@@ -445,22 +464,37 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Sales Entries */}
+        {/* Sales Entries - Grouped */}
         <AnalyticsSection
           title={`Sales Entries (${salesEntries.length})`}
           icon={<TrendingUp className="w-4 h-4 text-success" />}
           csvRows={salesCSV()}
           csvFilename={`${filePrefix}_Sales.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {salesEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {salesEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name || "—"} · {e.commodity || "Exchange"} · {e.weight}kg</span>
-                <span className="font-mono text-success whitespace-nowrap">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "Exchange"}</span>
-              </div>
-            ))}
-            {salesEntries.length > 50 && <p className="text-xs text-muted-foreground">+{salesEntries.length - 50} more</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(salesEntries, "weight").map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName || "No Name"}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-success whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity || "Exchange"} · {e.weight}kg {e.rate ? `@ ${symbol}${fmt(Number(e.rate))}` : ""}</span>
+                        <span className="font-mono text-success whitespace-nowrap">{e.amount ? `${symbol}${fmt(Number(e.amount))}` : "Exchange"}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(salesTotal)}</span>
