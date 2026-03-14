@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { ShoppingCart, Trash2, ArrowLeftRight } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -19,7 +19,7 @@ import { toast } from "sonner";
 const SalesEntryPage = () => {
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
+  const { resetSignal, refresh } = useEndOfDay();
   const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll } = useInventory();
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = useState("");
@@ -31,6 +31,14 @@ const SalesEntryPage = () => {
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
   const [exchangeFee, setExchangeFee] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+    toast.success("Entries refreshed");
+  };
 
   useEffect(() => {
     if (resetSignal === 0) return;
