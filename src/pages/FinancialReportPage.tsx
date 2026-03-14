@@ -45,16 +45,45 @@ const FinancialReportPage = () => {
     : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
-  // Helper to auto-fit column widths
+  // Helper to auto-fit column widths (snug, not too big)
   const autoFitColumns = (ws: XLSX.WorkSheet, data: any[][]) => {
+    if (!data.length || !data[0].length) return ws;
     const colWidths = data[0].map((_, colIdx) => {
       const maxLen = data.reduce((max, row) => {
         const cellValue = String(row[colIdx] ?? "");
         return Math.max(max, cellValue.length);
       }, 0);
-      return { wch: Math.min(Math.max(maxLen + 2, 10), 50) }; // min 10, max 50
+      return { wch: Math.min(Math.max(maxLen + 2, 8), 30) };
     });
     ws["!cols"] = colWidths;
+    return ws;
+  };
+
+  // Helper to style headers bold and freeze top row(s)
+  const styleSheet = (ws: XLSX.WorkSheet, headerRows: number = 1, totalRowIdx?: number, totalCols?: number) => {
+    // Freeze header rows
+    ws["!freeze"] = { xSplit: 0, ySplit: headerRows };
+    // Bold headers
+    for (let r = 0; r < headerRows; r++) {
+      const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (ws[addr]) {
+          if (!ws[addr].s) ws[addr].s = {};
+          ws[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: "4CAF50" } } };
+        }
+      }
+    }
+    // Bold total row
+    if (totalRowIdx !== undefined && totalCols) {
+      for (let c = 0; c < totalCols; c++) {
+        const addr = XLSX.utils.encode_cell({ r: totalRowIdx, c });
+        if (ws[addr]) {
+          if (!ws[addr].s) ws[addr].s = {};
+          ws[addr].s = { font: { bold: true } };
+        }
+      }
+    }
     return ws;
   };
 
