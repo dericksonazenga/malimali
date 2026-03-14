@@ -225,28 +225,69 @@ const FinancialReportPage = () => {
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    buildCommoditySheet(agentEntries, "Agent Entries");
-    buildCommoditySheet(vipEntries, "VIP Entries");
+    // Helper to build grouped-by-customer sheet for Agent/VIP
+    const buildGroupedSheet = (entries: any[], sheetName: string) => {
+      const groups = groupEntriesByCustomer(entries);
+      const aoa: any[][] = [
+        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
+      ];
+      groups.forEach(g => {
+        g.entries.forEach((e: any) => {
+          aoa.push([e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]);
+        });
+        // Subtotal row per customer
+        aoa.push([`${g.customerName} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, ""]);
+        aoa.push([]); // blank separator
+      });
+      // Grand total
+      const grandWeight = entries.reduce((s: number, e: any) => s + Number(e.actual_weight), 0);
+      const grandAmount = entries.reduce((s: number, e: any) => s + Number(e.amount), 0);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      autoFitColumns(ws, aoa);
+      styleSheet(ws, 1, aoa.length - 1, 6);
+      // Bold each subtotal row
+      let rowIdx = 1;
+      groups.forEach(g => {
+        rowIdx += g.entries.length;
+        for (let c = 0; c < 6; c++) {
+          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
+          if (ws[addr]) ws[addr].s = { font: { bold: true } };
+        }
+        rowIdx += 2; // subtotal + blank
+      });
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    };
+
+    buildGroupedSheet(agentEntries, "Agent Entries");
+    buildGroupedSheet(vipEntries, "VIP Entries");
 
     // Sales Entries sheet
-    const salesRows = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
+    const salesRows2 = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
     const salesData = [
       ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ...salesRows,
+      ...salesRows2,
       [],
-      ["TOTAL", "", salesRows.reduce((s, r) => s + Number(r[2]), 0), "", salesRows.reduce((s, r) => s + Number(r[4]), 0), "", ""],
+      ["TOTAL", "", salesRows2.reduce((s, r) => s + Number(r[2]), 0), "", salesRows2.reduce((s, r) => s + Number(r[4]), 0), "", ""],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(salesData), salesData), "Sales Entries");
+    const salesWs = XLSX.utils.aoa_to_sheet(salesData);
+    autoFitColumns(salesWs, salesData);
+    styleSheet(salesWs, 1, salesData.length - 1, 7);
+    XLSX.utils.book_append_sheet(wb, salesWs, "Sales Entries");
 
     // Expenses sheet
-    const expRows = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
+    const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
     const expData = [
       ["Category", "Amount", "Notes", "Date"],
-      ...expRows,
+      ...expRows2,
       [],
-      ["TOTAL", expRows.reduce((s, r) => s + Number(r[1]), 0), "", ""],
+      ["TOTAL", expRows2.reduce((s, r) => s + Number(r[1]), 0), "", ""],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(expData), expData), "Expenses");
+    const expWs = XLSX.utils.aoa_to_sheet(expData);
+    autoFitColumns(expWs, expData);
+    styleSheet(expWs, 1, expData.length - 1, 4);
+    XLSX.utils.book_append_sheet(wb, expWs, "Expenses");
 
     // Commodity Flow sheet
     const flowRows = Object.entries(commodityBreakdown).map(([c, v]) => [c, v.bought, v.sold, v.net]);
@@ -256,37 +297,53 @@ const FinancialReportPage = () => {
       [],
       ["TOTAL", flowRows.reduce((s, r) => s + Number(r[1]), 0), flowRows.reduce((s, r) => s + Number(r[2]), 0), flowRows.reduce((s, r) => s + Number(r[3]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(flowData), flowData), "Commodity Flow");
+    const flowWs = XLSX.utils.aoa_to_sheet(flowData);
+    autoFitColumns(flowWs, flowData);
+    styleSheet(flowWs, 1, flowData.length - 1, 4);
+    XLSX.utils.book_append_sheet(wb, flowWs, "Commodity Flow");
 
     // Current Stock sheet
-    const stockRows = stockData.map((s: any) => [s.commodity, s.weight]);
+    const stockRows2 = stockData.map((s: any) => [s.commodity, s.weight]);
     const stockSheetData = [
       ["Commodity", "Weight (kg)"],
-      ...stockRows,
+      ...stockRows2,
       [],
-      ["TOTAL", stockRows.reduce((s, r) => s + Number(r[1]), 0)],
+      ["TOTAL", stockRows2.reduce((s, r) => s + Number(r[1]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(stockSheetData), stockSheetData), "Current Stock");
+    const stockWs = XLSX.utils.aoa_to_sheet(stockSheetData);
+    autoFitColumns(stockWs, stockSheetData);
+    styleSheet(stockWs, 1, stockSheetData.length - 1, 2);
+    XLSX.utils.book_append_sheet(wb, stockWs, "Current Stock");
 
     // Payroll sheet
-    const payrollRows = workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]);
+    const payrollRows2 = workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]);
     const payrollData = [
       ["Worker", "Role", "Salary", "Paid", "Balance"],
-      ...payrollRows,
+      ...payrollRows2,
       [],
-      ["TOTAL", "", payrollRows.reduce((s, r) => s + Number(r[2]), 0), payrollRows.reduce((s, r) => s + Number(r[3]), 0), payrollRows.reduce((s, r) => s + Number(r[4]), 0)],
+      ["TOTAL", "", payrollRows2.reduce((s, r) => s + Number(r[2]), 0), payrollRows2.reduce((s, r) => s + Number(r[3]), 0), payrollRows2.reduce((s, r) => s + Number(r[4]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(payrollData), payrollData), "Payroll");
+    const payrollWs = XLSX.utils.aoa_to_sheet(payrollData);
+    autoFitColumns(payrollWs, payrollData);
+    styleSheet(payrollWs, 1, payrollData.length - 1, 5);
+    XLSX.utils.book_append_sheet(wb, payrollWs, "Payroll");
 
     // Commodity Profit sheet
-    const profitRows = commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]);
+    const profitRows2 = commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]);
     const profitData = [
       ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
-      ...profitRows,
+      ...profitRows2,
       [],
-      ["TOTAL", "", "", "", profitRows.reduce((s, r) => s + Number(r[4]), 0), profitRows.reduce((s, r) => s + Number(r[5]), 0)],
+      ["TOTAL", "", "", "", profitRows2.reduce((s, r) => s + Number(r[4]), 0), profitRows2.reduce((s, r) => s + Number(r[5]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(profitData), profitData), "Commodity Profit");
+    const profitWs = XLSX.utils.aoa_to_sheet(profitData);
+    autoFitColumns(profitWs, profitData);
+    styleSheet(profitWs, 1, profitData.length - 1, 6);
+    XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
+
+    // Style summary sheet too
+    const summaryWs = wb.Sheets["Summary"];
+    if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
 
     XLSX.writeFile(wb, `${filePrefix}_FullReport.xlsx`);
     toast.success("Full report downloaded!");
