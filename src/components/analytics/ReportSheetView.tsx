@@ -1,11 +1,14 @@
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Eye, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { groupEntriesByCustomer } from "@/utils/groupEntries";
 
 interface ReportSheetViewProps {
   symbol: string;
@@ -50,6 +53,57 @@ const ReportSheetView = ({
   const filteredStock = useMemo(() => q ? stockData.filter((s: any) => s.commodity.toLowerCase().includes(q)) : stockData, [q, stockData]);
   const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => c.toLowerCase().includes(q))) : commodityBreakdown, [q, commodityBreakdown]);
   const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => c.commodity.toLowerCase().includes(q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
+
+  const agentGroups = useMemo(() => groupEntriesByCustomer(filteredAgents), [filteredAgents]);
+  const vipGroups = useMemo(() => groupEntriesByCustomer(filteredVip), [filteredVip]);
+
+  const GroupedEntryTable = ({ groups, colorClass }: { groups: ReturnType<typeof groupEntriesByCustomer>; colorClass: string }) => (
+    <Accordion type="multiple" className="w-full">
+      {groups.map((g) => (
+        <AccordionItem key={g.customerName} value={g.customerName}>
+          <AccordionTrigger className="py-2 text-sm hover:no-underline">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="font-medium truncate">{g.customerName}</span>
+              <Badge variant="secondary" className="text-[10px] h-5">{g.count} entries</Badge>
+              <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+              <span className={`ml-auto font-mono ${colorClass} whitespace-nowrap`}>{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Commodity</TableHead>
+                  <TableHead className="text-right">Weight (kg)</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {g.entries.map((e: any) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{e.commodity}</TableCell>
+                    <TableCell className="text-right font-mono">{fmt(Number(e.actual_weight))}</TableCell>
+                    <TableCell className="text-right font-mono">{symbol}{fmt(Number(e.rate))}</TableCell>
+                    <TableCell className={`text-right font-mono ${colorClass}`}>{symbol}{fmt(Number(e.amount))}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell>Subtotal</TableCell>
+                  <TableCell className="text-right font-mono">{fmt(g.totalWeight)}</TableCell>
+                  <TableCell></TableCell>
+                  <TableCell className={`text-right font-mono ${colorClass}`}>{symbol}{fmt(g.totalAmount)}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+  );
 
   return (
     <Dialog>
@@ -107,12 +161,12 @@ const ReportSheetView = ({
                     { label: "Agent Purchases", value: agentTotal, color: "text-info" },
                     { label: "VIP Purchases", value: vipTotal, color: "text-info" },
                     { label: "Total Purchases", value: totalPurchases, color: "text-muted-foreground" },
-                    { label: "Gross Profit", value: grossProfit, color: grossProfit >= 0 ? "text-success" : "text-destructive" },
+                    { label: "Gross Profit", value: grossProfit, color: grossProfit >= 0 ? "text-success" : "text-destructive", bold: true },
                     { label: "Total Expenses", value: expenseTotal, color: "text-destructive" },
                     { label: "Salary Paid", value: salaryPaid, color: "text-destructive" },
-                    { label: "Net Profit", value: netProfit, color: netProfit >= 0 ? "text-success" : "text-destructive" },
-                  ].map(row => (
-                    <TableRow key={row.label}>
+                    { label: "Net Profit", value: netProfit, color: netProfit >= 0 ? "text-success" : "text-destructive", bold: true },
+                  ].map((row: any) => (
+                    <TableRow key={row.label} className={row.bold ? "font-bold" : ""}>
                       <TableCell className="font-medium">{row.label}</TableCell>
                       <TableCell className={`text-right font-mono ${row.color}`}>{symbol}{fmt(row.value)}</TableCell>
                     </TableRow>
@@ -121,75 +175,31 @@ const ReportSheetView = ({
               </Table>
             </TabsContent>
 
-            {/* Agent Entries */}
+            {/* Agent Entries - Grouped */}
             <TabsContent value="agents" className="p-4 m-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Commodity</TableHead>
-                    <TableHead className="text-right">Weight (kg)</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAgents.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
-                  )}
-                  {filteredAgents.map((e: any) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.customer_name}</TableCell>
-                      <TableCell>{e.commodity}</TableCell>
-                      <TableCell className="text-right font-mono">{fmt(Number(e.actual_weight))}</TableCell>
-                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(e.rate))}</TableCell>
-                      <TableCell className="text-right font-mono text-info">{symbol}{fmt(Number(e.amount))}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {filteredAgents.length > 0 && (
-                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
-                  <span>Total: <span className="font-mono">{symbol}{fmt(agentTotal)}</span></span>
-                </div>
+              {agentGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
+              ) : (
+                <>
+                  <GroupedEntryTable groups={agentGroups} colorClass="text-info" />
+                  <div className="flex justify-end mt-3 pt-2 border-t border-border text-sm font-bold">
+                    <span>Grand Total: <span className="font-mono text-info">{symbol}{fmt(agentTotal)}</span></span>
+                  </div>
+                </>
               )}
             </TabsContent>
 
-            {/* VIP Entries */}
+            {/* VIP Entries - Grouped */}
             <TabsContent value="vip" className="p-4 m-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Commodity</TableHead>
-                    <TableHead className="text-right">Weight (kg)</TableHead>
-                    <TableHead className="text-right">Rate</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredVip.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No entries</TableCell></TableRow>
-                  )}
-                  {filteredVip.map((e: any) => (
-                    <TableRow key={e.id}>
-                      <TableCell>{e.customer_name}</TableCell>
-                      <TableCell>{e.commodity}</TableCell>
-                      <TableCell className="text-right font-mono">{fmt(Number(e.actual_weight))}</TableCell>
-                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(e.rate))}</TableCell>
-                      <TableCell className="text-right font-mono text-primary">{symbol}{fmt(Number(e.amount))}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{e.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {filteredVip.length > 0 && (
-                <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
-                  <span>Total: <span className="font-mono">{symbol}{fmt(vipTotal)}</span></span>
-                </div>
+              {vipGroups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
+              ) : (
+                <>
+                  <GroupedEntryTable groups={vipGroups} colorClass="text-primary" />
+                  <div className="flex justify-end mt-3 pt-2 border-t border-border text-sm font-bold">
+                    <span>Grand Total: <span className="font-mono text-primary">{symbol}{fmt(vipTotal)}</span></span>
+                  </div>
+                </>
               )}
             </TabsContent>
 

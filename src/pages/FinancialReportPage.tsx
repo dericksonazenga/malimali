@@ -488,44 +488,74 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Agent Entries */}
+        {/* Agent Entries - Grouped */}
         <AnalyticsSection
           title={`Agent Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
           csvRows={agentCSV()}
           csvFilename={`${filePrefix}_Agents.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {agentEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {agentEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
-                <span className="font-mono text-info whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
-              </div>
-            ))}
-            {agentEntries.length > 50 && <p className="text-xs text-muted-foreground">+{agentEntries.length - 50} more (download for full list)</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(agentEntries).map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-info whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity} · {e.actual_weight}kg @ {symbol}{fmt(Number(e.rate))}</span>
+                        <span className="font-mono text-info whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(agentTotal)}</span>
           </div>
         </AnalyticsSection>
 
-        {/* VIP Entries */}
+        {/* VIP Entries - Grouped */}
         <AnalyticsSection
           title={`VIP Entries (${vipEntries.length})`}
           icon={<Users className="w-4 h-4 text-primary" />}
           csvRows={vipCSV()}
           csvFilename={`${filePrefix}_VIP.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {vipEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {vipEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
-                <span className="font-mono text-primary whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
-              </div>
-            ))}
-            {vipEntries.length > 50 && <p className="text-xs text-muted-foreground">+{vipEntries.length - 50} more</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(vipEntries).map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-primary whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity} · {e.actual_weight}kg @ {symbol}{fmt(Number(e.rate))}</span>
+                        <span className="font-mono text-primary whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(vipTotal)}</span>
