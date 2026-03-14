@@ -56,6 +56,7 @@ const ReportSheetView = ({
 
   const agentGroups = useMemo(() => groupEntriesByCustomer(filteredAgents), [filteredAgents]);
   const vipGroups = useMemo(() => groupEntriesByCustomer(filteredVip), [filteredVip]);
+  const salesGroups = useMemo(() => groupEntriesByCustomer(filteredSales, "weight"), [filteredSales]);
 
   const GroupedEntryTable = ({ groups, colorClass }: { groups: ReturnType<typeof groupEntriesByCustomer>; colorClass: string }) => (
     <Accordion type="multiple" className="w-full">
