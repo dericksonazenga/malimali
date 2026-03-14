@@ -21,7 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" />, permission: "view_dashboard" },
   { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "__admin_only__" },
-  { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_reports" },
+  { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_accountant" },
   { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" />, permission: "view_data_entry" },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
