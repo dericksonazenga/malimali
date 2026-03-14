@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -171,31 +172,84 @@ const SalesEntryPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>Customer</TableHead><TableHead>Commodity</TableHead>
-              <TableHead className="text-right">Gross</TableHead><TableHead className="text-right">Container</TableHead>
-              <TableHead className="text-right">Actual Wt</TableHead><TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">Amount</TableHead><TableHead>Exchange</TableHead>
-              <TableHead>Date</TableHead>{hasPermission("delete_entries") && <TableHead />}
-            </TableRow></TableHeader>
-            <TableBody>
-              {entries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="font-medium">{entry.customerName || "—"}</TableCell>
-                  <TableCell>{entry.commodity || "—"}</TableCell>
-                  <TableCell className="text-right font-mono">{entry.grossWeight}</TableCell>
-                  <TableCell className="text-right font-mono">{entry.containerWeight}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold">{entry.weight}</TableCell>
-                  <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
-                  <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
-                  <TableCell>{entry.isExchange ? <span className="text-xs bg-accent px-2 py-1 rounded">{entry.exchangeCommodity} ({entry.exchangeWeight}kg)</span> : "—"}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{entry.createdAt}</TableCell>
-                  {hasPermission("delete_entries") && (<TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>)}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {(() => {
+            const grouped = entries.reduce((acc, entry) => {
+              const key = (entry.customerName || "Walk-in").trim().toLowerCase();
+              if (!acc[key]) acc[key] = { displayName: entry.customerName || "Walk-in", entries: [] };
+              acc[key].entries.push(entry);
+              return acc;
+            }, {} as Record<string, { displayName: string; entries: SalesEntry[] }>);
+
+            return Object.values(grouped).map((group) => {
+              const totalGross = group.entries.reduce((s, e) => s + (e.grossWeight || 0), 0);
+              const totalContainer = group.entries.reduce((s, e) => s + (e.containerWeight || 0), 0);
+              const totalWt = group.entries.reduce((s, e) => s + (e.weight || 0), 0);
+              const totalAmt = group.entries.reduce((s, e) => s + (e.amount || 0), 0);
+              const commodities = [...new Set(group.entries.map(e => e.commodity).filter(Boolean))];
+
+              return (
+                <Accordion key={group.displayName} type="single" collapsible className="mb-2">
+                  <AccordionItem value={group.displayName} className="border rounded-lg">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex flex-1 items-center justify-between pr-4 text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold">{group.displayName}</span>
+                          <span className="bg-primary/10 text-primary text-xs font-mono px-2 py-0.5 rounded-full">{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</span>
+                        </div>
+                        <div className="flex items-center gap-4 font-mono text-xs">
+                          <span className="text-muted-foreground">{commodities.join(', ')}</span>
+                          <span>Wt: <strong>{totalWt}</strong>kg</span>
+                          <span className="text-primary font-semibold">{symbol}{totalAmt.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-0 pb-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Commodity</TableHead>
+                            <TableHead className="text-right">Gross</TableHead>
+                            <TableHead className="text-right">Container</TableHead>
+                            <TableHead className="text-right">Actual Wt</TableHead>
+                            <TableHead className="text-right">Rate</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Exchange</TableHead>
+                            {hasPermission("delete_entries") && <TableHead />}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.entries.map((entry) => (
+                            <TableRow key={entry.id}>
+                              <TableCell>{entry.commodity || "—"}</TableCell>
+                              <TableCell className="text-right font-mono">{entry.grossWeight}</TableCell>
+                              <TableCell className="text-right font-mono">{entry.containerWeight}</TableCell>
+                              <TableCell className="text-right font-mono font-semibold">{entry.weight}</TableCell>
+                              <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
+                              <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
+                              <TableCell>{entry.isExchange ? <span className="text-xs bg-accent px-2 py-1 rounded">{entry.exchangeCommodity} ({entry.exchangeWeight}kg)</span> : "—"}</TableCell>
+                              {hasPermission("delete_entries") && (
+                                <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                          <TableRow className="bg-muted/30 font-semibold">
+                            <TableCell>Totals</TableCell>
+                            <TableCell className="text-right font-mono">{totalGross}</TableCell>
+                            <TableCell className="text-right font-mono">{totalContainer}</TableCell>
+                            <TableCell className="text-right font-mono">{totalWt}</TableCell>
+                            <TableCell />
+                            <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>
+                            <TableCell />
+                            {hasPermission("delete_entries") && <TableCell />}
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              );
+            });
+          })()}
         </CardContent>
       </Card>
     </div>
