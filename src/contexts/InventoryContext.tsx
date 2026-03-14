@@ -235,7 +235,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [agentEntries, vipEntries, salesEntries, persistentStock, fetchPersistentStock]);
 
   return (
-    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll }}>
+    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll, refresh: fetchToday }}>
       {children}
     </InventoryContext.Provider>
   );
