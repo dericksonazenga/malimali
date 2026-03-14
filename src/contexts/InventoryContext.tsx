@@ -15,6 +15,7 @@ interface InventoryContextType {
   removeVipEntry: (id: string) => Promise<void>;
   removeSalesEntry: (id: string) => Promise<void>;
   clearAll: () => void;
+  refresh: () => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | null>(null);
