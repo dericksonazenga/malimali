@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Edit, CreditCard, Search } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Debt {
@@ -21,6 +21,7 @@ interface Debt {
   balance: number;
   status: string;
   created_at: string;
+  debt_type?: string;
 }
 
 interface DebtPayment {
@@ -29,6 +30,12 @@ interface DebtPayment {
   amount: number;
   notes: string;
   created_at: string;
+}
+
+interface Deduction {
+  id: string;
+  label: string;
+  amount: number;
 }
 
 const DebtManagementPage = () => {
@@ -41,9 +48,16 @@ const DebtManagementPage = () => {
 
   // Add form
   const [showAdd, setShowAdd] = useState(false);
+  const [debtType, setDebtType] = useState<"money_in" | "money_out">("money_in");
   const [customerName, setCustomerName] = useState("");
   const [description, setDescription] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
+
+  // Deduction dialog for money out
+  const [showDeduction, setShowDeduction] = useState(false);
+  const [deductions, setDeductions] = useState<Deduction[]>([]);
+  const [newDeductionLabel, setNewDeductionLabel] = useState("");
+  const [newDeductionAmount, setNewDeductionAmount] = useState("");
 
   // Edit form
   const [editDebt, setEditDebt] = useState<Debt | null>(null);
@@ -88,18 +102,54 @@ const DebtManagementPage = () => {
     if (data) setPayments(data.map((p: any) => ({ ...p, amount: Number(p.amount) })));
   };
 
-  const handleAdd = async () => {
+  const grossAmount = parseFloat(totalAmount) || 0;
+  const totalDeductions = deductions.reduce((s, d) => s + d.amount, 0);
+  const finalAmount = Math.max(0, grossAmount - totalDeductions);
+
+  const handleAddDeduction = () => {
+    if (!newDeductionLabel.trim() || !newDeductionAmount) return;
+    setDeductions(prev => [...prev, {
+      id: crypto.randomUUID(),
+      label: newDeductionLabel.trim(),
+      amount: parseFloat(newDeductionAmount) || 0,
+    }]);
+    setNewDeductionLabel("");
+    setNewDeductionAmount("");
+  };
+
+  const removeDeduction = (id: string) => {
+    setDeductions(prev => prev.filter(d => d.id !== id));
+  };
+
+  const handleAddClick = () => {
     if (!customerName.trim() || !totalAmount) { toast.error("Fill required fields"); return; }
-    const amt = parseFloat(totalAmount);
+    if (debtType === "money_out") {
+      setShowDeduction(true);
+    } else {
+      saveDebt(parseFloat(totalAmount));
+    }
+  };
+
+  const handleConfirmDeduction = () => {
+    const deductionDesc = deductions.length > 0
+      ? `${description ? description + " | " : ""}Deductions: ${deductions.map(d => `${d.label}: ${symbol}${d.amount.toLocaleString()}`).join(", ")} | Gross: ${symbol}${grossAmount.toLocaleString()}`
+      : description;
+    saveDebt(finalAmount, deductionDesc);
+    setShowDeduction(false);
+    setDeductions([]);
+  };
+
+  const saveDebt = async (amt: number, desc?: string) => {
     const { error } = await supabase.from("debts").insert({
       customer_name: customerName.trim(),
-      description,
+      description: desc ?? description,
       total_amount: amt,
       balance: amt,
       created_by: user?.id,
+      status: debtType === "money_out" ? "money_out" : "unpaid",
     });
     if (error) { toast.error("Failed to add debt"); return; }
-    setCustomerName(""); setDescription(""); setTotalAmount(""); setShowAdd(false);
+    setCustomerName(""); setDescription(""); setTotalAmount(""); setShowAdd(false); setDebtType("money_in");
     toast.success("Debt added");
   };
 
@@ -112,7 +162,7 @@ const DebtManagementPage = () => {
       description: editDesc,
       total_amount: amt,
       balance: newBalance,
-      status: newBalance <= 0 ? "paid" : "unpaid",
+      status: newBalance <= 0 ? "paid" : editDebt.status === "money_out" ? "money_out" : "unpaid",
       updated_at: new Date().toISOString(),
     }).eq("id", editDebt.id);
     if (error) { toast.error("Failed to update"); return; }
@@ -139,7 +189,7 @@ const DebtManagementPage = () => {
     await supabase.from("debts").update({
       paid_amount: newPaid,
       balance: newBalance,
-      status: newBalance <= 0 ? "paid" : "unpaid",
+      status: newBalance <= 0 ? "paid" : payDebt.status === "money_out" ? "money_out" : "unpaid",
       updated_at: new Date().toISOString(),
     }).eq("id", payDebt.id);
 
@@ -162,6 +212,12 @@ const DebtManagementPage = () => {
 
   const totalDebt = debts.reduce((s, d) => s + d.balance, 0);
 
+  const getStatusBadge = (status: string) => {
+    if (status === "paid") return <Badge variant="default" className="text-xs">Paid</Badge>;
+    if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30">Money Out</Badge>;
+    return <Badge variant="destructive" className="text-xs">Money In</Badge>;
+  };
+
   return (
     <div className="space-y-4 max-w-6xl">
       <Card>
@@ -179,11 +235,34 @@ const DebtManagementPage = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {showAdd && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4 bg-accent rounded-lg border border-border">
-              <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
-              <div className="space-y-1"><Label className="text-xs">Description</Label><Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Details" /></div>
-              <div className="space-y-1"><Label className="text-xs">Amount ({symbol}) *</Label><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" /></div>
-              <div className="flex items-end"><Button onClick={handleAdd} className="w-full">Save Debt</Button></div>
+            <div className="p-4 bg-accent rounded-lg border border-border space-y-3">
+              {/* Type Selector */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={debtType === "money_in" ? "default" : "outline"}
+                  className="flex-1 gap-2"
+                  onClick={() => setDebtType("money_in")}
+                >
+                  <ArrowDownCircle className="w-4 h-4" />
+                  Money In
+                </Button>
+                <Button
+                  type="button"
+                  variant={debtType === "money_out" ? "default" : "outline"}
+                  className="flex-1 gap-2"
+                  onClick={() => setDebtType("money_out")}
+                >
+                  <ArrowUpCircle className="w-4 h-4" />
+                  Money Out
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
+                <div className="space-y-1"><Label className="text-xs">Description</Label><Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Details" /></div>
+                <div className="space-y-1"><Label className="text-xs">{debtType === "money_out" ? "Gross" : ""} Amount ({symbol}) *</Label><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" /></div>
+                <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save Debt</Button></div>
+              </div>
             </div>
           )}
 
@@ -201,7 +280,7 @@ const DebtManagementPage = () => {
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Paid</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -213,11 +292,7 @@ const DebtManagementPage = () => {
                     <TableCell className="text-right font-mono">{symbol}{d.total_amount.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-mono text-success">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
                     <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={d.status === "paid" ? "default" : "destructive"} className="text-xs">
-                        {d.status === "paid" ? "Paid" : "Unpaid"}
-                      </Badge>
-                    </TableCell>
+                    <TableCell>{getStatusBadge(d.status)}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         {d.status !== "paid" && canEdit && (
@@ -247,6 +322,65 @@ const DebtManagementPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Deduction Dialog for Money Out */}
+      <Dialog open={showDeduction} onOpenChange={setShowDeduction}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deductions for {customerName}</DialogTitle>
+            <DialogDescription>Add deductions to calculate the final amount</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-accent rounded-lg">
+              <span className="text-sm text-muted-foreground">Gross Amount</span>
+              <span className="font-mono font-semibold">{symbol}{grossAmount.toLocaleString()}</span>
+            </div>
+
+            {/* Add deduction */}
+            <div className="flex gap-2">
+              <Input value={newDeductionLabel} onChange={e => setNewDeductionLabel(e.target.value)} placeholder="Deduction name" className="flex-1" />
+              <Input type="number" value={newDeductionAmount} onChange={e => setNewDeductionAmount(e.target.value)} placeholder="Amount" className="w-28" />
+              <Button size="icon" variant="outline" onClick={handleAddDeduction}><Plus className="w-4 h-4" /></Button>
+            </div>
+
+            {/* Deduction list */}
+            {deductions.length > 0 && (
+              <div className="space-y-2">
+                {deductions.map(d => (
+                  <div key={d.id} className="flex items-center justify-between p-2 bg-destructive/10 rounded text-sm">
+                    <div className="flex items-center gap-2">
+                      <Minus className="w-3 h-3 text-destructive" />
+                      <span>{d.label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-destructive">{symbol}{d.amount.toLocaleString()}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeDeduction(d.id)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Summary */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Deductions</span>
+                <span className="font-mono text-destructive">- {symbol}{totalDeductions.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold">
+                <span>Final Amount</span>
+                <span className="font-mono text-primary">{symbol}{finalAmount.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <Button onClick={handleConfirmDeduction} className="w-full">
+              Confirm & Save ({symbol}{finalAmount.toLocaleString()})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={!!editDebt} onOpenChange={() => setEditDebt(null)}>
