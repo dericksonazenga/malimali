@@ -48,7 +48,7 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/admin" element={<ProtectedRoute permission="manage_workers"><AdminPage /></ProtectedRoute>} />
-        <Route path="/accountant" element={<ProtectedRoute permission="view_reports"><AccountantPage /></ProtectedRoute>} />
+        <Route path="/accountant" element={<ProtectedRoute permission="view_accountant"><AccountantPage /></ProtectedRoute>} />
         <Route path="/data-entry" element={<DataEntryPage />} />
         <Route path="/rates" element={<ProtectedRoute permission="update_rates"><RatesPage /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute permission="manage_inventory"><InventoryPage /></ProtectedRoute>} />
