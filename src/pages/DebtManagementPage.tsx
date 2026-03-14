@@ -290,7 +290,9 @@ const DebtManagementPage = () => {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Gross Amount</TableHead>
+                  <TableHead className="text-right">Deducted Fee</TableHead>
+                  <TableHead className="text-right">Net Amount</TableHead>
                   <TableHead className="text-right">Paid</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
                   <TableHead>Type</TableHead>
@@ -298,7 +300,7 @@ const DebtManagementPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(d => (
+                {filtered.map(d => {
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.customer_name}</TableCell>
                     <TableCell className="text-muted-foreground max-w-[150px] truncate">{d.description}</TableCell>
