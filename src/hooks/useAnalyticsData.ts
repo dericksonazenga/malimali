@@ -177,7 +177,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       }
     });
 
-    const netProfit = grossProfit - expenseTotal - salaryPaid;
+    const netProfit = grossProfit - expenseTotal;
 
     // Commodity breakdown
     const cb: Record<string, { bought: number; sold: number; net: number }> = {};
