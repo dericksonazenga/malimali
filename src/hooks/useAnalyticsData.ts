@@ -215,10 +215,10 @@ export function useAnalyticsData(range: DateRangeValue) {
       }
     });
 
-    const allCommodities = new Set([...Object.keys(agentRateMap), ...Object.keys(sellAgg)]);
+    const allCommodities = new Set([...Object.keys(avgBuyRateMap), ...Object.keys(sellAgg)]);
     const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
       const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
-      const avgBuyRate = agentRateMap[commodity] || 0;
+      const avgBuyRate = avgBuyRateMap[commodity] || 0;
       const avgSellRate = sa.totalWeight > 0 ? sa.totalAmount / sa.totalWeight : 0;
       const marginPerKg = avgSellRate - avgBuyRate;
       const totalProfit = sa.totalWeight > 0 ? marginPerKg * sa.totalWeight : 0;
