@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
   BarChart3, Package, Users, Receipt, Loader2
@@ -8,11 +9,13 @@ import {
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
+import { groupEntriesByCustomer } from "@/utils/groupEntries";
 import * as XLSX from "xlsx";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
 import AnalyticsCharts from "@/components/analytics/AnalyticsCharts";
 import ReportSheetView from "@/components/analytics/ReportSheetView";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
@@ -42,16 +45,45 @@ const FinancialReportPage = () => {
     : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
   const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
-  // Helper to auto-fit column widths
+  // Helper to auto-fit column widths (snug, not too big)
   const autoFitColumns = (ws: XLSX.WorkSheet, data: any[][]) => {
+    if (!data.length || !data[0].length) return ws;
     const colWidths = data[0].map((_, colIdx) => {
       const maxLen = data.reduce((max, row) => {
         const cellValue = String(row[colIdx] ?? "");
         return Math.max(max, cellValue.length);
       }, 0);
-      return { wch: Math.min(Math.max(maxLen + 2, 10), 50) }; // min 10, max 50
+      return { wch: Math.min(Math.max(maxLen + 2, 8), 30) };
     });
     ws["!cols"] = colWidths;
+    return ws;
+  };
+
+  // Helper to style headers bold and freeze top row(s)
+  const styleSheet = (ws: XLSX.WorkSheet, headerRows: number = 1, totalRowIdx?: number, totalCols?: number) => {
+    // Freeze header rows
+    ws["!freeze"] = { xSplit: 0, ySplit: headerRows };
+    // Bold headers
+    for (let r = 0; r < headerRows; r++) {
+      const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        if (ws[addr]) {
+          if (!ws[addr].s) ws[addr].s = {};
+          ws[addr].s = { font: { bold: true }, fill: { fgColor: { rgb: "4CAF50" } } };
+        }
+      }
+    }
+    // Bold total row
+    if (totalRowIdx !== undefined && totalCols) {
+      for (let c = 0; c < totalCols; c++) {
+        const addr = XLSX.utils.encode_cell({ r: totalRowIdx, c });
+        if (ws[addr]) {
+          if (!ws[addr].s) ws[addr].s = {};
+          ws[addr].s = { font: { bold: true } };
+        }
+      }
+    }
     return ws;
   };
 
@@ -73,148 +105,72 @@ const FinancialReportPage = () => {
     ];
     XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(summaryData), summaryData), "Summary");
 
-    // Helper to build commodity-column sheet for Agent/VIP entries
-    const buildCommoditySheet = (entries: any[], sheetName: string) => {
-      // Get unique commodities and their rates
-      const commoditySet = new Map<string, number>();
-      entries.forEach((e: any) => {
-        if (!commoditySet.has(e.commodity)) {
-          commoditySet.set(e.commodity, Number(e.rate));
-        }
-      });
-      const commodityNames = Array.from(commoditySet.keys());
 
-      // Header row: Date | Customer | Commodity1 Weight | Commodity1 Amount | Commodity2 Weight | ...
-      const header: string[] = ["Date", "Customer"];
-      commodityNames.forEach(c => {
-        header.push(`${c} (kg)`, `${c} Amount`);
-      });
-      header.push("Total Amount");
 
-      // Rate row
-      const rateRow: any[] = ["", "Rate →"];
-      commodityNames.forEach(c => {
-        rateRow.push("", commoditySet.get(c) || 0);
-      });
-      rateRow.push("");
 
-      // Group entries by date+customer
-      const groupKey = (e: any) => `${e.date}|||${e.customer_name}`;
-      const groups = new Map<string, any[]>();
-      entries.forEach((e: any) => {
-        const k = groupKey(e);
-        if (!groups.has(k)) groups.set(k, []);
-        groups.get(k)!.push(e);
-      });
-
-      // Build data rows with formulas
-      const dataRows: any[][] = [];
-      const sortedKeys = Array.from(groups.keys()).sort();
-      sortedKeys.forEach(key => {
-        const [date, customer] = key.split("|||");
-        const row: any[] = [date, customer];
-        const group = groups.get(key)!;
-
-        // Aggregate weights per commodity for this group
-        const weightByCommodity: Record<string, number> = {};
-        group.forEach((e: any) => {
-          weightByCommodity[e.commodity] = (weightByCommodity[e.commodity] || 0) + Number(e.actual_weight);
+    // Helper to build grouped-by-customer sheet for Agent/VIP
+    const buildGroupedSheet = (entries: any[], sheetName: string) => {
+      const groups = groupEntriesByCustomer(entries);
+      const aoa: any[][] = [
+        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
+      ];
+      groups.forEach(g => {
+        g.entries.forEach((e: any) => {
+          aoa.push([e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]);
         });
-
-        commodityNames.forEach(c => {
-          const weight = weightByCommodity[c] || 0;
-          row.push(weight > 0 ? weight : "");
-          row.push(""); // placeholder for formula
-        });
-        row.push(""); // placeholder for total formula
-        dataRows.push(row);
+        // Subtotal row per customer
+        aoa.push([`${g.customerName} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, ""]);
+        aoa.push([]); // blank separator
       });
-
-      // Build full AOA (header + rate + data + blank + total)
-      const aoa: any[][] = [header, rateRow, ...dataRows, []];
-      // Total row
-      const totalRow: any[] = ["TOTAL", ""];
-      commodityNames.forEach(() => {
-        totalRow.push("", ""); // placeholders
-      });
-      totalRow.push("");
-      aoa.push(totalRow);
+      // Grand total
+      const grandWeight = entries.reduce((s: number, e: any) => s + Number(e.actual_weight), 0);
+      const grandAmount = entries.reduce((s: number, e: any) => s + Number(e.amount), 0);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, ""]);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-      // Now inject formulas
-      // Row 0 = header, Row 1 = rate row, Row 2+ = data rows
-      // Rate for commodity i is at column (2 + i*2 + 1) in row 2 (0-indexed row 1)
-      const dataStartRow = 3; // 1-indexed (row 3 in Excel)
-      const totalExcelRow = dataStartRow + dataRows.length + 1; // after blank row
-
-      dataRows.forEach((_, rowIdx) => {
-        const excelRow = dataStartRow + rowIdx;
-        let amountCols: string[] = [];
-
-        commodityNames.forEach((_, cIdx) => {
-          const weightCol = XLSX.utils.encode_col(2 + cIdx * 2);     // weight column
-          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1); // amount column
-          const rateCell = `${amountCol}$2`; // rate is in row 2, same column as amount
-          const weightCell = `${weightCol}${excelRow}`;
-          const amountCellRef = `${amountCol}${excelRow}`;
-
-          // Formula: weight * rate
-          ws[amountCellRef] = { t: 'n', f: `IF(${weightCell}="",0,${weightCell}*${rateCell})` };
-          amountCols.push(amountCellRef);
-        });
-
-        // Total Amount formula = sum of all amount cells in this row
-        const totalCol = XLSX.utils.encode_col(2 + commodityNames.length * 2);
-        const totalCell = `${totalCol}${excelRow}`;
-        const sumParts = commodityNames.map((_, cIdx) => {
-          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1);
-          return `${amountCol}${excelRow}`;
-        });
-        ws[totalCell] = { t: 'n', f: sumParts.join("+") };
-      });
-
-      // Total row formulas
-      if (dataRows.length > 0) {
-        commodityNames.forEach((_, cIdx) => {
-          // Sum weight column
-          const weightCol = XLSX.utils.encode_col(2 + cIdx * 2);
-          ws[`${weightCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${weightCol}${dataStartRow}:${weightCol}${dataStartRow + dataRows.length - 1})` };
-          // Sum amount column
-          const amountCol = XLSX.utils.encode_col(2 + cIdx * 2 + 1);
-          ws[`${amountCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${amountCol}${dataStartRow}:${amountCol}${dataStartRow + dataRows.length - 1})` };
-        });
-        // Grand total
-        const totalCol = XLSX.utils.encode_col(2 + commodityNames.length * 2);
-        ws[`${totalCol}${totalExcelRow}`] = { t: 'n', f: `SUM(${totalCol}${dataStartRow}:${totalCol}${dataStartRow + dataRows.length - 1})` };
-      }
-
       autoFitColumns(ws, aoa);
+      styleSheet(ws, 1, aoa.length - 1, 6);
+      // Bold each subtotal row
+      let rowIdx = 1;
+      groups.forEach(g => {
+        rowIdx += g.entries.length;
+        for (let c = 0; c < 6; c++) {
+          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
+          if (ws[addr]) ws[addr].s = { font: { bold: true } };
+        }
+        rowIdx += 2; // subtotal + blank
+      });
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    buildCommoditySheet(agentEntries, "Agent Entries");
-    buildCommoditySheet(vipEntries, "VIP Entries");
+    buildGroupedSheet(agentEntries, "Agent Entries");
+    buildGroupedSheet(vipEntries, "VIP Entries");
 
     // Sales Entries sheet
-    const salesRows = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
+    const salesRows2 = salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || 0, e.is_exchange ? "Yes" : "No", e.date]);
     const salesData = [
       ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ...salesRows,
+      ...salesRows2,
       [],
-      ["TOTAL", "", salesRows.reduce((s, r) => s + Number(r[2]), 0), "", salesRows.reduce((s, r) => s + Number(r[4]), 0), "", ""],
+      ["TOTAL", "", salesRows2.reduce((s, r) => s + Number(r[2]), 0), "", salesRows2.reduce((s, r) => s + Number(r[4]), 0), "", ""],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(salesData), salesData), "Sales Entries");
+    const salesWs = XLSX.utils.aoa_to_sheet(salesData);
+    autoFitColumns(salesWs, salesData);
+    styleSheet(salesWs, 1, salesData.length - 1, 7);
+    XLSX.utils.book_append_sheet(wb, salesWs, "Sales Entries");
 
     // Expenses sheet
-    const expRows = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
+    const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
     const expData = [
       ["Category", "Amount", "Notes", "Date"],
-      ...expRows,
+      ...expRows2,
       [],
-      ["TOTAL", expRows.reduce((s, r) => s + Number(r[1]), 0), "", ""],
+      ["TOTAL", expRows2.reduce((s, r) => s + Number(r[1]), 0), "", ""],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(expData), expData), "Expenses");
+    const expWs = XLSX.utils.aoa_to_sheet(expData);
+    autoFitColumns(expWs, expData);
+    styleSheet(expWs, 1, expData.length - 1, 4);
+    XLSX.utils.book_append_sheet(wb, expWs, "Expenses");
 
     // Commodity Flow sheet
     const flowRows = Object.entries(commodityBreakdown).map(([c, v]) => [c, v.bought, v.sold, v.net]);
@@ -224,37 +180,53 @@ const FinancialReportPage = () => {
       [],
       ["TOTAL", flowRows.reduce((s, r) => s + Number(r[1]), 0), flowRows.reduce((s, r) => s + Number(r[2]), 0), flowRows.reduce((s, r) => s + Number(r[3]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(flowData), flowData), "Commodity Flow");
+    const flowWs = XLSX.utils.aoa_to_sheet(flowData);
+    autoFitColumns(flowWs, flowData);
+    styleSheet(flowWs, 1, flowData.length - 1, 4);
+    XLSX.utils.book_append_sheet(wb, flowWs, "Commodity Flow");
 
     // Current Stock sheet
-    const stockRows = stockData.map((s: any) => [s.commodity, s.weight]);
+    const stockRows2 = stockData.map((s: any) => [s.commodity, s.weight]);
     const stockSheetData = [
       ["Commodity", "Weight (kg)"],
-      ...stockRows,
+      ...stockRows2,
       [],
-      ["TOTAL", stockRows.reduce((s, r) => s + Number(r[1]), 0)],
+      ["TOTAL", stockRows2.reduce((s, r) => s + Number(r[1]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(stockSheetData), stockSheetData), "Current Stock");
+    const stockWs = XLSX.utils.aoa_to_sheet(stockSheetData);
+    autoFitColumns(stockWs, stockSheetData);
+    styleSheet(stockWs, 1, stockSheetData.length - 1, 2);
+    XLSX.utils.book_append_sheet(wb, stockWs, "Current Stock");
 
     // Payroll sheet
-    const payrollRows = workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]);
+    const payrollRows2 = workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]);
     const payrollData = [
       ["Worker", "Role", "Salary", "Paid", "Balance"],
-      ...payrollRows,
+      ...payrollRows2,
       [],
-      ["TOTAL", "", payrollRows.reduce((s, r) => s + Number(r[2]), 0), payrollRows.reduce((s, r) => s + Number(r[3]), 0), payrollRows.reduce((s, r) => s + Number(r[4]), 0)],
+      ["TOTAL", "", payrollRows2.reduce((s, r) => s + Number(r[2]), 0), payrollRows2.reduce((s, r) => s + Number(r[3]), 0), payrollRows2.reduce((s, r) => s + Number(r[4]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(payrollData), payrollData), "Payroll");
+    const payrollWs = XLSX.utils.aoa_to_sheet(payrollData);
+    autoFitColumns(payrollWs, payrollData);
+    styleSheet(payrollWs, 1, payrollData.length - 1, 5);
+    XLSX.utils.book_append_sheet(wb, payrollWs, "Payroll");
 
     // Commodity Profit sheet
-    const profitRows = commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]);
+    const profitRows2 = commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]);
     const profitData = [
       ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
-      ...profitRows,
+      ...profitRows2,
       [],
-      ["TOTAL", "", "", "", profitRows.reduce((s, r) => s + Number(r[4]), 0), profitRows.reduce((s, r) => s + Number(r[5]), 0)],
+      ["TOTAL", "", "", "", profitRows2.reduce((s, r) => s + Number(r[4]), 0), profitRows2.reduce((s, r) => s + Number(r[5]), 0)],
     ];
-    XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(profitData), profitData), "Commodity Profit");
+    const profitWs = XLSX.utils.aoa_to_sheet(profitData);
+    autoFitColumns(profitWs, profitData);
+    styleSheet(profitWs, 1, profitData.length - 1, 6);
+    XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
+
+    // Style summary sheet too
+    const summaryWs = wb.Sheets["Summary"];
+    if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
 
     XLSX.writeFile(wb, `${filePrefix}_FullReport.xlsx`);
     toast.success("Full report downloaded!");
@@ -399,44 +371,74 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Agent Entries */}
+        {/* Agent Entries - Grouped */}
         <AnalyticsSection
           title={`Agent Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
           csvRows={agentCSV()}
           csvFilename={`${filePrefix}_Agents.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {agentEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {agentEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
-                <span className="font-mono text-info whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
-              </div>
-            ))}
-            {agentEntries.length > 50 && <p className="text-xs text-muted-foreground">+{agentEntries.length - 50} more (download for full list)</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(agentEntries).map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-info whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity} · {e.actual_weight}kg @ {symbol}{fmt(Number(e.rate))}</span>
+                        <span className="font-mono text-info whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(agentTotal)}</span>
           </div>
         </AnalyticsSection>
 
-        {/* VIP Entries */}
+        {/* VIP Entries - Grouped */}
         <AnalyticsSection
           title={`VIP Entries (${vipEntries.length})`}
           icon={<Users className="w-4 h-4 text-primary" />}
           csvRows={vipCSV()}
           csvFilename={`${filePrefix}_VIP.csv`}
         >
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {vipEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
-            {vipEntries.slice(0, 50).map((e: any) => (
-              <div key={e.id} className="flex justify-between text-sm py-1 border-b border-border/50">
-                <span className="truncate mr-2">{e.customer_name} · {e.commodity} · {e.actual_weight}kg</span>
-                <span className="font-mono text-primary whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
-              </div>
-            ))}
-            {vipEntries.length > 50 && <p className="text-xs text-muted-foreground">+{vipEntries.length - 50} more</p>}
+            <Accordion type="multiple" className="w-full">
+              {groupEntriesByCustomer(vipEntries).map((g) => (
+                <AccordionItem key={g.customerName} value={g.customerName}>
+                  <AccordionTrigger className="py-2 text-sm hover:no-underline">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-medium truncate">{g.customerName}</span>
+                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
+                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
+                      <span className="ml-auto font-mono text-primary whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {g.entries.map((e: any) => (
+                      <div key={e.id} className="flex justify-between text-xs py-1 border-b border-border/30 pl-2">
+                        <span className="truncate mr-2">{e.commodity} · {e.actual_weight}kg @ {symbol}{fmt(Number(e.rate))}</span>
+                        <span className="font-mono text-primary whitespace-nowrap">{symbol}{fmt(Number(e.amount))}</span>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
           <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
             <span>Total</span><span className="font-mono">{symbol}{fmt(vipTotal)}</span>
