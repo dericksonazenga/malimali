@@ -29,8 +29,8 @@ interface ParsedEntry {
  */
 function parseWeightExpression(expr: string): { gross: number; container: number }[] {
   if (!expr.trim()) return [];
-  // Split by comma, space, or newline
-  const parts = expr.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  // Split by +, comma, or newline
+  const parts = expr.split(/[+\n]+/).map(s => s.trim()).filter(Boolean);
   return parts.map(part => {
     // Support "gross-container" format
     const match = part.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
