@@ -46,7 +46,7 @@ const AuthenticatedApp = () => {
   return (
     <AppLayout>
       <Routes>
-        <Route path="/" element={<DashboardPage />} />
+        <Route path="/" element={<ProtectedRoute permission="view_dashboard"><DashboardPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute permission="manage_workers"><AdminPage /></ProtectedRoute>} />
         <Route path="/accountant" element={<ProtectedRoute permission="view_accountant"><AccountantPage /></ProtectedRoute>} />
         <Route path="/data-entry" element={<DataEntryPage />} />
