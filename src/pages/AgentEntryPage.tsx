@@ -9,14 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Package } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
+import BulkEntryForm from "@/components/BulkEntryForm";
 
 const AgentEntryPage = () => {
+  const [bulkMode, setBulkMode] = useState(false);
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
@@ -66,43 +68,75 @@ const AgentEntryPage = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> New Agent Entry</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> New Agent Entry</span>
+            <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
+              <Package className="w-4 h-4" /> Pick-up
+            </Button>
+          </CardTitle>
+        </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" className="h-12" /></div>
-            <div className="space-y-2">
-              <Label>Commodity *</Label>
-              <Select value={commodity} onValueChange={setCommodity}>
-                <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                <SelectContent>
-                  {mockCommodities.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.agentRate}/kg</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-            <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-            <div className="space-y-2">
-              <Label>Rate ({symbol}/kg) {!hasPermission("update_rates") && <span className="text-muted-foreground text-xs">(locked)</span>}</Label>
-              <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.agentRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
-            </div>
-            <div className="space-y-2">
-              <Label>Calculated</Label>
-              <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
-                <span>Wt: <strong>{actualWeight}</strong>kg</span>
-                <span>Amt: <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong></span>
+          {!bulkMode ? (
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" className="h-12" /></div>
+              <div className="space-y-2">
+                <Label>Commodity *</Label>
+                <Select value={commodity} onValueChange={setCommodity}>
+                  <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                  <SelectContent>
+                    {mockCommodities.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.agentRate}/kg</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
-              <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
-              <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
-              <div className="flex-1" />
-              <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
-            </div>
-          </form>
+              <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+              <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+              <div className="space-y-2">
+                <Label>Rate ({symbol}/kg) {!hasPermission("update_rates") && <span className="text-muted-foreground text-xs">(locked)</span>}</Label>
+                <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.agentRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+              </div>
+              <div className="space-y-2">
+                <Label>Calculated</Label>
+                <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
+                  <span>Wt: <strong>{actualWeight}</strong>kg</span>
+                  <span>Amt: <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong></span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
+                <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
+                <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
+                <div className="flex-1" />
+                <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
+              </div>
+            </form>
+          ) : null}
         </CardContent>
       </Card>
+
+      {bulkMode && (
+        <BulkEntryForm
+          type="agent"
+          title="Agent Pick-up — Bulk Entry"
+          onSubmitEntries={async (entries, customerName) => {
+            for (const entry of entries) {
+              await addAgentEntry({
+                id: Date.now().toString() + Math.random(),
+                customerName,
+                commodity: entry.commodity,
+                grossWeight: entry.grossWeight,
+                containerWeight: entry.containerWeight,
+                actualWeight: entry.actualWeight,
+                rate: entry.rate,
+                amount: entry.amount,
+                createdBy: "current",
+                createdAt: new Date().toISOString().split("T")[0],
+              });
+            }
+          }}
+        />
+      )}
 
       <Card>
         <CardHeader>
