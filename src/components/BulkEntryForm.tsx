@@ -23,14 +23,14 @@ interface ParsedEntry {
 }
 
 /**
- * Parse weight expressions like "102-10, 100-2, 65-2"
+ * Parse weight expressions like "102-10 + 100-2 + 65-2"
  * Each item is "gross-deduction" or just "gross" (no deduction).
  * Supports formats: "102-10" → gross=102, container=10
  */
 function parseWeightExpression(expr: string): { gross: number; container: number }[] {
   if (!expr.trim()) return [];
-  // Split by comma, space, or newline
-  const parts = expr.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+  // Split by +, comma, or newline
+  const parts = expr.split(/[+\n]+/).map(s => s.trim()).filter(Boolean);
   return parts.map(part => {
     // Support "gross-container" format
     const match = part.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/);
@@ -185,7 +185,7 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
                       <Textarea
                         value={weightExpressions[c.name] || ""}
                         onChange={e => updateExpression(c.name, e.target.value)}
-                        placeholder="e.g. 102-10, 100-2, 65-2"
+                        placeholder="e.g. 102-10 + 100-2 + 65-2"
                         className="min-h-[60px] font-mono text-sm resize-y"
                         rows={2}
                       />
