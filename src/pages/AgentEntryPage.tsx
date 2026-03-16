@@ -68,7 +68,14 @@ const AgentEntryPage = () => {
   return (
     <div className="space-y-6 max-w-6xl">
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> New Agent Entry</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> New Agent Entry</span>
+            <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
+              <Package className="w-4 h-4" /> Pick-up
+            </Button>
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Customer name" className="h-12" /></div>
