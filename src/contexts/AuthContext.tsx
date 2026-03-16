@@ -23,6 +23,8 @@ const ALL_PERMISSIONS: Permission[] = [
   "delete_rates", "manage_debts", "edit_records",
 ];
 
+const USER_ROLES: UserRole[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];
+
 const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
   // Admins get all permissions automatically
   if (role === "admin") return ALL_PERMISSIONS;
@@ -60,35 +62,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (error || !data) {
       console.error("Profile fetch error:", error);
-      setUser(null);
-    } else {
-      const u = await buildUser(data);
-      u.email = supabaseUser.email || "";
-      setUser(u);
+      const metadataRole = supabaseUser.user_metadata?.role as string | undefined;
+      const fallbackRole = USER_ROLES.includes(metadataRole as UserRole)
+        ? (metadataRole as UserRole)
+        : "boss";
+
+      setUser((prev) => {
+        if (prev && prev.id === supabaseUser.id) {
+          return { ...prev, email: supabaseUser.email || prev.email };
+        }
+
+        return {
+          id: supabaseUser.id,
+          name:
+            (supabaseUser.user_metadata?.display_name as string | undefined) ||
+            supabaseUser.email?.split("@")[0] ||
+            "User",
+          email: supabaseUser.email || "",
+          role: fallbackRole,
+          permissions: fallbackRole === "admin" ? ALL_PERMISSIONS : [],
+        };
+      });
+      return;
     }
+
+    const u = await buildUser(data);
+    u.email = supabaseUser.email || "";
+    setUser(u);
   };
 
   useEffect(() => {
     let currentUserId: string | null = null;
+    let isMounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        currentUserId = session.user.id;
-        setTimeout(() => fetchProfile(session.user), 0);
-      } else {
+    const hydrateFromSession = async (sessionUser: SupabaseUser | null) => {
+      if (!isMounted) return;
+
+      if (!sessionUser) {
         currentUserId = null;
         setUser(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      currentUserId = sessionUser.id;
+      await fetchProfile(sessionUser);
+      if (isMounted) setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+
+      if (!session?.user) {
+        currentUserId = null;
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      currentUserId = session.user.id;
+      setTimeout(() => {
+        void fetchProfile(session.user);
+      }, 0);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        currentUserId = session.user.id;
-        fetchProfile(session.user);
-      } else {
-        setLoading(false);
-      }
+      void hydrateFromSession(session?.user ?? null);
     });
 
     // Realtime listener for profile changes (e.g. role updated by admin)
@@ -113,6 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .subscribe();
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
