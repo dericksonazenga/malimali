@@ -23,7 +23,7 @@ interface ParsedEntry {
 }
 
 /**
- * Parse weight expressions like "102-10, 100-2, 65-2"
+ * Parse weight expressions like "102-10 + 100-2 + 65-2"
  * Each item is "gross-deduction" or just "gross" (no deduction).
  * Supports formats: "102-10" → gross=102, container=10
  */
