@@ -226,7 +226,39 @@ const AnalyticsCharts = ({
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={stockPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}>
+                <Pie
+                  data={stockPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  innerRadius={30}
+                  paddingAngle={2}
+                  label={({ name, percent, x, y, midAngle }) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius = 105;
+                    const cx2 = 0;
+                    const cy2 = 0;
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        textAnchor={midAngle > 90 && midAngle < 270 ? "end" : "start"}
+                        dominantBaseline="central"
+                        fontSize={10}
+                        fill="hsl(var(--foreground))"
+                      >
+                        {name} {(percent * 100).toFixed(0)}%
+                      </text>
+                    );
+                  }}
+                  labelLine={{
+                    stroke: "hsl(var(--muted-foreground))",
+                    strokeWidth: 1,
+                  }}
+                  fontSize={10}
+                >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
