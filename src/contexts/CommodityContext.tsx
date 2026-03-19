@@ -54,7 +54,17 @@ export const CommodityProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Re-fetch when auth state changes (e.g. user signs in)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        fetchCommodities();
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+      subscription.unsubscribe();
+    };
   }, [fetchCommodities]);
 
   const addCommodity = useCallback(async (c: Commodity) => {
