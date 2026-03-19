@@ -137,7 +137,18 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "commodities" }, () => fetchToday())
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Re-fetch when auth state changes (e.g. user signs in)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") {
+        fetchToday();
+        fetchPersistentStock();
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+      subscription.unsubscribe();
+    };
   }, [fetchToday, fetchPersistentStock]);
 
   const addAgentEntry = useCallback(async (entry: AgentEntry) => {
