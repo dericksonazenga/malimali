@@ -224,7 +224,7 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={stockPieData}
@@ -232,32 +232,52 @@ const AnalyticsCharts = ({
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={70}
-                  innerRadius={30}
-                  paddingAngle={2}
-                  label={({ name, percent, x, y, midAngle }) => {
+                  outerRadius={65}
+                  innerRadius={25}
+                  paddingAngle={3}
+                  label={({ cx: pcx, cy: pcy, midAngle, outerRadius: oR, name, percent, index }) => {
                     const RADIAN = Math.PI / 180;
-                    const radius = 105;
-                    const cx2 = 0;
-                    const cy2 = 0;
+                    const total = stockPieData.length;
+                    // Stagger radius so adjacent labels don't overlap
+                    const baseRadius = (oR as number) + 28;
+                    const stagger = index % 2 === 0 ? 0 : 18;
+                    const radius = baseRadius + stagger;
+                    // Compute anchor point on outer edge
+                    const ax = (pcx as number) + ((oR as number) + 8) * Math.cos(-midAngle * RADIAN);
+                    const ay = (pcy as number) + ((oR as number) + 8) * Math.sin(-midAngle * RADIAN);
+                    // Compute elbow (bend) point
+                    const ex = (pcx as number) + radius * Math.cos(-midAngle * RADIAN);
+                    const ey = (pcy as number) + radius * Math.sin(-midAngle * RADIAN);
+                    // Horizontal tail direction
+                    const isLeft = midAngle > 90 && midAngle < 270;
+                    const tailLen = 20;
+                    const tx = isLeft ? ex - tailLen : ex + tailLen;
                     return (
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor={midAngle > 90 && midAngle < 270 ? "end" : "start"}
-                        dominantBaseline="central"
-                        fontSize={10}
-                        fill="hsl(var(--foreground))"
-                      >
-                        {name} {(percent * 100).toFixed(0)}%
-                      </text>
+                      <g>
+                        {/* Connector line: slice edge → elbow → horizontal tail */}
+                        <polyline
+                          points={`${ax},${ay} ${ex},${ey} ${tx},${ey}`}
+                          fill="none"
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeWidth={1}
+                        />
+                        {/* Small dot at slice edge */}
+                        <circle cx={ax} cy={ay} r={2} fill="hsl(var(--muted-foreground))" />
+                        {/* Label text at tail end */}
+                        <text
+                          x={tx + (isLeft ? -4 : 4)}
+                          y={ey}
+                          textAnchor={isLeft ? "end" : "start"}
+                          dominantBaseline="central"
+                          fontSize={10}
+                          fill="hsl(var(--foreground))"
+                        >
+                          {name} {(percent * 100).toFixed(0)}%
+                        </text>
+                      </g>
                     );
                   }}
-                  labelLine={{
-                    stroke: "hsl(var(--muted-foreground))",
-                    strokeWidth: 1,
-                  }}
-                  fontSize={10}
+                  labelLine={false}
                 >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
