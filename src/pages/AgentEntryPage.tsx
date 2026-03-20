@@ -19,6 +19,7 @@ import BulkEntryForm from "@/components/BulkEntryForm";
 
 const AgentEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
+  const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
