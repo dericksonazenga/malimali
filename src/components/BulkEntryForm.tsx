@@ -121,6 +121,15 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
       toast.error("Enter at least one weight entry");
       return;
     }
+
+    // Duplicate guard: block identical bulk submission within 15 seconds
+    const bulkKey = `${customerName.trim().toLowerCase()}|${allParsed.map(e => `${e.commodity}:${e.grossWeight}-${e.containerWeight}`).join(",")}`;
+    const now = Date.now();
+    if (lastBulkSubmit && lastBulkSubmit.key === bulkKey && now - lastBulkSubmit.time < 15000) {
+      toast.error("Duplicate bulk entry blocked. Wait 15 seconds or change values.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       await onSubmitEntries(allParsed, customerName.trim());
