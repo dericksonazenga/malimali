@@ -133,6 +133,7 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
     setSubmitting(true);
     try {
       await onSubmitEntries(allParsed, customerName.trim());
+      setLastBulkSubmit({ key: bulkKey, time: now });
       setCustomerName("");
       setWeightExpressions({});
       setRateOverrides({});
