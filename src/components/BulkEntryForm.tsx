@@ -63,6 +63,7 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
   // Map of commodity name → rate override
   const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [lastBulkSubmit, setLastBulkSubmit] = useState<{ key: string; time: number } | null>(null);
 
   const getRateForCommodity = (commodityName: string) => {
     const override = rateOverrides[commodityName];
