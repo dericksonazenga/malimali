@@ -56,12 +56,22 @@ const AgentEntryPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !commodity || !grossWeight) { toast.error("Fill required fields"); return; }
+
+    // Duplicate guard: block identical entry within 15 seconds
+    const entryKey = `${customerName.trim().toLowerCase()}|${commodity}|${gross}|${container}`;
+    const now = Date.now();
+    if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
+      toast.error("Duplicate entry blocked. Wait 15 seconds or change values.");
+      return;
+    }
+
     const entry: AgentEntry = {
       id: Date.now().toString(), customerName, commodity,
       grossWeight: gross, containerWeight: container, actualWeight, rate, amount,
       createdBy: "current", createdAt: new Date().toISOString().split("T")[0],
     };
     await addAgentEntry(entry);
+    setLastSubmit({ key: entryKey, time: now });
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     toast.success("Agent entry added!");
   };
