@@ -20,6 +20,7 @@ import BulkEntryForm from "@/components/BulkEntryForm";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
+  const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
@@ -64,6 +65,16 @@ const SalesEntryPage = () => {
     } else {
       if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
     }
+
+    const entryKey = isExchange
+      ? `exchange|${exchangeCommodity}|${exchangeWeight}|${exchangeFee}`
+      : `${customerName.trim().toLowerCase()}|${commodity}|${gross}|${container}`;
+    const now = Date.now();
+    if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
+      toast.error("Duplicate entry blocked. Wait 15 seconds or change values.");
+      return;
+    }
+
     const entryAmount = isExchange ? exchFee : amount;
     await addSalesEntry({
       id: Date.now().toString(),
@@ -81,6 +92,7 @@ const SalesEntryPage = () => {
       createdBy: "current",
       createdAt: new Date().toISOString().split("T")[0],
     });
+    setLastSubmit({ key: entryKey, time: now });
     setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
     setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
     toast.success("Sales entry added!");
