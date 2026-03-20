@@ -20,6 +20,7 @@ import BulkEntryForm from "@/components/BulkEntryForm";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
+  const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
