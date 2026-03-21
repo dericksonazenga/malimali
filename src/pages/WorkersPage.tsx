@@ -8,6 +8,7 @@ import { Users, Trash2, Pencil, Check, X, Mail, Phone, IdCard } from "lucide-rea
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSuperAdminProfile } from "@/constants/superAdmin";
 
 interface WorkerRow {
   id: string;
