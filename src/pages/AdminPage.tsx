@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PermissionsManager from "@/components/PermissionsManager";
+import { isSuperAdmin, isSuperAdminProfile, isSuperAdminEmail, SUPER_ADMIN_EMAIL } from "@/constants/superAdmin";
 
 interface Profile {
   id: string;
