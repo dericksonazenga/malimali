@@ -102,7 +102,15 @@ const AdminPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfiles, fetchRecruits]);
 
-  const startEdit = (p: Profile) => { setEditingId(p.id); setEditRole(p.role as UserRole); };
+  const startEdit = (p: Profile) => {
+    // Block editing the super admin unless you ARE the super admin
+    if (isSuperAdmin(p.user_id) && !isSuperAdmin(user?.id)) {
+      toast.error("The permanent admin cannot be modified");
+      return;
+    }
+    setEditingId(p.id);
+    setEditRole(p.role as UserRole);
+  };
 
   const saveRole = async (profileId: string) => {
     const profile = profiles.find(p => p.id === profileId);
