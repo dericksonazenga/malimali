@@ -114,9 +114,20 @@ const AdminPage = () => {
 
   const saveRole = async (profileId: string) => {
     const profile = profiles.find(p => p.id === profileId);
+    // Prevent demoting the super admin
+    if (profile && isSuperAdmin(profile.user_id) && editRole !== "admin") {
+      toast.error("The permanent admin cannot be demoted");
+      setEditingId(null);
+      return;
+    }
+    // Only super admin can assign admin role
+    if (editRole === "admin" && !isSuperAdmin(user?.id)) {
+      toast.error(`Only ${SUPER_ADMIN_EMAIL} can assign the Admin role`);
+      setEditingId(null);
+      return;
+    }
     const { error } = await supabase.from("profiles").update({ role: editRole }).eq("id", profileId);
     if (error) { toast.error("Failed to update role"); return; }
-    // Sync role to recruited_workers and workers tables by display_name (case-insensitive)
     if (profile) {
       await supabase.from("recruited_workers").update({ role: editRole }).ilike("name", profile.display_name);
       await supabase.from("workers").update({ role: editRole }).ilike("name", profile.display_name);
