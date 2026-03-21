@@ -431,7 +431,7 @@ const AdminPage = () => {
                                 <Button variant="outline" size="sm" onClick={() => startEdit(p)}>
                                   Change Role
                                 </Button>
-                                {p.user_id !== user?.id && (
+                                {p.user_id !== user?.id && !isSuperAdmin(p.user_id) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
