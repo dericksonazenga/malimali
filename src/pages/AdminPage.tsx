@@ -403,7 +403,7 @@ const AdminPage = () => {
                             <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
                               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
+                                {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
                                 <SelectItem value="accountant">Accountant</SelectItem>
                                 <SelectItem value="data_manager">Data Manager</SelectItem>
                                 <SelectItem value="human_resource">Human Resource</SelectItem>
