@@ -179,6 +179,10 @@ const AdminPage = () => {
   };
 
   const startEditRecruit = (r: RecruitedWorker) => {
+    if (isSuperAdminProfile(r.name) || isSuperAdminEmail(r.email)) {
+      toast.error("The permanent admin cannot be modified");
+      return;
+    }
     setEditingRecruitId(r.id);
     setEditRecruitValues({ name: r.name, email: r.email || "", phone: r.phone || "", id_number: r.identification_number || "" });
   };
