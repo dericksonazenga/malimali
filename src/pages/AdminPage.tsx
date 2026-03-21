@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PermissionsManager from "@/components/PermissionsManager";
+import { isSuperAdmin, isSuperAdminProfile, isSuperAdminEmail, SUPER_ADMIN_EMAIL } from "@/constants/superAdmin";
 
 interface Profile {
   id: string;
@@ -101,13 +102,32 @@ const AdminPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchProfiles, fetchRecruits]);
 
-  const startEdit = (p: Profile) => { setEditingId(p.id); setEditRole(p.role as UserRole); };
+  const startEdit = (p: Profile) => {
+    // Block editing the super admin unless you ARE the super admin
+    if (isSuperAdmin(p.user_id) && !isSuperAdmin(user?.id)) {
+      toast.error("The permanent admin cannot be modified");
+      return;
+    }
+    setEditingId(p.id);
+    setEditRole(p.role as UserRole);
+  };
 
   const saveRole = async (profileId: string) => {
     const profile = profiles.find(p => p.id === profileId);
+    // Prevent demoting the super admin
+    if (profile && isSuperAdmin(profile.user_id) && editRole !== "admin") {
+      toast.error("The permanent admin cannot be demoted");
+      setEditingId(null);
+      return;
+    }
+    // Only super admin can assign admin role
+    if (editRole === "admin" && !isSuperAdmin(user?.id)) {
+      toast.error(`Only ${SUPER_ADMIN_EMAIL} can assign the Admin role`);
+      setEditingId(null);
+      return;
+    }
     const { error } = await supabase.from("profiles").update({ role: editRole }).eq("id", profileId);
     if (error) { toast.error("Failed to update role"); return; }
-    // Sync role to recruited_workers and workers tables by display_name (case-insensitive)
     if (profile) {
       await supabase.from("recruited_workers").update({ role: editRole }).ilike("name", profile.display_name);
       await supabase.from("workers").update({ role: editRole }).ilike("name", profile.display_name);
@@ -148,14 +168,21 @@ const AdminPage = () => {
   };
 
   const deleteRecruit = async (id: string, name: string) => {
+    if (isSuperAdminProfile(name)) {
+      toast.error("The permanent admin cannot be removed");
+      return;
+    }
     const { error } = await supabase.from("recruited_workers").delete().eq("id", id);
     if (error) { toast.error("Failed to remove"); return; }
     await supabase.from("workers").delete().ilike("name", name);
-    // Also update profile if the user had registered (don't delete profile, just log)
     toast.success("Worker removed");
   };
 
   const startEditRecruit = (r: RecruitedWorker) => {
+    if (isSuperAdminProfile(r.name) || isSuperAdminEmail(r.email)) {
+      toast.error("The permanent admin cannot be modified");
+      return;
+    }
     setEditingRecruitId(r.id);
     setEditRecruitValues({ name: r.name, email: r.email || "", phone: r.phone || "", id_number: r.identification_number || "" });
   };
@@ -213,18 +240,18 @@ const AdminPage = () => {
             </div>
             <div className="space-y-2">
               <Label>Initial Role</Label>
-              <Select value={newRole} onValueChange={v => setNewRole(v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="boss">Boss (Default)</SelectItem>
-                   <SelectItem value="accountant">Accountant</SelectItem>
-                   <SelectItem value="data_manager">Data Manager</SelectItem>
-                   <SelectItem value="human_resource">Human Resource</SelectItem>
-                   <SelectItem value="cashier">Cashier</SelectItem>
-                   {isAdmin && <SelectItem value="admin">Admin</SelectItem>}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Only Admin can assign the Admin role after recruitment.</p>
+               <Select value={newRole} onValueChange={v => setNewRole(v)}>
+                 <SelectTrigger><SelectValue /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="boss">Boss (Default)</SelectItem>
+                    <SelectItem value="accountant">Accountant</SelectItem>
+                    <SelectItem value="data_manager">Data Manager</SelectItem>
+                    <SelectItem value="human_resource">Human Resource</SelectItem>
+                    <SelectItem value="cashier">Cashier</SelectItem>
+                    {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
+                 </SelectContent>
+               </Select>
+               <p className="text-xs text-muted-foreground">Only the permanent admin ({SUPER_ADMIN_EMAIL}) can assign the Admin role.</p>
             </div>
           </div>
 
@@ -376,7 +403,7 @@ const AdminPage = () => {
                             <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
                               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
+                                {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
                                 <SelectItem value="accountant">Accountant</SelectItem>
                                 <SelectItem value="data_manager">Data Manager</SelectItem>
                                 <SelectItem value="human_resource">Human Resource</SelectItem>
@@ -404,7 +431,7 @@ const AdminPage = () => {
                                 <Button variant="outline" size="sm" onClick={() => startEdit(p)}>
                                   Change Role
                                 </Button>
-                                {p.user_id !== user?.id && (
+                                {p.user_id !== user?.id && !isSuperAdmin(p.user_id) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
