@@ -95,6 +95,10 @@ const WorkersPage = () => {
   }, [fetchWorkers]);
 
   const startEdit = (w: WorkerRow) => {
+    if (isSuperAdminProfile(w.name)) {
+      toast.error("The permanent admin cannot be modified");
+      return;
+    }
     setEditingId(w.id);
     setEditValues({ name: w.name, role: w.role });
   };
