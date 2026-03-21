@@ -121,6 +121,10 @@ const WorkersPage = () => {
   };
 
   const deleteWorker = async (w: WorkerRow) => {
+    if (isSuperAdminProfile(w.name)) {
+      toast.error("The permanent admin cannot be removed");
+      return;
+    }
     await supabase.from("recruited_workers").delete().eq("id", w.id);
     await supabase.from("workers").delete().ilike("name", w.name);
     toast.success("Worker removed");
