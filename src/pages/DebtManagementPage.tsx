@@ -198,6 +198,7 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", payDebt.id);
 
+    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: payNotes, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmount(""); setPayNotes("");
     toast.success("Payment recorded");
     fetchPayments(payDebt.id);
