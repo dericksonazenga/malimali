@@ -160,6 +160,7 @@ const DebtManagementPage = () => {
     if (!editDebt) return;
     const amt = parseFloat(editAmount);
     const newBalance = amt - editDebt.paid_amount;
+    const oldData = { customer_name: editDebt.customer_name, description: editDebt.description, total_amount: editDebt.total_amount };
     const { error } = await supabase.from("debts").update({
       customer_name: editName,
       description: editDesc,
@@ -169,6 +170,7 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", editDebt.id);
     if (error) { toast.error("Failed to update"); return; }
+    await logAuditEvent({ tableName: "debts", recordId: editDebt.id, action: "update", oldData, newData: { customer_name: editName, description: editDesc, total_amount: amt }, changedByName: user?.name || "Unknown" });
     setEditDebt(null);
     toast.success("Debt updated");
   };
