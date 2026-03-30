@@ -683,19 +683,23 @@ const FinancialReportPage = () => {
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {workers.length === 0 && <p className="text-sm text-muted-foreground">No workers</p>}
             {workers.map((w: any) => (
-              <div key={w.id} className="grid grid-cols-4 text-sm py-1 border-b border-border/50">
-                <span className="truncate">{w.name}</span>
-                <span className="font-mono text-right">{symbol}{fmt(Number(w.salary))}</span>
-                <span className="font-mono text-right text-success">{symbol}{fmt(Number(w.paid))}</span>
-                <span className="font-mono text-right text-destructive">{symbol}{fmt(Number(w.balance))}</span>
+              <div key={w.id} className="flex flex-wrap justify-between gap-x-2 text-sm py-1 border-b border-border/50">
+                <span className="truncate min-w-0">{w.name}</span>
+                <div className="flex gap-3 font-mono text-xs sm:text-sm">
+                  <span>{symbol}{fmt(Number(w.salary))}</span>
+                  <span className="text-success">{symbol}{fmt(Number(w.paid))}</span>
+                  <span className="text-destructive">{symbol}{fmt(Number(w.balance))}</span>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-2 pt-2 border-t border-border grid grid-cols-4 font-bold text-sm">
+          <div className="mt-2 pt-2 border-t border-border flex flex-wrap justify-between gap-x-2 font-bold text-sm">
             <span>Total</span>
-            <span className="font-mono text-right">{symbol}{fmt(salaryTotal)}</span>
-            <span className="font-mono text-right text-success">{symbol}{fmt(salaryPaid)}</span>
-            <span className="font-mono text-right text-destructive">{symbol}{fmt(salaryBalance)}</span>
+            <div className="flex gap-3 font-mono text-xs sm:text-sm">
+              <span>{symbol}{fmt(salaryTotal)}</span>
+              <span className="text-success">{symbol}{fmt(salaryPaid)}</span>
+              <span className="text-destructive">{symbol}{fmt(salaryBalance)}</span>
+            </div>
           </div>
         </AnalyticsSection>
 
