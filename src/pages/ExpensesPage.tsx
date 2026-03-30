@@ -219,6 +219,7 @@ const ExpensesPage = () => {
           )}
         </CardContent>
       </Card>
+      <AuditLogViewer tableName="expenses" title="Expense Change History" />
     </div>
   );
 };
