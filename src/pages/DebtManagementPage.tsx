@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 interface Debt {
   id: string;
