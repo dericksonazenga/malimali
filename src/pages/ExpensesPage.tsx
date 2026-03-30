@@ -16,7 +16,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
