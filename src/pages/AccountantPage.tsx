@@ -50,14 +50,16 @@ const AccountantPage = () => {
     fetchData();
   }, [resetSignal]);
 
-  const grossProfit = salesTotal - (agentTotal + vipTotal);
+  const totalPurchases = agentTotal + vipTotal;
+  const grossProfit = salesTotal - totalPurchases;
 
   const cards = [
-    { title: "Agent Purchases", value: agentTotal, icon: <FileText className="w-5 h-5 text-info" />, color: "text-info", path: "/data-entry?tab=agent" },
-    { title: "VIP Purchases", value: vipTotal, icon: <Star className="w-5 h-5 text-primary" />, color: "text-primary", path: "/data-entry?tab=vip" },
-    { title: "Sales Revenue", value: salesTotal, icon: <ShoppingCart className="w-5 h-5 text-success" />, color: "text-success", path: "/data-entry?tab=sales" },
-    { title: "Expenses", value: expenseTotal, icon: <Wallet className="w-5 h-5 text-destructive" />, color: "text-destructive", path: "/expenses" },
-    { title: "Gross Profit", value: grossProfit, icon: <TrendingUp className={`w-5 h-5 ${grossProfit >= 0 ? "text-success" : "text-destructive"}`} />, color: grossProfit >= 0 ? "text-success" : "text-destructive", path: "/financial-report" },
+    { title: "Agent Purchases", value: agentTotal, icon: <FileText className="w-5 h-5 text-info" />, color: "text-info", path: "/data-entry?tab=agent", clickable: true },
+    { title: "VIP Purchases", value: vipTotal, icon: <Star className="w-5 h-5 text-primary" />, color: "text-primary", path: "/data-entry?tab=vip", clickable: true },
+    { title: "Total Purchases", value: totalPurchases, icon: <Package className="w-5 h-5 text-orange-500" />, color: "text-foreground", path: "", clickable: false },
+    { title: "Sales Revenue", value: salesTotal, icon: <ShoppingCart className="w-5 h-5 text-success" />, color: "text-success", path: "/data-entry?tab=sales", clickable: true },
+    { title: "Expenses", value: expenseTotal, icon: <Wallet className="w-5 h-5 text-destructive" />, color: "text-destructive", path: "/expenses", clickable: true },
+    { title: "Gross Profit", value: grossProfit, icon: <TrendingUp className={`w-5 h-5 ${grossProfit >= 0 ? "text-success" : "text-destructive"}`} />, color: grossProfit >= 0 ? "text-success" : "text-destructive", path: "/financial-report", clickable: true },
   ];
 
   return (
