@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
-  BarChart3, Package, Users, Receipt, Loader2
+  BarChart3, Package, Users, Receipt, Loader2, PiggyBank
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
