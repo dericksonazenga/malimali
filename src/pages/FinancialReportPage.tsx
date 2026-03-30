@@ -681,6 +681,29 @@ const FinancialReportPage = () => {
             <span className="font-mono text-right text-destructive">{symbol}{fmt(salaryBalance)}</span>
           </div>
         </AnalyticsSection>
+
+        {/* Savings Summary */}
+        <AnalyticsSection
+          title={`Savings (${savingsAccounts.length} accounts)`}
+          icon={<PiggyBank className="w-4 h-4 text-primary" />}
+          csvRows={savingsCSV()}
+          csvFilename={`${filePrefix}_Savings.csv`}
+        >
+          <div className="space-y-1">
+            <StatRow label="Total Deposits" value={totalDeposits} />
+            <StatRow label="Total Withdrawals" value={totalWithdrawals} negative />
+            <StatRow label="Net Savings Held" value={netSavingsHeld} bold />
+          </div>
+          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+            {savingsAccounts.length === 0 && <p className="text-sm text-muted-foreground">No savings accounts</p>}
+            {savingsAccounts.map((a: any) => (
+              <div key={a.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate">{a.customer_name}</span>
+                <span className="font-mono font-bold">{symbol}{fmt(Number(a.balance))}</span>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
       </div>
     </div>
   );
