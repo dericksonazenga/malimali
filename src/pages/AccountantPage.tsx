@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useNavigate } from "react-router-dom";
-import { FileText, Star, ShoppingCart, Wallet, TrendingUp } from "lucide-react";
+import { FileText, Star, ShoppingCart, Wallet, TrendingUp, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 
@@ -50,14 +50,16 @@ const AccountantPage = () => {
     fetchData();
   }, [resetSignal]);
 
-  const grossProfit = salesTotal - (agentTotal + vipTotal);
+  const totalPurchases = agentTotal + vipTotal;
+  const grossProfit = salesTotal - totalPurchases;
 
   const cards = [
-    { title: "Agent Purchases", value: agentTotal, icon: <FileText className="w-5 h-5 text-info" />, color: "text-info", path: "/data-entry?tab=agent" },
-    { title: "VIP Purchases", value: vipTotal, icon: <Star className="w-5 h-5 text-primary" />, color: "text-primary", path: "/data-entry?tab=vip" },
-    { title: "Sales Revenue", value: salesTotal, icon: <ShoppingCart className="w-5 h-5 text-success" />, color: "text-success", path: "/data-entry?tab=sales" },
-    { title: "Expenses", value: expenseTotal, icon: <Wallet className="w-5 h-5 text-destructive" />, color: "text-destructive", path: "/expenses" },
-    { title: "Gross Profit", value: grossProfit, icon: <TrendingUp className={`w-5 h-5 ${grossProfit >= 0 ? "text-success" : "text-destructive"}`} />, color: grossProfit >= 0 ? "text-success" : "text-destructive", path: "/financial-report" },
+    { title: "Agent Purchases", value: agentTotal, icon: <FileText className="w-5 h-5 text-info" />, color: "text-info", path: "/data-entry?tab=agent", clickable: true },
+    { title: "VIP Purchases", value: vipTotal, icon: <Star className="w-5 h-5 text-primary" />, color: "text-primary", path: "/data-entry?tab=vip", clickable: true },
+    { title: "Total Purchases", value: totalPurchases, icon: <Package className="w-5 h-5 text-orange-500" />, color: "text-foreground", path: "", clickable: false },
+    { title: "Sales Revenue", value: salesTotal, icon: <ShoppingCart className="w-5 h-5 text-success" />, color: "text-success", path: "/data-entry?tab=sales", clickable: true },
+    { title: "Expenses", value: expenseTotal, icon: <Wallet className="w-5 h-5 text-destructive" />, color: "text-destructive", path: "/expenses", clickable: true },
+    { title: "Gross Profit", value: grossProfit, icon: <TrendingUp className={`w-5 h-5 ${grossProfit >= 0 ? "text-success" : "text-destructive"}`} />, color: grossProfit >= 0 ? "text-success" : "text-destructive", path: "/financial-report", clickable: true },
   ];
 
   return (
@@ -67,8 +69,8 @@ const AccountantPage = () => {
         {cards.map((c) => (
           <Card
             key={c.title}
-            className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
-            onClick={() => navigate(c.path)}
+            className={`transition-all ${c.clickable ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : ""}`}
+            onClick={c.clickable ? () => navigate(c.path) : undefined}
           >
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
