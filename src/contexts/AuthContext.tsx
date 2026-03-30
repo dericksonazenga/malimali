@@ -20,7 +20,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "update_rates", "delete_entries", "view_reports", "view_financial_report", "view_daily_summaries", "view_accountant",
   "manage_workers", "manage_expenses", "manage_inventory", "adjust_stock",
   "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses",
-  "delete_rates", "manage_debts", "edit_records",
+  "delete_rates", "manage_debts", "edit_records", "view_savings", "manage_savings",
 ];
 
 const USER_ROLES: UserRole[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];

@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft,
+  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
   { label: "Expenses", path: "/expenses", icon: <Wallet className="w-5 h-5" />, permission: "manage_expenses" },
   { label: "Debts", path: "/debts", icon: <CreditCard className="w-5 h-5" />, permission: "view_debts" },
+  { label: "Savings", path: "/savings", icon: <PiggyBank className="w-5 h-5" />, permission: "view_savings" },
   { label: "Workers", path: "/workers", icon: <Users className="w-5 h-5" />, permission: "manage_workers" },
   { label: "Salary", path: "/salary", icon: <Banknote className="w-5 h-5" />, permission: "manage_workers" },
   { label: "Financial Report", path: "/financial-report", icon: <BarChart3 className="w-5 h-5" />, permission: "view_financial_report" },

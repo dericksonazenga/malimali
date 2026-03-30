@@ -30,6 +30,8 @@ const ALL_PERMISSIONS = [
   { key: "manage_inventory", label: "Manage Inventory" },
   { key: "adjust_stock", label: "Adjust Stock" },
   { key: "manage_debts", label: "Manage Debts" },
+  { key: "view_savings", label: "View Savings (Read-Only)" },
+  { key: "manage_savings", label: "Manage Savings (Add/Edit/Delete)" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {

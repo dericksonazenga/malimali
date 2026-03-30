@@ -30,6 +30,7 @@ import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MyInfoPage from "@/pages/MyInfoPage";
 import DebtManagementPage from "@/pages/DebtManagementPage";
+import SavingsPage from "@/pages/SavingsPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/daily-summaries" element={<ProtectedRoute permission="view_daily_summaries"><DailySummariesPage /></ProtectedRoute>} />
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/debts" element={<DebtManagementPage />} />
+        <Route path="/savings" element={<SavingsPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
