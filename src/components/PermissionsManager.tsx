@@ -160,12 +160,13 @@ const PermissionsManager = () => {
             <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
               <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
               {ALL_ROLES.map((role) => {
-                const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+                const allSelected = role === "admin" ? true : ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
                 return (
                   <td key={role} className="text-center py-3 px-2">
                     <Switch
                       checked={allSelected}
                       onCheckedChange={() => toggleAll(role)}
+                      disabled={role === "admin"}
                       className="mx-auto"
                     />
                   </td>
