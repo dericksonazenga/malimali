@@ -272,6 +272,7 @@ const WorkersPage = () => {
           )}
         </CardContent>
       </Card>
+      <AuditLogViewer tableName="workers" title="Worker Change History" />
     </div>
   );
 };
