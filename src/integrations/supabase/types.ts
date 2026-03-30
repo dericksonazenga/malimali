@@ -295,6 +295,9 @@ export type Database = {
           id: string
           notes: string | null
           paid_by: string | null
+          paid_by_name: string
+          paid_to_name: string
+          payment_method: string
         }
         Insert: {
           amount?: number
@@ -303,6 +306,9 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_by?: string | null
+          paid_by_name?: string
+          paid_to_name?: string
+          payment_method?: string
         }
         Update: {
           amount?: number
@@ -311,6 +317,9 @@ export type Database = {
           id?: string
           notes?: string | null
           paid_by?: string | null
+          paid_by_name?: string
+          paid_to_name?: string
+          payment_method?: string
         }
         Relationships: [
           {
