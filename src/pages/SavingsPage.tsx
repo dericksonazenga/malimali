@@ -549,7 +549,7 @@ const SavingsPage = () => {
       </Dialog>
 
       {/* Audit Log */}
-      <AuditLogViewer tableName="savings_accounts" title="Savings Change History" />
+      <AuditLogViewer tableName="savings_accounts" title="Savings Change History" allowDelete />
     </div>
   );
 };
