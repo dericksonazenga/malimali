@@ -316,6 +316,14 @@ const FinancialReportPage = () => {
     ["Worker", "Role", "Salary", "Paid", "Balance"],
     ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)]),
   ];
+  const savingsCSV = () => [
+    ["Customer", "Balance"],
+    ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]),
+    [],
+    ["Total Deposits", String(totalDeposits)],
+    ["Total Withdrawals", String(totalWithdrawals)],
+    ["Net Savings Held", String(netSavingsHeld)],
+  ];
   const revenueCSV = () => [
     ["Category", "Amount"],
     ["Sales Revenue", String(salesTotal)],
