@@ -393,7 +393,7 @@ const FinancialReportPage = () => {
         ].map(kpi => (
           <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-1">{kpi.icon}<span className="text-xs text-muted-foreground">{kpi.label}</span></div>
-            <p className={`text-xl font-bold font-mono ${kpi.color}`}>{symbol}{fmt(kpi.value)}</p>
+           <p className={`text-lg sm:text-xl font-bold font-mono ${kpi.color} break-all`}>{symbol}{fmt(kpi.value)}</p>
           </div>
         ))}
       </div>
