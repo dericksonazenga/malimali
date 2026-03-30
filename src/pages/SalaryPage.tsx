@@ -85,6 +85,7 @@ const SalaryPage = () => {
       return;
     }
 
+    await logAuditEvent({ tableName: "salaries", recordId: id, action: "payment", newData: { worker: worker.name, payment_amount: amount, new_paid: newPaid, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmounts((prev) => ({ ...prev, [id]: "" }));
     toast.success(`Payment of ${symbol}${amount.toLocaleString()} recorded`);
   };
