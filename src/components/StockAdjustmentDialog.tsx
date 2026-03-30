@@ -60,6 +60,9 @@ const StockAdjustmentDialog = ({ open, onOpenChange, commodities, persistentStoc
 
       if (updateError) throw updateError;
 
+      const { data: profile } = await supabase.from("profiles").select("display_name").eq("user_id", userId).single();
+      await logAuditEvent({ tableName: "stock", recordId: commodity, action: "update", oldData: { commodity, weight: currentWeight }, newData: { commodity, weight, reason: reason.trim() }, changedByName: profile?.display_name || "Unknown" });
+
       toast.success(`Stock adjusted: ${commodity} → ${weight.toLocaleString()} kg`);
       setCommodity("");
       setNewWeight("");
