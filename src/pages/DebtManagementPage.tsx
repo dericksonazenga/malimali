@@ -207,8 +207,10 @@ const DebtManagementPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const debt = debts.find(d => d.id === id);
     const { error } = await supabase.from("debts").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
+    if (debt) await logAuditEvent({ tableName: "debts", recordId: id, action: "delete", oldData: { customer_name: debt.customer_name, total_amount: debt.total_amount, balance: debt.balance }, changedByName: user?.name || "Unknown" });
     toast.success("Debt deleted");
   };
 
