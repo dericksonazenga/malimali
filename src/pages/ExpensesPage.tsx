@@ -11,6 +11,8 @@ import { Plus, Trash2, Search, UserCheck } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
