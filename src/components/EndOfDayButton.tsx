@@ -1,5 +1,6 @@
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Moon } from "lucide-react";
@@ -10,6 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 const EndOfDayButton = () => {
   const { triggerEndOfDay, canTrigger } = useEndOfDay();
   const { clearAll } = useInventory();
+  const { hasPermission } = useAuth();
+
+  if (!hasPermission("end_of_day")) return null;
 
   const handleConfirm = async () => {
     // 1. Save daily summary first (captures all today's data)

@@ -69,8 +69,8 @@ const AccountantPage = () => {
         {cards.map((c) => (
           <Card
             key={c.title}
-            className="cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all"
-            onClick={() => navigate(c.path)}
+            className={`transition-all ${c.clickable ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : ""}`}
+            onClick={c.clickable ? () => navigate(c.path) : undefined}
           >
             <CardContent className="p-5">
               <div className="flex items-start justify-between">

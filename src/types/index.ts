@@ -33,7 +33,8 @@ export type Permission =
   | "manage_debts"
   | "edit_records"
   | "view_savings"
-  | "manage_savings";
+  | "manage_savings"
+  | "end_of_day";
 
 export interface Commodity {
   id: string;
