@@ -25,6 +25,22 @@ const FinancialReportPage = () => {
   const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
+  // Savings data
+  const [savingsAccounts, setSavingsAccounts] = useState<any[]>([]);
+  const [savingsTransactions, setSavingsTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSavings = async () => {
+      const [{ data: accounts }, { data: txns }] = await Promise.all([
+        supabase.from("savings_accounts").select("*").order("customer_name"),
+        supabase.from("savings_transactions").select("*").order("created_at", { ascending: false }),
+      ]);
+      if (accounts) setSavingsAccounts(accounts as any[]);
+      if (txns) setSavingsTransactions(txns as any[]);
+    };
+    fetchSavings();
+  }, []);
+
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
