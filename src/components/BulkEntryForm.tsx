@@ -37,6 +37,12 @@ function parseWeightExpression(expr: string): { gross: number; container: number
     if (match) {
       return { gross: parseFloat(match[1]), container: parseFloat(match[2]) };
     }
+    // Support multiplication e.g. "50*3"
+    const mulMatch = part.match(/^(\d+(?:\.\d+)?)\s*\*\s*(\d+(?:\.\d+)?)$/);
+    if (mulMatch) {
+      const result = parseFloat(mulMatch[1]) * parseFloat(mulMatch[2]);
+      return { gross: result, container: 0 };
+    }
     // Just a number — no deduction
     const num = parseFloat(part);
     if (!isNaN(num)) {
@@ -196,7 +202,7 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
                       <Textarea
                         value={weightExpressions[c.name] || ""}
                         onChange={e => updateExpression(c.name, e.target.value)}
-                        placeholder="e.g. 102-10 + 100-2 + 65-2"
+                        placeholder="e.g. 102-10 + 100-2 + 50*3"
                         className="min-h-[60px] font-mono text-sm resize-y"
                         rows={2}
                       />

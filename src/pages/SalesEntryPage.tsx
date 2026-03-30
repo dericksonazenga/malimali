@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
+import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
@@ -28,8 +29,7 @@ const SalesEntryPage = () => {
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
-  const [grossWeight, setGrossWeight] = useState("");
-  const [containerWeight, setContainerWeight] = useState("");
+  const [weightExpr, setWeightExpr] = useState("");
   const [rateOverride, setRateOverride] = useState("");
   const [isExchange, setIsExchange] = useState(false);
   const [exchangeCommodity, setExchangeCommodity] = useState("");
@@ -51,9 +51,7 @@ const SalesEntryPage = () => {
 
   const selectedCommodity = commodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
-  const gross = parseFloat(grossWeight) || 0;
-  const container = parseFloat(containerWeight) || 0;
-  const actualWeight = Math.max(0, gross - container);
+  const actualWeight = evalWeightExpression(weightExpr);
   const amount = rate > 0 ? actualWeight * rate : undefined;
   const exchFee = parseFloat(exchangeFee) || 0;
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
@@ -63,12 +61,12 @@ const SalesEntryPage = () => {
     if (isExchange) {
       if (!exchangeCommodity || !exchangeWeight) { toast.error("Fill exchange fields"); return; }
     } else {
-      if (!commodity || !grossWeight) { toast.error("Fill required fields"); return; }
+      if (!commodity || !weightExpr) { toast.error("Fill required fields"); return; }
     }
 
     const entryKey = isExchange
       ? `exchange|${exchangeCommodity}|${exchangeWeight}|${exchangeFee}`
-      : `${customerName.trim().toLowerCase()}|${commodity}|${gross}|${container}`;
+      : `${customerName.trim().toLowerCase()}|${commodity}|${actualWeight}`;
     const now = Date.now();
     if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
       toast.error("Duplicate entry blocked. Wait 15 seconds or change values.");
@@ -80,8 +78,8 @@ const SalesEntryPage = () => {
       id: Date.now().toString(),
       customerName,
       commodity: isExchange ? exchangeCommodity : commodity,
-      grossWeight: isExchange ? 0 : gross,
-      containerWeight: isExchange ? 0 : container,
+      grossWeight: isExchange ? 0 : actualWeight,
+      containerWeight: 0,
       weight: isExchange ? (parseFloat(exchangeWeight) || 0) : actualWeight,
       rate: isExchange ? undefined : (rate > 0 ? rate : undefined),
       amount: entryAmount,
@@ -93,7 +91,7 @@ const SalesEntryPage = () => {
       createdAt: new Date().toISOString().split("T")[0],
     });
     setLastSubmit({ key: entryKey, time: now });
-    setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
+    setCustomerName(""); setCommodity(""); setWeightExpr(""); setRateOverride("");
     setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
     toast.success("Sales entry added!");
   };
@@ -127,8 +125,18 @@ const SalesEntryPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-                <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Weight (kg) *</Label>
+                  <Input
+                    value={weightExpr}
+                    onChange={(e) => setWeightExpr(e.target.value)}
+                    placeholder="e.g. 50+30 or 100*2"
+                    className="h-12 font-mono"
+                  />
+                  {hasMathOperators(weightExpr) && (
+                    <p className="text-xs text-muted-foreground">= {actualWeight} kg</p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label>Rate ({symbol}/kg)</Label>
                   <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
@@ -233,11 +241,9 @@ const SalesEntryPage = () => {
             }, {} as Record<string, { displayName: string; entries: SalesEntry[] }>);
 
             return Object.values(grouped).map((group) => {
-              const totalGross = group.entries.reduce((s, e) => s + (e.grossWeight || 0), 0);
-              const totalContainer = group.entries.reduce((s, e) => s + (e.containerWeight || 0), 0);
               const totalWt = group.entries.reduce((s, e) => s + (e.weight || 0), 0);
               const totalAmt = group.entries.reduce((s, e) => s + (e.amount || 0), 0);
-              const commodities = [...new Set(group.entries.map(e => e.commodity).filter(Boolean))];
+              const commoditiesList = [...new Set(group.entries.map(e => e.commodity).filter(Boolean))];
 
               return (
                 <Accordion key={group.displayName} type="single" collapsible className="mb-2">
@@ -249,7 +255,7 @@ const SalesEntryPage = () => {
                           <span className="bg-primary/10 text-primary text-xs font-mono px-2 py-0.5 rounded-full">{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</span>
                         </div>
                         <div className="flex items-center gap-4 font-mono text-xs">
-                          <span className="text-muted-foreground">{commodities.join(', ')}</span>
+                          <span className="text-muted-foreground">{commoditiesList.join(', ')}</span>
                           <span>Wt: <strong>{totalWt}</strong>kg</span>
                           <span className="text-primary font-semibold">{symbol}{totalAmt.toLocaleString()}</span>
                         </div>
@@ -260,9 +266,7 @@ const SalesEntryPage = () => {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Commodity</TableHead>
-                            <TableHead className="text-right">Gross</TableHead>
-                            <TableHead className="text-right">Container</TableHead>
-                            <TableHead className="text-right">Actual Wt</TableHead>
+                            <TableHead className="text-right">Weight</TableHead>
                             <TableHead className="text-right">Rate</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead>Exchange</TableHead>
@@ -273,8 +277,6 @@ const SalesEntryPage = () => {
                           {group.entries.map((entry) => (
                             <TableRow key={entry.id}>
                               <TableCell>{entry.commodity || "—"}</TableCell>
-                              <TableCell className="text-right font-mono">{entry.grossWeight}</TableCell>
-                              <TableCell className="text-right font-mono">{entry.containerWeight}</TableCell>
                               <TableCell className="text-right font-mono font-semibold">{entry.weight}</TableCell>
                               <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
                               <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
@@ -286,8 +288,6 @@ const SalesEntryPage = () => {
                           ))}
                           <TableRow className="bg-muted/30 font-semibold">
                             <TableCell>Totals</TableCell>
-                            <TableCell className="text-right font-mono">{totalGross}</TableCell>
-                            <TableCell className="text-right font-mono">{totalContainer}</TableCell>
                             <TableCell className="text-right font-mono">{totalWt}</TableCell>
                             <TableCell />
                             <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>

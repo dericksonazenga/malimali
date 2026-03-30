@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
+import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
 
 const AgentEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
@@ -27,8 +28,7 @@ const AgentEntryPage = () => {
   const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = useState("");
   const [commodity, setCommodity] = useState("");
-  const [grossWeight, setGrossWeight] = useState("");
-  const [containerWeight, setContainerWeight] = useState("");
+  const [weightExpr, setWeightExpr] = useState("");
   const [rateOverride, setRateOverride] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -46,19 +46,16 @@ const AgentEntryPage = () => {
 
   const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.agentRate || 0);
-  const gross = parseFloat(grossWeight) || 0;
-  const container = parseFloat(containerWeight) || 0;
-  const actualWeight = Math.max(0, gross - container);
+  const actualWeight = evalWeightExpression(weightExpr);
   const amount = actualWeight * rate;
 
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + e.amount, 0), [entries]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !commodity || !grossWeight) { toast.error("Fill required fields"); return; }
+    if (!customerName || !commodity || !weightExpr) { toast.error("Fill required fields"); return; }
 
-    // Duplicate guard: block identical entry within 15 seconds
-    const entryKey = `${customerName.trim().toLowerCase()}|${commodity}|${gross}|${container}`;
+    const entryKey = `${customerName.trim().toLowerCase()}|${commodity}|${actualWeight}`;
     const now = Date.now();
     if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
       toast.error("Duplicate entry blocked. Wait 15 seconds or change values.");
@@ -67,12 +64,12 @@ const AgentEntryPage = () => {
 
     const entry: AgentEntry = {
       id: Date.now().toString(), customerName, commodity,
-      grossWeight: gross, containerWeight: container, actualWeight, rate, amount,
+      grossWeight: actualWeight, containerWeight: 0, actualWeight, rate, amount,
       createdBy: "current", createdAt: new Date().toISOString().split("T")[0],
     };
     await addAgentEntry(entry);
     setLastSubmit({ key: entryKey, time: now });
-    setCustomerName(""); setCommodity(""); setGrossWeight(""); setContainerWeight(""); setRateOverride("");
+    setCustomerName(""); setCommodity(""); setWeightExpr(""); setRateOverride("");
     toast.success("Agent entry added!");
   };
 
@@ -105,8 +102,18 @@ const AgentEntryPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-                <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Weight (kg) *</Label>
+                  <Input
+                    value={weightExpr}
+                    onChange={(e) => setWeightExpr(e.target.value)}
+                    placeholder="e.g. 50+30 or 100*2"
+                    className="h-12 font-mono"
+                  />
+                  {hasMathOperators(weightExpr) && (
+                    <p className="text-xs text-muted-foreground">= {actualWeight} kg</p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label>Rate ({symbol}/kg) {!hasPermission("update_rates") && <span className="text-muted-foreground text-xs">(locked)</span>}</Label>
                   <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.agentRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
@@ -182,8 +189,6 @@ const AgentEntryPage = () => {
             }, {} as Record<string, { displayName: string; entries: AgentEntry[] }>);
 
             return Object.values(grouped).map((group) => {
-              const totalGross = group.entries.reduce((s, e) => s + e.grossWeight, 0);
-              const totalContainer = group.entries.reduce((s, e) => s + e.containerWeight, 0);
               const totalActual = group.entries.reduce((s, e) => s + e.actualWeight, 0);
               const totalAmt = group.entries.reduce((s, e) => s + e.amount, 0);
               const commodities = [...new Set(group.entries.map(e => e.commodity))];
@@ -209,8 +214,8 @@ const AgentEntryPage = () => {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Commodity</TableHead>
-                            <TableHead className="text-right">Gross</TableHead><TableHead className="text-right">Container</TableHead>
-                            <TableHead className="text-right">Actual</TableHead><TableHead className="text-right">Rate</TableHead>
+                            <TableHead className="text-right">Weight</TableHead>
+                            <TableHead className="text-right">Rate</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             {hasPermission("delete_entries") && <TableHead />}
                           </TableRow>
@@ -219,8 +224,6 @@ const AgentEntryPage = () => {
                           {group.entries.map((entry) => (
                             <TableRow key={entry.id}>
                               <TableCell>{entry.commodity}</TableCell>
-                              <TableCell className="text-right font-mono">{entry.grossWeight}</TableCell>
-                              <TableCell className="text-right font-mono">{entry.containerWeight}</TableCell>
                               <TableCell className="text-right font-mono font-semibold">{entry.actualWeight}</TableCell>
                               <TableCell className="text-right font-mono">{symbol}{entry.rate}</TableCell>
                               <TableCell className="text-right font-mono font-semibold text-primary">{symbol}{entry.amount.toLocaleString()}</TableCell>
@@ -231,8 +234,6 @@ const AgentEntryPage = () => {
                           ))}
                           <TableRow className="bg-muted/30 font-semibold">
                             <TableCell>Totals</TableCell>
-                            <TableCell className="text-right font-mono">{totalGross}</TableCell>
-                            <TableCell className="text-right font-mono">{totalContainer}</TableCell>
                             <TableCell className="text-right font-mono">{totalActual}</TableCell>
                             <TableCell />
                             <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>
