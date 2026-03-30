@@ -264,6 +264,21 @@ const FinancialReportPage = () => {
     styleSheet(profitWs, 1, profitData.length - 1, 6);
     XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
 
+    // Savings sheet
+    const savingsRows = savingsAccounts.map(a => [a.customer_name, a.balance]);
+    const savingsData = [
+      ["Customer", "Balance"],
+      ...savingsRows,
+      [],
+      ["Total Deposits", totalDeposits],
+      ["Total Withdrawals", totalWithdrawals],
+      ["Net Savings Held", netSavingsHeld],
+    ];
+    const savingsWs = XLSX.utils.aoa_to_sheet(savingsData);
+    autoFitColumns(savingsWs, savingsData);
+    styleSheet(savingsWs, 1);
+    XLSX.utils.book_append_sheet(wb, savingsWs, "Savings");
+
     // Style summary sheet too
     const summaryWs = wb.Sheets["Summary"];
     if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
