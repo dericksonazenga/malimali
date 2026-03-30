@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Banknote, Plus, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 import { differenceInDays, format, setDate, isAfter, isBefore, addMonths } from "date-fns";
 
 interface WorkerRow {
