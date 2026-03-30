@@ -202,7 +202,7 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
                       <Textarea
                         value={weightExpressions[c.name] || ""}
                         onChange={e => updateExpression(c.name, e.target.value)}
-                        placeholder="e.g. 102-10 + 100-2 + 65-2"
+                        placeholder="e.g. 102-10 + 100-2 + 50*3"
                         className="min-h-[60px] font-mono text-sm resize-y"
                         rows={2}
                       />
