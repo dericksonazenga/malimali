@@ -664,10 +664,9 @@ const FinancialReportPage = () => {
             ))}
           </div>
           {commodityProfitBreakdown.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-border grid grid-cols-6 font-bold text-sm">
+            <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
               <span>Total</span>
-              <span /><span /><span /><span />
-              <span className={`text-right font-mono ${commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0) >= 0 ? "text-success" : "text-destructive"}`}>
+              <span className={`font-mono ${commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0) >= 0 ? "text-success" : "text-destructive"}`}>
                 {symbol}{fmt(commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0))}
               </span>
             </div>
