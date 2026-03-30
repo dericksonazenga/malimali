@@ -30,6 +30,7 @@ import NotFound from "@/pages/NotFound";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MyInfoPage from "@/pages/MyInfoPage";
 import DebtManagementPage from "@/pages/DebtManagementPage";
+import SavingsPage from "@/pages/SavingsPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
