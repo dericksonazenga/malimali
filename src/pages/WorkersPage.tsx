@@ -129,6 +129,7 @@ const WorkersPage = () => {
     }
     await supabase.from("recruited_workers").delete().eq("id", w.id);
     await supabase.from("workers").delete().ilike("name", w.name);
+    await logAuditEvent({ tableName: "workers", recordId: w.id, action: "delete", oldData: { name: w.name, role: w.role, email: w.email, phone: w.phone }, changedByName: user?.name || "Unknown" });
     toast.success("Worker removed");
     fetchWorkers();
   };
