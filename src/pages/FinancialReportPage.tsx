@@ -622,7 +622,7 @@ const FinancialReportPage = () => {
         >
           <div className="space-y-1">
             {commodityProfitBreakdown.length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
-            <div className="grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
+            <div className="hidden sm:grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
               <span>Commodity</span>
               <span className="text-right">Buy/kg</span>
               <span className="text-right">Sell/kg</span>
@@ -631,18 +631,33 @@ const FinancialReportPage = () => {
               <span className="text-right">Profit</span>
             </div>
             {commodityProfitBreakdown.map((c) => (
-              <div key={c.commodity} className="grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
-                <span className="truncate font-medium">{c.commodity}</span>
-                <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
-                <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
-                <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
-                  {symbol}{fmt(c.marginPerKg)}
-                </span>
-                <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
-                <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {symbol}{fmt(c.totalProfit)}
-                </span>
-              </div>
+              <>
+                {/* Desktop row */}
+                <div key={c.commodity} className="hidden sm:grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
+                  <span className="truncate font-medium">{c.commodity}</span>
+                  <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
+                  <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
+                  <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
+                    {symbol}{fmt(c.marginPerKg)}
+                  </span>
+                  <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
+                  <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                    {symbol}{fmt(c.totalProfit)}
+                  </span>
+                </div>
+                {/* Mobile card */}
+                <div key={`m-${c.commodity}`} className="sm:hidden border border-border/50 rounded-lg p-2 space-y-1">
+                  <p className="font-medium text-sm">{c.commodity}</p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <span className="text-muted-foreground">Buy: <span className="font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span></span>
+                    <span className="text-muted-foreground">Sell: <span className="font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span></span>
+                    <span className="text-muted-foreground">Sold: <span className="font-mono">{fmt(c.totalWeightSold)}kg</span></span>
+                    <span className={`font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                      Profit: {symbol}{fmt(c.totalProfit)}
+                    </span>
+                  </div>
+                </div>
+              </>
             ))}
           </div>
           {commodityProfitBreakdown.length > 0 && (
