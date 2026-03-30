@@ -61,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/daily-summaries" element={<ProtectedRoute permission="view_daily_summaries"><DailySummariesPage /></ProtectedRoute>} />
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/debts" element={<DebtManagementPage />} />
+        <Route path="/savings" element={<SavingsPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
