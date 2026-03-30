@@ -148,8 +148,9 @@ const PermissionsManager = () => {
                 {ALL_ROLES.map((role) => (
                   <td key={role} className="text-center py-3 px-2">
                     <Switch
-                      checked={matrix[role]?.has(perm.key) ?? false}
+                      checked={role === "admin" ? true : (matrix[role]?.has(perm.key) ?? false)}
                       onCheckedChange={() => toggle(role, perm.key)}
+                      disabled={role === "admin"}
                       className="mx-auto"
                     />
                   </td>
