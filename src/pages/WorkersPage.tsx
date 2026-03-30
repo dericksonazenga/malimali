@@ -106,17 +106,17 @@ const WorkersPage = () => {
   };
 
   const saveEdit = async (w: WorkerRow) => {
-    // Update in recruited_workers
+    const oldData = { name: w.name, role: w.role };
+    const newData = { name: editValues.name, role: editValues.role };
     await supabase.from("recruited_workers").update({ name: editValues.name, role: editValues.role }).eq("id", w.id);
-    // Update in workers table by original name (case-insensitive)
     await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).ilike("name", w.name);
-    // Sync name and role to profiles table (case-insensitive)
     const profileUpdate: Record<string, string> = {};
     if (w.name.toLowerCase() !== editValues.name.toLowerCase()) profileUpdate.display_name = editValues.name;
     if (w.role !== editValues.role) profileUpdate.role = editValues.role;
     if (Object.keys(profileUpdate).length > 0) {
       await supabase.from("profiles").update(profileUpdate).ilike("display_name", w.name);
     }
+    await logAuditEvent({ tableName: "workers", recordId: w.id, action: "update", oldData, newData, changedByName: user?.name || "Unknown" });
     toast.success("Worker details updated");
     setEditingId(null);
     fetchWorkers();
