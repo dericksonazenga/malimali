@@ -122,7 +122,9 @@ const ExpensesPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const expense = expenses.find(e => e.id === id);
     await supabase.from("expenses").delete().eq("id", id);
+    if (expense) await logAuditEvent({ tableName: "expenses", recordId: id, action: "delete", oldData: { category: expense.category, amount: expense.amount }, changedByName: user?.name || "Unknown" });
   };
 
   const canDelete = hasPermission("delete_expenses") || hasPermission("delete_entries");
