@@ -101,18 +101,20 @@ const ExpensesPage = () => {
       }
     }
 
-    const { error } = await supabase.from("expenses").insert({
+    const { data, error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
       date,
       notes: expenseNotes,
       verified_by: selectedWorker.name,
-    });
+    }).select("id").single();
 
     if (error) {
       toast.error("Failed to save expense");
       return;
     }
+
+    await logAuditEvent({ tableName: "expenses", recordId: data.id, action: "create", newData: { category, amount: parseFloat(amount), date, verified_by: selectedWorker.name }, changedByName: user?.name || "Unknown" });
 
     setCategory(""); setAmount(""); setNotes("");
     setSelectedWorker(null);
