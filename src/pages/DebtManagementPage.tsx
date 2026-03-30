@@ -472,6 +472,7 @@ const DebtManagementPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      <AuditLogViewer tableName="debts" title="Debt Change History" />
     </div>
   );
 };
