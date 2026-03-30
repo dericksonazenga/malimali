@@ -277,6 +277,7 @@ const SalaryPage = () => {
           </div>
         </CardContent>
       </Card>
+      <AuditLogViewer tableName="salaries" title="Salary & Payment History" />
     </div>
   );
 };
