@@ -11,10 +11,12 @@ import { Plus, Trash2, Search, UserCheck } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -99,18 +101,20 @@ const ExpensesPage = () => {
       }
     }
 
-    const { error } = await supabase.from("expenses").insert({
+    const { data, error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
       date,
       notes: expenseNotes,
       verified_by: selectedWorker.name,
-    });
+    }).select("id").single();
 
     if (error) {
       toast.error("Failed to save expense");
       return;
     }
+
+    await logAuditEvent({ tableName: "expenses", recordId: data.id, action: "create", newData: { category, amount: parseFloat(amount), date, verified_by: selectedWorker.name }, changedByName: user?.name || "Unknown" });
 
     setCategory(""); setAmount(""); setNotes("");
     setSelectedWorker(null);
@@ -118,7 +122,9 @@ const ExpensesPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const expense = expenses.find(e => e.id === id);
     await supabase.from("expenses").delete().eq("id", id);
+    if (expense) await logAuditEvent({ tableName: "expenses", recordId: id, action: "delete", oldData: { category: expense.category, amount: expense.amount }, changedByName: user?.name || "Unknown" });
   };
 
   const canDelete = hasPermission("delete_expenses") || hasPermission("delete_entries");
@@ -213,6 +219,7 @@ const ExpensesPage = () => {
           )}
         </CardContent>
       </Card>
+      <AuditLogViewer tableName="expenses" title="Expense Change History" />
     </div>
   );
 };

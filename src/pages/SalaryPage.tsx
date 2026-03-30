@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Banknote, Plus, AlertTriangle, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 import { differenceInDays, format, setDate, isAfter, isBefore, addMonths } from "date-fns";
 
 interface WorkerRow {
@@ -83,6 +85,7 @@ const SalaryPage = () => {
       return;
     }
 
+    await logAuditEvent({ tableName: "salaries", recordId: id, action: "payment", newData: { worker: worker.name, payment_amount: amount, new_paid: newPaid, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmounts((prev) => ({ ...prev, [id]: "" }));
     toast.success(`Payment of ${symbol}${amount.toLocaleString()} recorded`);
   };
@@ -91,9 +94,11 @@ const SalaryPage = () => {
     const salary = parseFloat(editSalaryValue) || 0;
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
+    const oldSalary = worker.salary;
     const newBalance = salary - worker.paid;
     const { error } = await supabase.from("workers").update({ salary, balance: newBalance }).eq("id", workerId);
     if (error) { toast.error("Failed to update salary"); return; }
+    await logAuditEvent({ tableName: "salaries", recordId: workerId, action: "update", oldData: { worker: worker.name, salary: oldSalary }, newData: { worker: worker.name, salary }, changedByName: user?.name || "Unknown" });
     toast.success("Salary updated");
     setEditingSalaryId(null);
   };
@@ -272,6 +277,7 @@ const SalaryPage = () => {
           </div>
         </CardContent>
       </Card>
+      <AuditLogViewer tableName="salaries" title="Salary & Payment History" />
     </div>
   );
 };

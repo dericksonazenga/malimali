@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { logAuditEvent } from "@/utils/auditLog";
 import { toast } from "sonner";
 
 interface StockAdjustmentDialogProps {
@@ -58,6 +59,9 @@ const StockAdjustmentDialog = ({ open, onOpenChange, commodities, persistentStoc
       );
 
       if (updateError) throw updateError;
+
+      const { data: profile } = await supabase.from("profiles").select("display_name").eq("user_id", userId).single();
+      await logAuditEvent({ tableName: "stock", recordId: commodity, action: "update", oldData: { commodity, weight: currentWeight }, newData: { commodity, weight, reason: reason.trim() }, changedByName: profile?.display_name || "Unknown" });
 
       toast.success(`Stock adjusted: ${commodity} → ${weight.toLocaleString()} kg`);
       setCommodity("");

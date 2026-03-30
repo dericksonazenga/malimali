@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus } from "lucide-react";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 interface Debt {
   id: string;
@@ -140,15 +142,16 @@ const DebtManagementPage = () => {
   };
 
   const saveDebt = async (amt: number, desc?: string) => {
-    const { error } = await supabase.from("debts").insert({
+    const { data, error } = await supabase.from("debts").insert({
       customer_name: customerName.trim(),
       description: desc ?? description,
       total_amount: amt,
       balance: amt,
       created_by: user?.id,
       status: debtType === "money_out" ? "money_out" : "unpaid",
-    });
+    }).select("id").single();
     if (error) { toast.error("Failed to add debt"); return; }
+    await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
     setCustomerName(""); setDescription(""); setTotalAmount(""); setShowAdd(false); setDebtType("money_in");
     toast.success("Debt added");
   };
@@ -157,6 +160,7 @@ const DebtManagementPage = () => {
     if (!editDebt) return;
     const amt = parseFloat(editAmount);
     const newBalance = amt - editDebt.paid_amount;
+    const oldData = { customer_name: editDebt.customer_name, description: editDebt.description, total_amount: editDebt.total_amount };
     const { error } = await supabase.from("debts").update({
       customer_name: editName,
       description: editDesc,
@@ -166,6 +170,7 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", editDebt.id);
     if (error) { toast.error("Failed to update"); return; }
+    await logAuditEvent({ tableName: "debts", recordId: editDebt.id, action: "update", oldData, newData: { customer_name: editName, description: editDesc, total_amount: amt }, changedByName: user?.name || "Unknown" });
     setEditDebt(null);
     toast.success("Debt updated");
   };
@@ -193,6 +198,7 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", payDebt.id);
 
+    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: payNotes, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmount(""); setPayNotes("");
     toast.success("Payment recorded");
     fetchPayments(payDebt.id);
@@ -201,8 +207,10 @@ const DebtManagementPage = () => {
   };
 
   const handleDelete = async (id: string) => {
+    const debt = debts.find(d => d.id === id);
     const { error } = await supabase.from("debts").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
+    if (debt) await logAuditEvent({ tableName: "debts", recordId: id, action: "delete", oldData: { customer_name: debt.customer_name, total_amount: debt.total_amount, balance: debt.balance }, changedByName: user?.name || "Unknown" });
     toast.success("Debt deleted");
   };
 
@@ -464,6 +472,7 @@ const DebtManagementPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      <AuditLogViewer tableName="debts" title="Debt Change History" />
     </div>
   );
 };
