@@ -447,11 +447,12 @@ const FinancialReportPage = () => {
               {groupEntriesByCustomer(agentEntries).map((g) => (
                 <AccordionItem key={g.customerName} value={g.customerName}>
                   <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-medium truncate">{g.customerName}</span>
-                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
-                      <span className="ml-auto font-mono text-info whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{g.customerName}</span>
+                        <Badge variant="secondary" className="text-[10px] h-5 shrink-0">{g.count}</Badge>
+                      </div>
+                      <span className="ml-auto font-mono text-info whitespace-nowrap text-xs">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
