@@ -197,25 +197,47 @@ const ExpensesPage = () => {
       </Dialog>
 
       <Card>
-        <CardHeader><CardTitle className="flex flex-col sm:flex-row justify-between gap-1"><span>Today's Expenses</span><span className="text-destructive font-mono">Total: {symbol}{total.toLocaleString()}</span></CardTitle></CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardHeader><CardTitle className="flex flex-col sm:flex-row justify-between gap-1"><span>Today's Expenses</span><span className="text-destructive font-mono text-sm sm:text-base">Total: {symbol}{total.toLocaleString()}</span></CardTitle></CardHeader>
+        <CardContent>
           {loading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Verified By</TableHead><TableHead>Notes</TableHead>{canDelete && <TableHead />}</TableRow></TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Verified By</TableHead><TableHead>Notes</TableHead>{canDelete && <TableHead />}</TableRow></TableHeader>
+                  <TableBody>
+                    {expenses.map((e) => (
+                      <TableRow key={e.id}>
+                        <TableCell className="font-medium">{e.category}</TableCell>
+                        <TableCell className="text-right font-mono font-semibold text-destructive">{symbol}{e.amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{e.notes}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{e.date}</TableCell>
+                        {canDelete && (
+                          <TableCell><Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => handleDelete(e.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile */}
+              <div className="md:hidden space-y-2">
                 {expenses.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="font-medium">{e.category}</TableCell>
-                    <TableCell className="text-right font-mono font-semibold text-destructive">{symbol}{e.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{e.notes}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{e.date}</TableCell>
-                    {canDelete && (
-                      <TableCell><Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => handleDelete(e.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
-                    )}
-                  </TableRow>
+                  <div key={e.id} className="border border-border rounded-lg p-3 space-y-1">
+                    <div className="flex justify-between items-start">
+                      <p className="font-medium text-sm">{e.category}</p>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono font-semibold text-destructive text-sm">{symbol}{e.amount.toLocaleString()}</span>
+                        {canDelete && <Button variant="ghost" size="icon" className="text-destructive h-7 w-7" onClick={() => handleDelete(e.id)}><Trash2 className="w-3.5 h-3.5" /></Button>}
+                      </div>
+                    </div>
+                    {e.notes && <p className="text-xs text-muted-foreground">{e.notes}</p>}
+                    <p className="text-xs text-muted-foreground">{e.date}</p>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+                {expenses.length === 0 && <p className="text-center text-muted-foreground py-8">No expenses today</p>}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

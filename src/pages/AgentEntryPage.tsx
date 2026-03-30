@@ -191,16 +191,16 @@ const AgentEntryPage = () => {
               return (
                 <Accordion key={group.displayName} type="single" collapsible className="mb-2">
                   <AccordionItem value={group.displayName} className="border rounded-lg">
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                      <div className="flex flex-1 items-center justify-between pr-4 text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold">{group.displayName}</span>
-                          <span className="bg-primary/10 text-primary text-xs font-mono px-2 py-0.5 rounded-full">{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</span>
+                     <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 pr-4 text-sm w-full">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-semibold truncate">{group.displayName}</span>
+                          <span className="bg-primary/10 text-primary text-xs font-mono px-2 py-0.5 rounded-full shrink-0">{group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}</span>
                         </div>
-                        <div className="flex items-center gap-4 font-mono text-xs">
-                          <span className="text-muted-foreground">{commodities.join(', ')}</span>
-                          <span>Wt: <strong>{totalActual}</strong>kg</span>
-                          <span className="text-primary font-semibold">{symbol}{totalAmt.toLocaleString()}</span>
+                        <div className="flex items-center gap-2 sm:gap-4 font-mono text-xs">
+                          <span className="text-muted-foreground truncate hidden sm:inline">{commodities.join(', ')}</span>
+                          <span className="whitespace-nowrap">Wt: <strong>{totalActual}</strong>kg</span>
+                          <span className="text-primary font-semibold whitespace-nowrap">{symbol}{totalAmt.toLocaleString()}</span>
                         </div>
                       </div>
                     </AccordionTrigger>

@@ -294,6 +294,8 @@ const DebtManagementPage = () => {
           </div>
 
           <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden lg:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -361,6 +363,45 @@ const DebtManagementPage = () => {
                 )}
               </TableBody>
             </Table>
+            </div>
+            {/* Mobile cards */}
+            <div className="lg:hidden space-y-2">
+              {filtered.map(d => {
+                const isMoneyOut = d.status === "money_out";
+                const deductionAmount = isMoneyOut ? parseDeductionAmount(d.description) : 0;
+                const grossAmount = isMoneyOut ? d.total_amount + deductionAmount : d.total_amount;
+                return (
+                  <div key={d.id} className="border border-border rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{d.customer_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{d.description}</p>
+                      </div>
+                      {getStatusBadge(d.status)}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</p></div>
+                      <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-success">{symbol}{d.paid_amount.toLocaleString()}</p></div>
+                      <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
+                    </div>
+                    {canEdit && (
+                      <div className="flex gap-1">
+                        {d.status !== "paid" && (
+                          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}>
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No debts found</p>}
+            </div>
           </div>
         </CardContent>
       </Card>

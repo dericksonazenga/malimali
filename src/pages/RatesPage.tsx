@@ -100,7 +100,7 @@ const RatesPage = () => {
               </div>
             </div>
           )}
-          <div className="overflow-x-auto">
+          <div>
             {loading ? (
               <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -111,31 +111,73 @@ const RatesPage = () => {
                 <p className="text-sm">No commodities found. Add one above or check your connection.</p>
               </div>
             ) : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent Rate ({symbol}/kg)</TableHead><TableHead className="text-right">VIP Rate ({symbol}/kg)</TableHead><TableHead className="text-right">Sales Rate ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
-              <TableBody>
-                {commodities.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    {editing === c.id ? (
-                      <>
-                        <TableCell className="text-right"><Input type="number" value={editValues.agentRate} onChange={(e) => setEditValues((v) => ({ ...v, agentRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
-                        <TableCell className="text-right"><Input type="number" value={editValues.vipRate} onChange={(e) => setEditValues((v) => ({ ...v, vipRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
-                        <TableCell className="text-right"><Input type="number" value={editValues.salesRate} onChange={(e) => setEditValues((v) => ({ ...v, salesRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
-                        <TableCell><Button size="sm" onClick={() => saveEdit(c.id)} className="gap-1"><Save className="w-3 h-3" /> Save</Button></TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell className="text-right font-mono">{symbol}{c.agentRate}</TableCell>
-                        <TableCell className="text-right font-mono">{symbol}{c.vipRate}</TableCell>
-                        <TableCell className="text-right font-mono">{symbol}{c.salesRate}</TableCell>
-                        <TableCell><Button variant="outline" size="sm" onClick={() => startEdit(c)}>Edit</Button></TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              <>
+                {/* Desktop */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent ({symbol}/kg)</TableHead><TableHead className="text-right">VIP ({symbol}/kg)</TableHead><TableHead className="text-right">Sales ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
+                    <TableBody>
+                      {commodities.map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          {editing === c.id ? (
+                            <>
+                              <TableCell className="text-right"><Input type="number" value={editValues.agentRate} onChange={(e) => setEditValues((v) => ({ ...v, agentRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
+                              <TableCell className="text-right"><Input type="number" value={editValues.vipRate} onChange={(e) => setEditValues((v) => ({ ...v, vipRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
+                              <TableCell className="text-right"><Input type="number" value={editValues.salesRate} onChange={(e) => setEditValues((v) => ({ ...v, salesRate: +e.target.value }))} className="w-24 ml-auto text-right" /></TableCell>
+                              <TableCell><Button size="sm" onClick={() => saveEdit(c.id)} className="gap-1"><Save className="w-3 h-3" /> Save</Button></TableCell>
+                            </>
+                          ) : (
+                            <>
+                              <TableCell className="text-right font-mono">{symbol}{c.agentRate}</TableCell>
+                              <TableCell className="text-right font-mono">{symbol}{c.vipRate}</TableCell>
+                              <TableCell className="text-right font-mono">{symbol}{c.salesRate}</TableCell>
+                              <TableCell><Button variant="outline" size="sm" onClick={() => startEdit(c)}>Edit</Button></TableCell>
+                            </>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {/* Mobile */}
+                <div className="md:hidden space-y-2">
+                  {commodities.map((c) => (
+                    <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <p className="font-medium">{c.name}</p>
+                        {editing === c.id ? (
+                          <Button size="sm" onClick={() => saveEdit(c.id)} className="gap-1 h-7"><Save className="w-3 h-3" /> Save</Button>
+                        ) : (
+                          <Button variant="outline" size="sm" className="h-7" onClick={() => startEdit(c)}>Edit</Button>
+                        )}
+                      </div>
+                      {editing === c.id ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Agent</span>
+                            <Input type="number" value={editValues.agentRate} onChange={(e) => setEditValues((v) => ({ ...v, agentRate: +e.target.value }))} className="h-8 text-sm" />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">VIP</span>
+                            <Input type="number" value={editValues.vipRate} onChange={(e) => setEditValues((v) => ({ ...v, vipRate: +e.target.value }))} className="h-8 text-sm" />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Sales</span>
+                            <Input type="number" value={editValues.salesRate} onChange={(e) => setEditValues((v) => ({ ...v, salesRate: +e.target.value }))} className="h-8 text-sm" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div><span className="text-muted-foreground">Agent</span><p className="font-mono font-semibold">{symbol}{c.agentRate}</p></div>
+                          <div><span className="text-muted-foreground">VIP</span><p className="font-mono font-semibold text-primary">{symbol}{c.vipRate}</p></div>
+                          <div><span className="text-muted-foreground">Sales</span><p className="font-mono font-semibold text-success">{symbol}{c.salesRate}</p></div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </CardContent>

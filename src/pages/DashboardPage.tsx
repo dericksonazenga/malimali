@@ -78,7 +78,7 @@ const DashboardPage = () => {
   const currentStock = persistentTotal + stockIn - stockOut;
 
   return (
-    <div className="space-y-4 lg:space-y-6 max-w-6xl p-3 lg:p-6 rounded-2xl bg-[linear-gradient(135deg,#0f2027_0%,#203a43_40%,#2c5364_70%,#1a3a2a_100%)] min-h-screen">
+    <div className="space-y-4 lg:space-y-6 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold">Welcome back, Rachel Scrap Ltd.</h1>
         <p className="text-muted-foreground">Here's your scrap yard overview</p>
@@ -126,10 +126,10 @@ const DashboardPage = () => {
               {commodities.slice(0, 5).map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
-                  <div className="flex gap-4 text-sm font-mono">
-                    <span className="text-muted-foreground">A: {symbol}{c.agentRate}</span>
-                    <span className="text-primary">V: {symbol}{c.vipRate}</span>
-                    <span className="text-success">S: {symbol}{c.salesRate}</span>
+                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm font-mono justify-end">
+                    <span className="text-muted-foreground whitespace-nowrap">A: {symbol}{c.agentRate}</span>
+                    <span className="text-primary whitespace-nowrap">V: {symbol}{c.vipRate}</span>
+                    <span className="text-success whitespace-nowrap">S: {symbol}{c.salesRate}</span>
                   </div>
                 </div>
               ))}

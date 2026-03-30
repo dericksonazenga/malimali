@@ -218,7 +218,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <EndOfDayButton />
           </div>
         </header>
-        <main className="flex-1 p-3 lg:p-6 overflow-auto animate-fade-in">{children}</main>
+        <main className="flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto animate-fade-in">{children}</main>
       </div>
     </div>
   );

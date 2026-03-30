@@ -347,9 +347,9 @@ const FinancialReportPage = () => {
   return (
     <div className="space-y-5 max-w-6xl pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col gap-3">
         <h1 className="text-xl font-bold">Analytics & Reports</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <ReportSheetView
             symbol={symbol}
             fmt={fmt}
@@ -374,8 +374,8 @@ const FinancialReportPage = () => {
             commodityBreakdown={commodityBreakdown}
             commodityProfitBreakdown={commodityProfitBreakdown}
           />
-          <Button onClick={downloadFullReport} className="h-10 gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> Download Full Report
+          <Button onClick={downloadFullReport} className="h-10 gap-2 text-xs sm:text-sm">
+            <FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">Download</span> Full Report
           </Button>
         </div>
       </div>
@@ -393,7 +393,7 @@ const FinancialReportPage = () => {
         ].map(kpi => (
           <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-1">{kpi.icon}<span className="text-xs text-muted-foreground">{kpi.label}</span></div>
-            <p className={`text-xl font-bold font-mono ${kpi.color}`}>{symbol}{fmt(kpi.value)}</p>
+           <p className={`text-lg sm:text-xl font-bold font-mono ${kpi.color} break-all`}>{symbol}{fmt(kpi.value)}</p>
           </div>
         ))}
       </div>
@@ -447,11 +447,12 @@ const FinancialReportPage = () => {
               {groupEntriesByCustomer(agentEntries).map((g) => (
                 <AccordionItem key={g.customerName} value={g.customerName}>
                   <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-medium truncate">{g.customerName}</span>
-                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
-                      <span className="ml-auto font-mono text-info whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{g.customerName}</span>
+                        <Badge variant="secondary" className="text-[10px] h-5 shrink-0">{g.count}</Badge>
+                      </div>
+                      <span className="ml-auto font-mono text-info whitespace-nowrap text-xs">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -484,11 +485,12 @@ const FinancialReportPage = () => {
               {groupEntriesByCustomer(vipEntries).map((g) => (
                 <AccordionItem key={g.customerName} value={g.customerName}>
                   <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-medium truncate">{g.customerName}</span>
-                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
-                      <span className="ml-auto font-mono text-primary whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{g.customerName}</span>
+                        <Badge variant="secondary" className="text-[10px] h-5 shrink-0">{g.count}</Badge>
+                      </div>
+                      <span className="ml-auto font-mono text-primary whitespace-nowrap text-xs">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -521,11 +523,12 @@ const FinancialReportPage = () => {
               {groupEntriesByCustomer(salesEntries, "weight").map((g) => (
                 <AccordionItem key={g.customerName} value={g.customerName}>
                   <AccordionTrigger className="py-2 text-sm hover:no-underline">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-medium truncate">{g.customerName || "No Name"}</span>
-                      <Badge variant="secondary" className="text-[10px] h-5">{g.count}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">{g.commodities.join(", ")}</span>
-                      <span className="ml-auto font-mono text-success whitespace-nowrap">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{g.customerName || "No Name"}</span>
+                        <Badge variant="secondary" className="text-[10px] h-5 shrink-0">{g.count}</Badge>
+                      </div>
+                      <span className="ml-auto font-mono text-success whitespace-nowrap text-xs">{fmt(g.totalWeight)}kg · {symbol}{fmt(g.totalAmount)}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -622,7 +625,7 @@ const FinancialReportPage = () => {
         >
           <div className="space-y-1">
             {commodityProfitBreakdown.length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
-            <div className="grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
+            <div className="hidden sm:grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
               <span>Commodity</span>
               <span className="text-right">Buy/kg</span>
               <span className="text-right">Sell/kg</span>
@@ -631,25 +634,39 @@ const FinancialReportPage = () => {
               <span className="text-right">Profit</span>
             </div>
             {commodityProfitBreakdown.map((c) => (
-              <div key={c.commodity} className="grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
-                <span className="truncate font-medium">{c.commodity}</span>
-                <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
-                <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
-                <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
-                  {symbol}{fmt(c.marginPerKg)}
-                </span>
-                <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
-                <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                  {symbol}{fmt(c.totalProfit)}
-                </span>
-              </div>
+              <>
+                {/* Desktop row */}
+                <div key={c.commodity} className="hidden sm:grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
+                  <span className="truncate font-medium">{c.commodity}</span>
+                  <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
+                  <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
+                  <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
+                    {symbol}{fmt(c.marginPerKg)}
+                  </span>
+                  <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
+                  <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                    {symbol}{fmt(c.totalProfit)}
+                  </span>
+                </div>
+                {/* Mobile card */}
+                <div key={`m-${c.commodity}`} className="sm:hidden border border-border/50 rounded-lg p-2 space-y-1">
+                  <p className="font-medium text-sm">{c.commodity}</p>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <span className="text-muted-foreground">Buy: <span className="font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span></span>
+                    <span className="text-muted-foreground">Sell: <span className="font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span></span>
+                    <span className="text-muted-foreground">Sold: <span className="font-mono">{fmt(c.totalWeightSold)}kg</span></span>
+                    <span className={`font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                      Profit: {symbol}{fmt(c.totalProfit)}
+                    </span>
+                  </div>
+                </div>
+              </>
             ))}
           </div>
           {commodityProfitBreakdown.length > 0 && (
-            <div className="mt-2 pt-2 border-t border-border grid grid-cols-6 font-bold text-sm">
+            <div className="mt-2 pt-2 border-t border-border flex justify-between font-bold text-sm">
               <span>Total</span>
-              <span /><span /><span /><span />
-              <span className={`text-right font-mono ${commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0) >= 0 ? "text-success" : "text-destructive"}`}>
+              <span className={`font-mono ${commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0) >= 0 ? "text-success" : "text-destructive"}`}>
                 {symbol}{fmt(commodityProfitBreakdown.reduce((s, c) => s + c.totalProfit, 0))}
               </span>
             </div>
@@ -666,19 +683,23 @@ const FinancialReportPage = () => {
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {workers.length === 0 && <p className="text-sm text-muted-foreground">No workers</p>}
             {workers.map((w: any) => (
-              <div key={w.id} className="grid grid-cols-4 text-sm py-1 border-b border-border/50">
-                <span className="truncate">{w.name}</span>
-                <span className="font-mono text-right">{symbol}{fmt(Number(w.salary))}</span>
-                <span className="font-mono text-right text-success">{symbol}{fmt(Number(w.paid))}</span>
-                <span className="font-mono text-right text-destructive">{symbol}{fmt(Number(w.balance))}</span>
+              <div key={w.id} className="flex flex-wrap justify-between gap-x-2 text-sm py-1 border-b border-border/50">
+                <span className="truncate min-w-0">{w.name}</span>
+                <div className="flex gap-3 font-mono text-xs sm:text-sm">
+                  <span>{symbol}{fmt(Number(w.salary))}</span>
+                  <span className="text-success">{symbol}{fmt(Number(w.paid))}</span>
+                  <span className="text-destructive">{symbol}{fmt(Number(w.balance))}</span>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-2 pt-2 border-t border-border grid grid-cols-4 font-bold text-sm">
+          <div className="mt-2 pt-2 border-t border-border flex flex-wrap justify-between gap-x-2 font-bold text-sm">
             <span>Total</span>
-            <span className="font-mono text-right">{symbol}{fmt(salaryTotal)}</span>
-            <span className="font-mono text-right text-success">{symbol}{fmt(salaryPaid)}</span>
-            <span className="font-mono text-right text-destructive">{symbol}{fmt(salaryBalance)}</span>
+            <div className="flex gap-3 font-mono text-xs sm:text-sm">
+              <span>{symbol}{fmt(salaryTotal)}</span>
+              <span className="text-success">{symbol}{fmt(salaryPaid)}</span>
+              <span className="text-destructive">{symbol}{fmt(salaryBalance)}</span>
+            </div>
           </div>
         </AnalyticsSection>
 
