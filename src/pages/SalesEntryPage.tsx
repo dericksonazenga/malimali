@@ -176,9 +176,10 @@ const SalesEntryPage = () => {
             </form>
           ) : null}
         </CardContent>
-      </Card>
+        </Card>
+      )}
 
-      {bulkMode && (
+      {canEntry && bulkMode && (
         <BulkEntryForm
           type="sales"
           title="Bulk Sales — Multi-Commodity Entry"
