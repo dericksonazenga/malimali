@@ -347,9 +347,9 @@ const FinancialReportPage = () => {
   return (
     <div className="space-y-5 max-w-6xl pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col gap-3">
         <h1 className="text-xl font-bold">Analytics & Reports</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <ReportSheetView
             symbol={symbol}
             fmt={fmt}
@@ -374,8 +374,8 @@ const FinancialReportPage = () => {
             commodityBreakdown={commodityBreakdown}
             commodityProfitBreakdown={commodityProfitBreakdown}
           />
-          <Button onClick={downloadFullReport} className="h-10 gap-2">
-            <FileSpreadsheet className="w-4 h-4" /> Download Full Report
+          <Button onClick={downloadFullReport} className="h-10 gap-2 text-xs sm:text-sm">
+            <FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">Download</span> Full Report
           </Button>
         </div>
       </div>
