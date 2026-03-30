@@ -57,6 +57,10 @@ const FinancialReportPage = () => {
     commodityProfitBreakdown,
   } = data;
 
+  const totalDeposits = savingsTransactions.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
+  const totalWithdrawals = savingsTransactions.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0);
+  const netSavingsHeld = savingsAccounts.reduce((s, a) => s + Number(a.balance), 0);
+
   const rangeLabel = range.preset === "custom" 
     ? "Custom" 
     : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
