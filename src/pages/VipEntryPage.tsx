@@ -70,50 +70,54 @@ const VipEntryPage = () => {
     toast.success("VIP entry added!");
   };
 
+  const canEntry = hasPermission("data_entry");
+
   return (
     <div className="space-y-6 max-w-6xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2"><Star className="w-5 h-5 text-primary" /> New VIP Entry</span>
-            <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
-              <Package className="w-4 h-4" /> Pick-up
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!bulkMode ? (
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="VIP customer" className="h-12" /></div>
-              <div className="space-y-2">
-                <Label>Commodity *</Label>
-                <Select value={commodity} onValueChange={setCommodity}>
-                  <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                  <SelectContent>{mockCommodities.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.vipRate}/kg</SelectItem>))}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-              <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-              <div className="space-y-2"><Label>Rate ({symbol}/kg)</Label><Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.vipRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" /></div>
-              <div className="space-y-2">
-                <Label>Calculated</Label>
-                <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
-                  <span>Wt: <strong>{actualWeight}</strong>kg</span>
-                  <span>Amt: <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong></span>
+      {canEntry && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2"><Star className="w-5 h-5 text-primary" /> New VIP Entry</span>
+              <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
+                <Package className="w-4 h-4" /> Pick-up
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!bulkMode ? (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2"><Label>Customer Name *</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="VIP customer" className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Commodity *</Label>
+                  <Select value={commodity} onValueChange={setCommodity}>
+                    <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                    <SelectContent>{mockCommodities.map((c) => (<SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.vipRate}/kg</SelectItem>))}</SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
-                <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
-                <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
-                <div className="flex-1" />
-                <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
-              </div>
-            </form>
-          ) : null}
-        </CardContent>
-      </Card>
+                <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2"><Label>Rate ({symbol}/kg)</Label><Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.vipRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Calculated</Label>
+                  <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
+                    <span>Wt: <strong>{actualWeight}</strong>kg</span>
+                    <span>Amt: <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong></span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
+                  <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
+                  <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
+                  <div className="flex-1" />
+                  <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
+                </div>
+              </form>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
-      {bulkMode && (
+      {canEntry && bulkMode && (
         <BulkEntryForm
           type="vip"
           title="VIP Pick-up — Bulk Entry"

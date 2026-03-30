@@ -8,11 +8,12 @@ import { toast } from "sonner";
 const ALL_ROLES = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"] as const;
 const ALL_PERMISSIONS = [
   { key: "view_dashboard", label: "View Dashboard" },
-  { key: "view_data_entry", label: "View Data Entry" },
-  { key: "view_debts", label: "View Debts" },
+  { key: "view_data_entry", label: "View Data Entry (Read-Only)" },
+  { key: "data_entry", label: "Data Entry (Add/Edit)" },
+  { key: "view_debts", label: "View Debts (Read-Only)" },
   { key: "view_messages", label: "View Messages" },
   { key: "view_my_info", label: "View My Info" },
-  { key: "view_settings", label: "View Settings" },
+  { key: "view_settings", label: "View Settings (Read-Only)" },
   { key: "update_rates", label: "Update Rates" },
   { key: "edit_records", label: "Edit Records" },
   { key: "delete_entries", label: "Delete All Entries" },

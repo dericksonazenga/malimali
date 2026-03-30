@@ -98,66 +98,69 @@ const SalesEntryPage = () => {
     toast.success("Sales entry added!");
   };
 
+  const canEntry = hasPermission("data_entry");
+
   return (
     <div className="space-y-6 max-w-6xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> New Sales Entry</span>
-            <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
-              <Package className="w-4 h-4" /> Bulk Sales
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!bulkMode ? (
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
-              <div className="space-y-2">
-                <Label>Commodity *</Label>
-                <Select value={commodity} onValueChange={setCommodity}>
-                  <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                  <SelectContent>
-                    {commodities.map((c) => (
-                      <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-              <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
-              <div className="space-y-2">
-                <Label>Rate ({symbol}/kg)</Label>
-                <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
-              </div>
-              <div className="space-y-2">
-                <Label>Calculated</Label>
-                <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
-                  <span>Wt: <strong>{actualWeight}</strong>kg</span>
-                  <span>Amt: {amount !== undefined ? <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong> : <span className="text-muted-foreground">Pending</span>}</span>
+      {canEntry && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" /> New Sales Entry</span>
+              <Button variant={bulkMode ? "default" : "outline"} size="sm" className="gap-1.5" onClick={() => setBulkMode(!bulkMode)}>
+                <Package className="w-4 h-4" /> Bulk Sales
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!bulkMode ? (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Commodity *</Label>
+                  <Select value={commodity} onValueChange={setCommodity}>
+                    <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                    <SelectContent>
+                      {commodities.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+                <div className="space-y-2"><Label>Gross Weight (kg) *</Label><Input type="number" value={grossWeight} onChange={(e) => setGrossWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2"><Label>Container Weight (kg)</Label><Input type="number" value={containerWeight} onChange={(e) => setContainerWeight(e.target.value)} placeholder="0" className="h-12" /></div>
+                <div className="space-y-2">
+                  <Label>Rate ({symbol}/kg)</Label>
+                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Calculated</Label>
+                  <div className="h-12 rounded-lg bg-accent flex items-center px-4 gap-4 text-sm font-mono">
+                    <span>Wt: <strong>{actualWeight}</strong>kg</span>
+                    <span>Amt: {amount !== undefined ? <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong> : <span className="text-muted-foreground">Pending</span>}</span>
+                  </div>
+                </div>
 
-              {/* Exchange Section */}
-              <div className="lg:col-span-3 border-t border-border pt-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-                  <Label htmlFor="exchange-toggle" className="cursor-pointer">Exchange / Barter Trade</Label>
-                  <Switch id="exchange-toggle" checked={isExchange} onCheckedChange={setIsExchange} />
-                </div>
-                {isExchange && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Exchange Commodity *</Label>
-                      <Select value={exchangeCommodity} onValueChange={setExchangeCommodity}>
-                        <SelectTrigger className="h-12"><SelectValue placeholder="Commodity given in exchange" /></SelectTrigger>
-                        <SelectContent>
-                          {commodities.filter(c => c.name !== commodity).map((c) => (
-                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                {/* Exchange Section */}
+                <div className="lg:col-span-3 border-t border-border pt-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                    <Label htmlFor="exchange-toggle" className="cursor-pointer">Exchange / Barter Trade</Label>
+                    <Switch id="exchange-toggle" checked={isExchange} onCheckedChange={setIsExchange} />
+                  </div>
+                  {isExchange && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Exchange Commodity *</Label>
+                        <Select value={exchangeCommodity} onValueChange={setExchangeCommodity}>
+                          <SelectTrigger className="h-12"><SelectValue placeholder="Commodity given in exchange" /></SelectTrigger>
+                          <SelectContent>
+                            {commodities.filter(c => c.name !== commodity).map((c) => (
+                              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                      <div className="space-y-2"><Label>Exchange Weight (kg) *</Label><Input type="number" value={exchangeWeight} onChange={(e) => setExchangeWeight(e.target.value)} placeholder="0" className="h-12" /></div>
                      <div className="space-y-2"><Label>Exchange Fee ({symbol})</Label><Input type="number" value={exchangeFee} onChange={(e) => setExchangeFee(e.target.value)} placeholder="Extra cash from customer" className="h-12" /></div>
                   </div>
@@ -173,9 +176,10 @@ const SalesEntryPage = () => {
             </form>
           ) : null}
         </CardContent>
-      </Card>
+        </Card>
+      )}
 
-      {bulkMode && (
+      {canEntry && bulkMode && (
         <BulkEntryForm
           type="sales"
           title="Bulk Sales — Multi-Commodity Entry"
