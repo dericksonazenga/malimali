@@ -94,9 +94,11 @@ const SalaryPage = () => {
     const salary = parseFloat(editSalaryValue) || 0;
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
+    const oldSalary = worker.salary;
     const newBalance = salary - worker.paid;
     const { error } = await supabase.from("workers").update({ salary, balance: newBalance }).eq("id", workerId);
     if (error) { toast.error("Failed to update salary"); return; }
+    await logAuditEvent({ tableName: "salaries", recordId: workerId, action: "update", oldData: { worker: worker.name, salary: oldSalary }, newData: { worker: worker.name, salary }, changedByName: user?.name || "Unknown" });
     toast.success("Salary updated");
     setEditingSalaryId(null);
   };
