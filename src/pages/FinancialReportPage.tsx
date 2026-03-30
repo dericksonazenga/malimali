@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
-  BarChart3, Package, Users, Receipt, Loader2
+  BarChart3, Package, Users, Receipt, Loader2, PiggyBank
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
@@ -24,6 +25,22 @@ const FinancialReportPage = () => {
   const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
+  // Savings data
+  const [savingsAccounts, setSavingsAccounts] = useState<any[]>([]);
+  const [savingsTransactions, setSavingsTransactions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSavings = async () => {
+      const [{ data: accounts }, { data: txns }] = await Promise.all([
+        supabase.from("savings_accounts").select("*").order("customer_name"),
+        supabase.from("savings_transactions").select("*").order("created_at", { ascending: false }),
+      ]);
+      if (accounts) setSavingsAccounts(accounts as any[]);
+      if (txns) setSavingsTransactions(txns as any[]);
+    };
+    fetchSavings();
+  }, []);
+
   if (loading || !data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -39,6 +56,10 @@ const FinancialReportPage = () => {
     totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
     commodityProfitBreakdown,
   } = data;
+
+  const totalDeposits = savingsTransactions.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
+  const totalWithdrawals = savingsTransactions.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0);
+  const netSavingsHeld = savingsAccounts.reduce((s, a) => s + Number(a.balance), 0);
 
   const rangeLabel = range.preset === "custom" 
     ? "Custom" 
@@ -243,6 +264,21 @@ const FinancialReportPage = () => {
     styleSheet(profitWs, 1, profitData.length - 1, 6);
     XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
 
+    // Savings sheet
+    const savingsRows = savingsAccounts.map(a => [a.customer_name, a.balance]);
+    const savingsData = [
+      ["Customer", "Balance"],
+      ...savingsRows,
+      [],
+      ["Total Deposits", totalDeposits],
+      ["Total Withdrawals", totalWithdrawals],
+      ["Net Savings Held", netSavingsHeld],
+    ];
+    const savingsWs = XLSX.utils.aoa_to_sheet(savingsData);
+    autoFitColumns(savingsWs, savingsData);
+    styleSheet(savingsWs, 1);
+    XLSX.utils.book_append_sheet(wb, savingsWs, "Savings");
+
     // Style summary sheet too
     const summaryWs = wb.Sheets["Summary"];
     if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
@@ -279,6 +315,14 @@ const FinancialReportPage = () => {
   const payrollCSV = () => [
     ["Worker", "Role", "Salary", "Paid", "Balance"],
     ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)]),
+  ];
+  const savingsCSV = () => [
+    ["Customer", "Balance"],
+    ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]),
+    [],
+    ["Total Deposits", String(totalDeposits)],
+    ["Total Withdrawals", String(totalWithdrawals)],
+    ["Net Savings Held", String(netSavingsHeld)],
   ];
   const revenueCSV = () => [
     ["Category", "Amount"],
@@ -635,6 +679,29 @@ const FinancialReportPage = () => {
             <span className="font-mono text-right">{symbol}{fmt(salaryTotal)}</span>
             <span className="font-mono text-right text-success">{symbol}{fmt(salaryPaid)}</span>
             <span className="font-mono text-right text-destructive">{symbol}{fmt(salaryBalance)}</span>
+          </div>
+        </AnalyticsSection>
+
+        {/* Savings Summary */}
+        <AnalyticsSection
+          title={`Savings (${savingsAccounts.length} accounts)`}
+          icon={<PiggyBank className="w-4 h-4 text-primary" />}
+          csvRows={savingsCSV()}
+          csvFilename={`${filePrefix}_Savings.csv`}
+        >
+          <div className="space-y-1">
+            <StatRow label="Total Deposits" value={totalDeposits} />
+            <StatRow label="Total Withdrawals" value={totalWithdrawals} negative />
+            <StatRow label="Net Savings Held" value={netSavingsHeld} bold />
+          </div>
+          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+            {savingsAccounts.length === 0 && <p className="text-sm text-muted-foreground">No savings accounts</p>}
+            {savingsAccounts.map((a: any) => (
+              <div key={a.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate">{a.customer_name}</span>
+                <span className="font-mono font-bold">{symbol}{fmt(Number(a.balance))}</span>
+              </div>
+            ))}
           </div>
         </AnalyticsSection>
       </div>
