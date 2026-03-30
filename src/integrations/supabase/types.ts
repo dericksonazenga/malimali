@@ -705,6 +705,74 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_accounts: {
+        Row: {
+          balance: number
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      savings_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_method: string
+          served_by_name: string
+          type: string
+        }
+        Insert: {
+          account_id: string
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          served_by_name?: string
+          type?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          served_by_name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "savings_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_adjustments: {
         Row: {
           adjusted_by: string | null
