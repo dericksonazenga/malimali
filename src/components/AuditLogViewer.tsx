@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { History, ChevronDown, ChevronUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { History, ChevronDown, ChevronUp, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface AuditEntry {
   id: string;
@@ -22,6 +25,7 @@ interface AuditLogViewerProps {
   tableName: string;
   title?: string;
   limit?: number;
+  allowDelete?: boolean;
 }
 
 const actionColors: Record<string, string> = {
@@ -57,9 +61,13 @@ const formatChanges = (oldData: Record<string, any> | null, newData: Record<stri
   return "—";
 };
 
-const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) => {
+const AuditLogViewer = ({ tableName, title, limit = 50, allowDelete = false }: AuditLogViewerProps) => {
+  const { hasPermission } = useAuth();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const canDelete = allowDelete && (hasPermission("manage_savings") || hasPermission("delete_entries"));
 
   const fetchLog = useCallback(async () => {
     const { data } = await supabase
@@ -80,7 +88,29 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
     return () => { supabase.removeChannel(channel); };
   }, [fetchLog, tableName]);
 
+  const handleDeleteEntry = async (entry: AuditEntry) => {
+    if (!confirm("Delete this history entry?")) return;
+    const { error } = await supabase.from("audit_log").delete().eq("id", entry.id);
+    if (error) {
+      toast.error("Failed to delete history entry");
+      return;
+    }
+    toast.success("History entry deleted");
+    setEntries(prev => prev.filter(e => e.id !== entry.id));
+  };
+
   if (entries.length === 0) return null;
+
+  const filtered = entries.filter(e => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    const details = formatChanges(e.old_data, e.new_data, e.action).toLowerCase();
+    return (
+      e.changed_by_name.toLowerCase().includes(q) ||
+      e.action.toLowerCase().includes(q) ||
+      details.includes(q)
+    );
+  });
 
   return (
     <Card>
@@ -96,7 +126,19 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
         </CardTitle>
       </CardHeader>
       {expanded && (
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Filter history..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-8 text-sm"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+
           {/* Desktop */}
           <div className="hidden md:block">
             <Table>
@@ -106,10 +148,11 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
                   <TableHead>Action</TableHead>
                   <TableHead>Changed By</TableHead>
                   <TableHead>Details</TableHead>
+                  {canDelete && <TableHead className="w-10"></TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((e) => (
+                {filtered.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="text-xs whitespace-nowrap">
                       {format(new Date(e.created_at), "MMM dd, yyyy HH:mm")}
@@ -123,22 +166,39 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
                     <TableCell className="text-xs text-muted-foreground max-w-[400px] truncate" title={formatChanges(e.old_data, e.new_data, e.action)}>
                       {formatChanges(e.old_data, e.new_data, e.action)}
                     </TableCell>
+                    {canDelete && (
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteEntry(e)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={canDelete ? 5 : 4} className="text-center text-muted-foreground py-4">No matching history</TableCell></TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
           {/* Mobile */}
           <div className="md:hidden space-y-2">
-            {entries.map((e) => (
+            {filtered.map((e) => (
               <div key={e.id} className="border border-border rounded-lg p-3 space-y-1">
                 <div className="flex justify-between items-center">
                   <Badge variant={actionColors[e.action] as any || "secondary"} className="text-xs capitalize">
                     {e.action}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(e.created_at), "MMM dd, HH:mm")}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(e.created_at), "MMM dd, HH:mm")}
+                    </span>
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteEntry(e)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs font-medium">{e.changed_by_name}</p>
                 <p className="text-xs text-muted-foreground line-clamp-2">
