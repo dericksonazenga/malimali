@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSuperAdminProfile } from "@/constants/superAdmin";
+import { logAuditEvent } from "@/utils/auditLog";
+import AuditLogViewer from "@/components/AuditLogViewer";
 
 interface WorkerRow {
   id: string;
