@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const SESSION_KEY = "sysadmin_verified";
+const LOCKOUT_KEY = "sysadmin_lockout";
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const { isSystemAdmin } = useAuth();
@@ -17,6 +20,44 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState("");
+
+  // Restore lockout state from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem(LOCKOUT_KEY);
+    if (stored) {
+      const until = parseInt(stored, 10);
+      if (Date.now() < until) {
+        setLockedUntil(until);
+      } else {
+        sessionStorage.removeItem(LOCKOUT_KEY);
+      }
+    }
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!lockedUntil) { setLockCountdown(""); return; }
+    const tick = () => {
+      const remaining = lockedUntil - Date.now();
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        setAttempts(0);
+        setLockCountdown("");
+        setError("");
+        sessionStorage.removeItem(LOCKOUT_KEY);
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.ceil((remaining % 60000) / 1000);
+      setLockCountdown(`${mins}:${secs.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(SESSION_KEY);
@@ -37,6 +78,7 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockedUntil && Date.now() < lockedUntil) return;
     setError("");
     setSubmitting(true);
 
@@ -49,10 +91,21 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
         setError("Verification failed. Try again.");
       } else if (data?.valid) {
         sessionStorage.setItem(SESSION_KEY, "true");
+        sessionStorage.removeItem(LOCKOUT_KEY);
         setVerified(true);
+        setAttempts(0);
         toast.success("System Admin access granted");
       } else {
-        setError("Invalid PIN. Access denied.");
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_DURATION_MS;
+          setLockedUntil(until);
+          sessionStorage.setItem(LOCKOUT_KEY, until.toString());
+          setError(`Too many failed attempts. Locked for 5 minutes.`);
+        } else {
+          setError(`Invalid PIN. ${MAX_ATTEMPTS - newAttempts} attempt(s) remaining.`);
+        }
       }
     } catch {
       setError("Network error. Please try again.");
@@ -91,9 +144,15 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</p>
           )}
 
-          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting}>
+          {lockCountdown && (
+            <div className="text-center text-sm text-destructive font-mono bg-destructive/10 rounded-lg p-3">
+              🔒 Locked — try again in {lockCountdown}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting || !!lockedUntil}>
             <Lock className="w-4 h-4" />
-            {submitting ? "Verifying..." : "Unlock"}
+            {submitting ? "Verifying..." : lockedUntil ? "Locked" : "Unlock"}
           </Button>
 
           <Button
