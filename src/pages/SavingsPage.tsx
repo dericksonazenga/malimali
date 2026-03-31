@@ -113,9 +113,10 @@ const SavingsPage = () => {
       accountId = existing.id;
     } else {
       // Create new account
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
       const { data, error } = await supabase
         .from("savings_accounts")
-        .insert({ customer_name: name, balance: depositAmount, created_by: user?.id })
+        .insert({ customer_name: name, balance: depositAmount, created_by: user?.id, company_id })
         .select("id")
         .single();
       if (error || !data) { toast.error("Failed to create account"); return; }
