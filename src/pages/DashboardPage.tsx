@@ -128,9 +128,9 @@ const DashboardPage = () => {
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm font-mono justify-end">
-                    <span className="text-muted-foreground whitespace-nowrap">A: {symbol}{c.agentRate}</span>
-                    <span className="text-primary whitespace-nowrap">V: {symbol}{c.vipRate}</span>
-                    <span className="text-success whitespace-nowrap">S: {symbol}{c.salesRate}</span>
+                     <span className="text-muted-foreground whitespace-nowrap">{labels.agent[0]}: {symbol}{c.agentRate}</span>
+                     <span className="text-primary whitespace-nowrap">{labels.vip[0]}: {symbol}{c.vipRate}</span>
+                     <span className="text-success whitespace-nowrap">{labels.sales[0]}: {symbol}{c.salesRate}</span>
                   </div>
                 </div>
               ))}
