@@ -151,6 +151,7 @@ const DebtManagementPage = () => {
 
   const saveDebt = async (amt: number, desc?: string) => {
     // status: "unpaid" = advance payment, "money_out" = debt
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase.from("debts").insert({
       customer_name: customerName.trim(),
       description: desc ?? description,
@@ -158,6 +159,7 @@ const DebtManagementPage = () => {
       balance: amt,
       created_by: user?.id,
       status: debtType === "debt" ? "money_out" : "unpaid",
+      company_id,
     }).select("id").single();
     if (error) { toast.error("Failed to add"); return; }
     await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
