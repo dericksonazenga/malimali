@@ -681,6 +681,39 @@ export type Database = {
         }
         Relationships: []
       }
+      salary_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          paid_by_name: string
+          type: string
+          worker_id: string
+          worker_name: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_by_name?: string
+          type?: string
+          worker_id: string
+          worker_name: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_by_name?: string
+          type?: string
+          worker_id?: string
+          worker_name?: string
+        }
+        Relationships: []
+      }
       sales_entries: {
         Row: {
           amount: number | null
