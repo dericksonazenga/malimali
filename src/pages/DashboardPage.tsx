@@ -85,10 +85,10 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
-        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
-        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
+        <StatCard title={`${labels.agent} Purchases`} value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
+        <StatCard title={`${labels.vip} Purchases`} value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
         <StatCard title="Total Purchases" value={`${symbol}${(agentTotal + vipTotal).toLocaleString()}`} subtitle={`${agentEntries.length + vipEntries.length} entries`} icon={<TrendingDown className="w-5 h-5 text-orange-500" />} color="text-foreground" />
-        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
+        <StatCard title={labels.sales} value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
         <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
       </div>
 
