@@ -232,6 +232,7 @@ const MyInfoPage = () => {
       .channel("my-info-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "salary_payments" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "message_recipients" }, () => fetchData())
       .subscribe();
 
