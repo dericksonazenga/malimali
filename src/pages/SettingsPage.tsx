@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Settings, Globe, User, X } from "lucide-react";
 import { toast } from "sonner";
+import ChangePasswordCard from "@/components/ChangePasswordCard";
 
 const SettingsPage = () => {
   const { currency, symbol, globalCurrency, globalSymbol, setCurrencyCode, setGlobalCurrency, isPersonalOverride, clearPersonalOverride } = useCurrency();
