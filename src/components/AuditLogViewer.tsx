@@ -182,7 +182,7 @@ const AuditLogViewer = ({ tableName, title, limit = 50, allowDelete = false }: A
             </Table>
           </div>
           {/* Mobile */}
-          <div className="md:hidden space-y-2">
+          <div className="md:hidden space-y-2 max-h-[480px] overflow-y-auto">
             {filtered.map((e) => (
               <div key={e.id} className="border border-border rounded-lg p-3 space-y-1">
                 <div className="flex justify-between items-center">

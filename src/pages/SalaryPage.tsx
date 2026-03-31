@@ -242,7 +242,7 @@ const SalaryPage = () => {
             </Table>
           </div>
           {/* Mobile */}
-          <div className="md:hidden space-y-3">
+          <div className="md:hidden space-y-3 max-h-[480px] overflow-y-auto">
             {workers.map((w) => {
               const status = getSalaryStatus(w);
               return (

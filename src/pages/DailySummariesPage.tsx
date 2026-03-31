@@ -84,7 +84,7 @@ const DailySummariesPage = () => {
               <Clock className="w-4 h-4 text-primary" /> End of Day History
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="max-h-[480px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>

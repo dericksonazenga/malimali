@@ -221,7 +221,7 @@ const ExpensesPage = () => {
                 </Table>
               </div>
               {/* Mobile */}
-              <div className="md:hidden space-y-2">
+              <div className="md:hidden space-y-2 max-h-[480px] overflow-y-auto">
                 {expenses.map((e) => (
                   <div key={e.id} className="border border-border rounded-lg p-3 space-y-1">
                     <div className="flex justify-between items-start">

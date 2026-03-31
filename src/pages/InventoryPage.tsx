@@ -211,7 +211,7 @@ const InventoryPage = () => {
                 </Table>
               </div>
               {/* Mobile card layout */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-3 max-h-[480px] overflow-y-auto">
                 {adjustments.map((a) => {
                   const diff = a.new_weight - a.previous_weight;
                   return (
