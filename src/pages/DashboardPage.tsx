@@ -80,8 +80,8 @@ const DashboardPage = () => {
   return (
     <div className="space-y-4 lg:space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold">Welcome back, Rachel Scrap Ltd.</h1>
-        <p className="text-muted-foreground">Here's your scrap yard overview</p>
+        <h1 className="text-2xl font-bold">Welcome to MaliMali Dashboard</h1>
+        <p className="text-muted-foreground">Here's your business overview</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
