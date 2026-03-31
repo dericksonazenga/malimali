@@ -24,7 +24,8 @@ const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
+  const { agentEntries: entries, addAgentEntry, removeAgentEntry, refresh } = useInventory();
+  const [searchQuery, setSearchQuery] = useState("");
   const [customerName, setCustomerName] = usePersistedState("agent_customerName", "");
   const [commodity, setCommodity] = usePersistedState("agent_commodity", "");
   const [weightExpr, setWeightExpr] = usePersistedState("agent_weightExpr", "");
