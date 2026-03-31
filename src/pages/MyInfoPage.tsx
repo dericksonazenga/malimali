@@ -159,7 +159,17 @@ const MyInfoPage = () => {
         });
       }
 
-      // Fetch attendance
+      // Fetch salary payment history for this worker
+      if (workerData) {
+        const { data: payData } = await supabase
+          .from("salary_payments")
+          .select("*")
+          .eq("worker_id", workerData.id)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        if (payData) setSalaryPayments(payData as SalaryPaymentRecord[]);
+      }
+
       const { data: attendanceData } = await supabase
         .from("attendance")
         .select("*")
