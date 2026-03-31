@@ -78,11 +78,12 @@ const SalesEntryPage = () => {
       return;
     }
 
+    const specialCommodity = isSpecial ? "Heavy" : commodity;
     const entryAmount = isExchange ? exchFee : amount;
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
-      commodity: isExchange ? exchangeCommodity : commodity,
+      commodity: isExchange ? exchangeCommodity : specialCommodity,
       grossWeight: isExchange ? 0 : actualWeight,
       containerWeight: 0,
       weight: isExchange ? (parseFloat(exchangeWeight) || 0) : actualWeight,
@@ -97,8 +98,8 @@ const SalesEntryPage = () => {
     });
     setLastSubmit({ key: entryKey, time: now });
     setCustomerName(""); setCommodity(""); setWeightExpr(""); setRateOverride("");
-    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
-    toast.success("Sales entry added!");
+    setIsExchange(false); setIsSpecial(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
+    toast.success(isSpecial ? "Special entry added! Weight deducted from Heavy inventory." : "Sales entry added!");
   };
 
   const canEntry = hasPermission("data_entry");
