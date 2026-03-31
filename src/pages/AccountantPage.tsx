@@ -11,6 +11,7 @@ const AccountantPage = () => {
   const { symbol } = useCurrency();
   const navigate = useNavigate();
   const { resetSignal } = useEndOfDay();
+  const { labels } = useCategoryLabels();
   const [agentTotal, setAgentTotal] = useState(0);
   const [vipTotal, setVipTotal] = useState(0);
   const [salesTotal, setSalesTotal] = useState(0);
