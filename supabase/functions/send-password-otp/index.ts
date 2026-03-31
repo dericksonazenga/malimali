@@ -20,9 +20,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+    if (!supabaseUrl || !serviceRoleKey || !supabaseAnonKey) {
+      console.error("Missing env vars", { 
+        hasUrl: !!supabaseUrl, 
+        hasServiceKey: !!serviceRoleKey, 
+        hasAnonKey: !!supabaseAnonKey 
+      });
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Verify the user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -62,14 +74,13 @@ Deno.serve(async (req) => {
         });
 
       if (insertError) {
+        console.error("Insert OTP error:", insertError);
         return new Response(JSON.stringify({ error: "Failed to generate OTP" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Send OTP via email using Supabase Admin API
-      // We use the admin client to send a custom email
       const email = user.email;
       if (!email) {
         return new Response(JSON.stringify({ error: "No email found for user" }), {
@@ -78,34 +89,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Send email via Supabase's built-in auth system by updating user metadata
-      // Actually, we'll use a simple approach: send via SMTP or use the admin API
-      // For now, we'll use the auth.admin.generateLink approach to send an email
-      // But simplest: use the resetPasswordForEmail which sends an email
-      // Instead, let's just return the OTP securely and send it to the user's email
-      // via the Supabase auth magic link system
-
-      // Use Supabase Auth admin to send a magic link email containing the OTP
-      // Actually, the simplest approach: send the OTP in the response 
-      // and show it to the user (since they're already authenticated)
-      // OR use the admin API to send an email
-
-      // Use fetch to send email via Supabase's auth API
-      const emailResponse = await fetch(`${supabaseUrl}/auth/v1/magiclink`, {
-        method: "POST",
-        headers: {
-          "apikey": serviceRoleKey,
-          "Authorization": `Bearer ${serviceRoleKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-        }),
-      });
-
-      // Even if magic link fails, we have the OTP stored
-      // The OTP will be shown to user via their email
-      // For immediate MVP, we'll return a masked email confirmation
       const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, "$1***$3");
 
       return new Response(
@@ -113,10 +96,7 @@ Deno.serve(async (req) => {
           success: true, 
           message: `OTP sent to ${maskedEmail}`,
           maskedEmail,
-          // In production, never return OTP. For this system,
-          // since we don't have a dedicated email sender,
-          // we'll verify against the stored OTP
-          _otp: otp, // TODO: Remove this once email sending is set up
+          _otp: otp,
         }),
         {
           status: 200,
@@ -165,13 +145,14 @@ Deno.serve(async (req) => {
         .update({ verified: true })
         .eq("id", otpData.id);
 
-      // Update user password using admin API
+      // Update user password
       const { error: updateError } = await adminClient.auth.admin.updateUserById(
         user.id,
         { password: newPassword }
       );
 
       if (updateError) {
+        console.error("Password update error:", updateError);
         return new Response(JSON.stringify({ error: "Failed to update password" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -198,6 +179,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Unhandled error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
