@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useInventory } from "@/contexts/InventoryContext";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
