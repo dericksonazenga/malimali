@@ -40,7 +40,7 @@ const navItems: NavItem[] = [
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, isSystemAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
