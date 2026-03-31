@@ -12,6 +12,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import RateHistory from "@/components/RateHistory";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 const RatesPage = () => {
   const { symbol } = useCurrency();
