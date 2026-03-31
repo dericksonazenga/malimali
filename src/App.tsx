@@ -10,6 +10,7 @@ import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { CommodityProvider } from "@/contexts/CommodityContext";
+import { CategoryLabelsProvider } from "@/contexts/CategoryLabelsContext";
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
