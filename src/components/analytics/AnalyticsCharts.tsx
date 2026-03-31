@@ -135,27 +135,17 @@ const AnalyticsCharts = ({
             <p className="text-sm text-muted-foreground text-center py-10">No data for this period</p>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 80%)" strokeOpacity={0.3} />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`} />
                 <Tooltip content={<ProfitTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine y={0} stroke="hsl(0, 0%, 50%)" strokeDasharray="3 3" />
-                <Area type="monotone" dataKey="sales" name="Sales" stroke={COLORS[1]} fill="url(#salesGrad)" strokeWidth={1.5} />
-                <Area type="monotone" dataKey="purchases" name="Purchases" stroke={COLORS[2]} fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
-                <Area type="monotone" dataKey="profit" name="Profit" stroke={COLORS[0]} fill="url(#profitGrad)" strokeWidth={2.5} />
-              </AreaChart>
+                <Line type="monotone" dataKey="sales" name="Sales" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(0, 84%, 60%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="profit" name="Profit" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} dot={false} />
+              </LineChart>
             </ResponsiveContainer>
           )}
         </CardContent>
