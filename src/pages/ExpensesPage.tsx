@@ -102,12 +102,14 @@ const ExpensesPage = () => {
       }
     }
 
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase.from("expenses").insert({
       category,
       amount: parseFloat(amount),
       date,
       notes: expenseNotes,
       verified_by: selectedWorker.name,
+      company_id,
     }).select("id").single();
 
     if (error) {

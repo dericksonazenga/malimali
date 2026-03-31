@@ -78,6 +78,7 @@ export const generateDailySummary = async () => {
   });
 
   const userId = (await supabase.auth.getUser()).data.user?.id;
+  const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
 
   const { error } = await supabase.from("daily_summaries").upsert(
     {
@@ -93,8 +94,9 @@ export const generateDailySummary = async () => {
       total_sales_amount: totalSales,
       total_expenses: totalExpenses,
       net_profit: netProfit,
+      company_id,
     },
-    { onConflict: "date" }
+    { onConflict: "date,company_id" }
   );
 
   if (error) {

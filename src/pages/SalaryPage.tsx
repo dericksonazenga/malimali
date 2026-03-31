@@ -113,6 +113,7 @@ const SalaryPage = () => {
       accountNumber ? `(${paymentMethod === "mpesa" ? "M-Pesa" : "Acct"}: ${accountNumber})` : "",
     ].filter(Boolean).join(" ");
 
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     await supabase.from("salary_payments").insert({
       worker_id: worker.id,
       worker_name: worker.name,
@@ -122,6 +123,7 @@ const SalaryPage = () => {
       notes,
       payment_month: paymentMonth,
       payment_method: paymentMethod,
+      company_id,
     });
 
     await logAuditEvent({

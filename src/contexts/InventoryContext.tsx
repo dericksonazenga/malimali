@@ -234,12 +234,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Upsert each commodity delta into persistent_stock
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     for (const [commodity, delta] of Object.entries(updates)) {
       const currentWeight = persistentStock[commodity] || 0;
       const newWeight = currentWeight + delta;
       await supabase.from("persistent_stock").upsert(
-        { commodity, weight: newWeight, updated_at: new Date().toISOString() },
-        { onConflict: "commodity" }
+        { commodity, weight: newWeight, updated_at: new Date().toISOString(), company_id },
+        { onConflict: "commodity,company_id" }
       );
     }
 

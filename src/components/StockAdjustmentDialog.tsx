@@ -40,6 +40,7 @@ const StockAdjustmentDialog = ({ open, onOpenChange, commodities, persistentStoc
     setSaving(true);
     try {
       const userId = (await supabase.auth.getUser()).data.user?.id;
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
 
       // Log the adjustment
       const { error: logError } = await supabase.from("stock_adjustments").insert({
@@ -48,14 +49,15 @@ const StockAdjustmentDialog = ({ open, onOpenChange, commodities, persistentStoc
         new_weight: weight,
         reason: reason.trim(),
         adjusted_by: userId,
+        company_id,
       });
 
       if (logError) throw logError;
 
       // Update persistent stock
       const { error: updateError } = await supabase.from("persistent_stock").upsert(
-        { commodity, weight, updated_at: new Date().toISOString() },
-        { onConflict: "commodity" }
+        { commodity, weight, updated_at: new Date().toISOString(), company_id },
+        { onConflict: "commodity,company_id" }
       );
 
       if (updateError) throw updateError;

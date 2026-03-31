@@ -106,7 +106,7 @@ const PermissionsManager = () => {
     } else {
       const { error } = await supabase
         .from("role_permissions")
-        .insert({ role, permission });
+        .insert({ role, permission, company_id: await (await import("@/utils/getCompanyId")).getCompanyId() });
       if (error) {
         toast.error("Failed to add permission");
         return;

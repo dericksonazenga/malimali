@@ -169,6 +169,7 @@ const SavingsPage = () => {
       .eq("id", selectedAccount.id);
     if (error) { toast.error("Failed to update balance"); return; }
 
+    const wCompanyId = await (await import("@/utils/getCompanyId")).getCompanyId();
     await supabase.from("savings_transactions").insert({
       account_id: selectedAccount.id,
       type: "withdrawal",
@@ -176,6 +177,7 @@ const SavingsPage = () => {
       payment_method: paymentMethod,
       served_by_name: user?.name || "Unknown",
       notes,
+      company_id: wCompanyId,
     });
 
     await logAuditEvent({

@@ -192,6 +192,7 @@ const DebtManagementPage = () => {
     if (amt <= 0) { toast.error("Invalid amount"); return; }
     if (amt > payDebt.balance) { toast.error("Amount exceeds balance"); return; }
 
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: payErr } = await supabase.from("debt_payments").insert({
       debt_id: payDebt.id,
       amount: amt,
@@ -200,6 +201,7 @@ const DebtManagementPage = () => {
       payment_method: payMethod,
       paid_by_name: user?.name || "Unknown",
       paid_to_name: payToName.trim() || payDebt.customer_name,
+      company_id,
     });
     if (payErr) { toast.error("Payment failed"); return; }
 

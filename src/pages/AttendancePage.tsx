@@ -188,8 +188,9 @@ const AttendancePage = () => {
     const userId = (await supabase.auth.getUser()).data.user?.id;
     const existing = records.find((r) => r.workerName === worker.name && r.date === todayStr && r.signInAt);
     if (existing) { toast.error(`${worker.name} has already signed in today!`); setSignInWorker(""); return; }
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("attendance").insert({
-      worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId,
+      worker_name: worker.name, sign_in_at: now, date: todayStr, status: "present", created_by: userId, company_id,
     });
     if (error) { toast.error("Failed to save attendance"); return; }
     if (isLate(now)) {

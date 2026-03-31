@@ -58,12 +58,14 @@ const AttendanceScanPage = () => {
         return;
       }
 
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
       const { error } = await supabase.from("attendance").insert({
         worker_name: workerName,
         sign_in_at: new Date().toISOString(),
         date,
         status: "present",
         created_by: user.id,
+        company_id,
       });
 
       if (error) {
