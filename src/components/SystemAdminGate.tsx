@@ -16,6 +16,7 @@ const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const { isSystemAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [verified, setVerified] = useState(false);
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
