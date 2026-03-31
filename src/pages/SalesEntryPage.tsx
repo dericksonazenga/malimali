@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package, Search } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
