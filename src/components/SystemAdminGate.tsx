@@ -90,10 +90,21 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
         setError("Verification failed. Try again.");
       } else if (data?.valid) {
         sessionStorage.setItem(SESSION_KEY, "true");
+        sessionStorage.removeItem(LOCKOUT_KEY);
         setVerified(true);
+        setAttempts(0);
         toast.success("System Admin access granted");
       } else {
-        setError("Invalid PIN. Access denied.");
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_DURATION_MS;
+          setLockedUntil(until);
+          sessionStorage.setItem(LOCKOUT_KEY, until.toString());
+          setError(`Too many failed attempts. Locked for 5 minutes.`);
+        } else {
+          setError(`Invalid PIN. ${MAX_ATTEMPTS - newAttempts} attempt(s) remaining.`);
+        }
       }
     } catch {
       setError("Network error. Please try again.");
