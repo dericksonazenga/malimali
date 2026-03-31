@@ -94,6 +94,8 @@ const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ChangePasswordCard />
     </div>
   );
 };
