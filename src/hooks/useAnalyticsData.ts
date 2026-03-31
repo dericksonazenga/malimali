@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   startOfDay, endOfDay, subDays, startOfWeek, endOfWeek,
@@ -82,6 +82,8 @@ export interface AnalyticsData {
   expenses: any[];
   workers: any[];
   stockData: any[];
+  debts: any[];
+  debtPayments: any[];
   agentTotal: number;
   vipTotal: number;
   salesTotal: number;
@@ -92,6 +94,9 @@ export interface AnalyticsData {
   totalPurchases: number;
   grossProfit: number;
   netProfit: number;
+  debtTotal: number;
+  debtPaid: number;
+  debtBalance: number;
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   dailyProfitTrend: DailyProfit[];
   commodityProfitBreakdown: CommodityProfit[];
@@ -100,8 +105,10 @@ export interface AnalyticsData {
 export function useAnalyticsData(range: DateRangeValue) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchRef = useRef(0);
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
+    const id = ++fetchRef.current;
     setLoading(true);
     const { from, to } = getDateBounds(range);
 
@@ -111,15 +118,19 @@ export function useAnalyticsData(range: DateRangeValue) {
       return q;
     };
 
-    const [agents, vips, sales, exps, workers, stock, commodities] = await Promise.all([
+    const [agents, vips, sales, exps, workers, stock, debtsRes, debtPayRes] = await Promise.all([
       applyRange(supabase.from("agent_entries").select("*")),
       applyRange(supabase.from("vip_entries").select("*")),
       applyRange(supabase.from("sales_entries").select("*")),
       applyRange(supabase.from("expenses").select("*")),
       supabase.from("workers").select("*"),
       supabase.from("persistent_stock").select("*"),
-      supabase.from("commodities").select("*"),
+      supabase.from("debts").select("*"),
+      supabase.from("debt_payments").select("*"),
     ]);
+
+    // Stale response guard
+    if (id !== fetchRef.current) return;
 
     const agentRows = agents.data || [];
     const vipRows = vips.data || [];
@@ -127,9 +138,8 @@ export function useAnalyticsData(range: DateRangeValue) {
     const expRows = exps.data || [];
     const workerRows = workers.data || [];
     const stockRows = stock.data || [];
-
-    // All profit calculations use the rate stored on each transaction at time of entry,
-    // so rate changes never retroactively affect previous records.
+    const debtRows = debtsRes.data || [];
+    const debtPayRows = debtPayRes.data || [];
 
     const agentTotal = agentRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
     const vipTotal = vipRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
@@ -139,36 +149,26 @@ export function useAnalyticsData(range: DateRangeValue) {
     const salaryPaid = workerRows.reduce((s: number, x: any) => s + Number(x.paid), 0);
     const salaryBalance = workerRows.reduce((s: number, x: any) => s + Number(x.balance), 0);
 
+    const debtTotal = debtRows.reduce((s: number, d: any) => s + Number(d.total_amount), 0);
+    const debtPaid = debtRows.reduce((s: number, d: any) => s + Number(d.paid_amount), 0);
+    const debtBalance = debtRows.reduce((s: number, d: any) => s + Number(d.balance), 0);
+
     const totalPurchases = agentTotal + vipTotal;
 
-    // Build average buying price per commodity from actual agent + VIP entries
+    // Build average buying price per commodity
     const buyAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
     const ensureBuy = (c: string) => { if (!buyAgg[c]) buyAgg[c] = { totalWeight: 0, totalAmount: 0 }; };
-    agentRows.forEach((e: any) => {
-      ensureBuy(e.commodity);
-      buyAgg[e.commodity].totalWeight += Number(e.actual_weight);
-      buyAgg[e.commodity].totalAmount += Number(e.amount);
-    });
-    vipRows.forEach((e: any) => {
-      ensureBuy(e.commodity);
-      buyAgg[e.commodity].totalWeight += Number(e.actual_weight);
-      buyAgg[e.commodity].totalAmount += Number(e.amount);
-    });
-    // Average buying rate per commodity
+    agentRows.forEach((e: any) => { ensureBuy(e.commodity); buyAgg[e.commodity].totalWeight += Number(e.actual_weight); buyAgg[e.commodity].totalAmount += Number(e.amount); });
+    vipRows.forEach((e: any) => { ensureBuy(e.commodity); buyAgg[e.commodity].totalWeight += Number(e.actual_weight); buyAgg[e.commodity].totalAmount += Number(e.amount); });
     const avgBuyRateMap: Record<string, number> = {};
-    Object.entries(buyAgg).forEach(([c, v]) => {
-      avgBuyRateMap[c] = v.totalWeight > 0 ? v.totalAmount / v.totalWeight : 0;
-    });
+    Object.entries(buyAgg).forEach(([c, v]) => { avgBuyRateMap[c] = v.totalWeight > 0 ? v.totalAmount / v.totalWeight : 0; });
 
-    // Gross profit = for each sale, (sale_rate - avg_buy_rate) × weight
-    // For exchanges (no rate/weight), just count the exchange fee as revenue
     let grossProfit = 0;
     salesRows.forEach((e: any) => {
       const commodity = e.commodity;
       const saleRate = Number(e.rate || 0);
       const saleWeight = Number(e.weight || 0);
       const saleAmount = Number(e.amount || 0);
-
       if (e.is_exchange || !commodity || saleWeight === 0) {
         grossProfit += saleAmount;
       } else {
@@ -196,13 +196,7 @@ export function useAnalyticsData(range: DateRangeValue) {
     expRows.forEach((e: any) => { const d = e.date || e.created_at?.split("T")[0]; ensureDay(d); dailyMap[d].expenses += Number(e.amount); });
     const dailyProfitTrend: DailyProfit[] = Object.entries(dailyMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => ({
-        date,
-        sales: v.sales,
-        purchases: v.purchases,
-        expenses: v.expenses,
-        profit: v.sales - v.purchases - v.expenses,
-      }));
+      .map(([date, v]) => ({ date, sales: v.sales, purchases: v.purchases, expenses: v.expenses, profit: v.sales - v.purchases - v.expenses }));
 
     // Per-commodity profit breakdown
     const sellAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
@@ -214,7 +208,6 @@ export function useAnalyticsData(range: DateRangeValue) {
         sellAgg[e.commodity].totalAmount += Number(e.amount || 0);
       }
     });
-
     const allCommodities = new Set([...Object.keys(avgBuyRateMap), ...Object.keys(sellAgg)]);
     const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
       const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
@@ -228,15 +221,38 @@ export function useAnalyticsData(range: DateRangeValue) {
     setData({
       agentEntries: agentRows, vipEntries: vipRows, salesEntries: salesRows,
       expenses: expRows, workers: workerRows, stockData: stockRows,
+      debts: debtRows, debtPayments: debtPayRows,
       agentTotal, vipTotal, salesTotal, expenseTotal,
       salaryTotal, salaryPaid, salaryBalance,
+      debtTotal, debtPaid, debtBalance,
       totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
       dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);
   }, [range.preset, range.customFrom?.getTime(), range.customTo?.getTime()]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  return { data, loading, refetch: fetch };
+  // Realtime: auto-refresh on any change to key tables
+  useEffect(() => {
+    const tables = [
+      "agent_entries", "vip_entries", "sales_entries", "expenses",
+      "workers", "persistent_stock", "debts", "debt_payments",
+    ];
+    const channel = supabase
+      .channel("analytics-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[0] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[1] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[2] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[3] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[4] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[5] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: tables[7] }, () => fetchData())
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchData]);
+
+  return { data, loading, refetch: fetchData };
 }

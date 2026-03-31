@@ -33,6 +33,10 @@ interface ReportSheetViewProps {
   stockData: any[];
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   commodityProfitBreakdown: { commodity: string; avgBuyRate: number; avgSellRate: number; marginPerKg: number; totalWeightSold: number; totalProfit: number }[];
+  debts?: any[];
+  debtTotal?: number;
+  debtPaid?: number;
+  debtBalance?: number;
 }
 
 const ReportSheetView = ({
@@ -41,6 +45,7 @@ const ReportSheetView = ({
   expenseTotal, salaryPaid, salaryTotal, salaryBalance, netProfit,
   agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
   commodityBreakdown, commodityProfitBreakdown,
+  debts = [], debtTotal = 0, debtPaid = 0, debtBalance = 0,
 }: ReportSheetViewProps) => {
   const [search, setSearch] = useState("");
   const q = search.toLowerCase().trim();
@@ -53,6 +58,7 @@ const ReportSheetView = ({
   const filteredStock = useMemo(() => q ? stockData.filter((s: any) => s.commodity.toLowerCase().includes(q)) : stockData, [q, stockData]);
   const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => c.toLowerCase().includes(q))) : commodityBreakdown, [q, commodityBreakdown]);
   const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => c.commodity.toLowerCase().includes(q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
+  const filteredDebts = useMemo(() => q ? debts.filter((d: any) => `${d.customer_name} ${d.description}`.toLowerCase().includes(q)) : debts, [q, debts]);
 
   const agentGroups = useMemo(() => groupEntriesByCustomer(filteredAgents), [filteredAgents]);
   const vipGroups = useMemo(() => groupEntriesByCustomer(filteredVip), [filteredVip]);
@@ -122,24 +128,20 @@ const ReportSheetView = ({
             <p className="text-xs text-muted-foreground whitespace-nowrap">Generated: {new Date().toLocaleString()}</p>
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search entries..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="h-8 pl-8 text-xs"
-              />
+              <Input placeholder="Search entries..." value={search} onChange={e => setSearch(e.target.value)} className="h-8 pl-8 text-xs" />
             </div>
           </div>
         </DialogHeader>
 
         <Tabs defaultValue="summary" className="flex flex-col flex-1 min-h-0">
-          <div className="px-4 pt-2 border-b border-border">
+          <div className="px-4 pt-2 border-b border-border overflow-x-auto">
             <TabsList className="h-8 gap-1">
               <TabsTrigger value="summary" className="text-xs h-7 px-2.5">Summary</TabsTrigger>
               <TabsTrigger value="agents" className="text-xs h-7 px-2.5">Agents</TabsTrigger>
               <TabsTrigger value="vip" className="text-xs h-7 px-2.5">VIP</TabsTrigger>
               <TabsTrigger value="sales" className="text-xs h-7 px-2.5">Sales</TabsTrigger>
               <TabsTrigger value="expenses" className="text-xs h-7 px-2.5">Expenses</TabsTrigger>
+              <TabsTrigger value="debts" className="text-xs h-7 px-2.5">Debts</TabsTrigger>
               <TabsTrigger value="inventory" className="text-xs h-7 px-2.5">Inventory</TabsTrigger>
               <TabsTrigger value="payroll" className="text-xs h-7 px-2.5">Payroll</TabsTrigger>
               <TabsTrigger value="profit" className="text-xs h-7 px-2.5">Profit</TabsTrigger>
@@ -166,6 +168,7 @@ const ReportSheetView = ({
                     { label: "Total Expenses", value: expenseTotal, color: "text-destructive" },
                     { label: "Salary Paid", value: salaryPaid, color: "text-destructive" },
                     { label: "Net Profit", value: netProfit, color: netProfit >= 0 ? "text-success" : "text-destructive", bold: true },
+                    { label: "Debt Outstanding", value: debtBalance, color: debtBalance > 0 ? "text-orange-500" : "text-success" },
                   ].map((row: any) => (
                     <TableRow key={row.label} className={row.bold ? "font-bold" : ""}>
                       <TableCell className="font-medium">{row.label}</TableCell>
@@ -176,7 +179,7 @@ const ReportSheetView = ({
               </Table>
             </TabsContent>
 
-            {/* Agent Entries - Grouped */}
+            {/* Agent Entries */}
             <TabsContent value="agents" className="p-4 m-0">
               {agentGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
@@ -190,7 +193,7 @@ const ReportSheetView = ({
               )}
             </TabsContent>
 
-            {/* VIP Entries - Grouped */}
+            {/* VIP Entries */}
             <TabsContent value="vip" className="p-4 m-0">
               {vipGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
@@ -204,7 +207,7 @@ const ReportSheetView = ({
               )}
             </TabsContent>
 
-            {/* Sales Entries - Grouped */}
+            {/* Sales Entries */}
             <TabsContent value="sales" className="p-4 m-0">
               {salesGroups.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No entries</p>
@@ -293,6 +296,46 @@ const ReportSheetView = ({
               {filteredExpenses.length > 0 && (
                 <div className="flex justify-end mt-2 pt-2 border-t border-border text-sm font-bold">
                   <span>Total: <span className="font-mono text-destructive">-{symbol}{fmt(expenseTotal)}</span></span>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Debts */}
+            <TabsContent value="debts" className="p-4 m-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Paid</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDebts.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No debts</TableCell></TableRow>
+                  )}
+                  {filteredDebts.map((d: any) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-medium">{d.customer_name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{d.description || "—"}</TableCell>
+                      <TableCell className="text-right font-mono">{symbol}{fmt(Number(d.total_amount))}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{symbol}{fmt(Number(d.paid_amount))}</TableCell>
+                      <TableCell className="text-right font-mono text-orange-500">{symbol}{fmt(Number(d.balance))}</TableCell>
+                      <TableCell>
+                        <Badge variant={d.status === "paid" ? "default" : "secondary"} className="text-[10px]">{d.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {filteredDebts.length > 0 && (
+                <div className="grid grid-cols-3 gap-4 mt-2 pt-2 border-t border-border text-sm font-bold text-right">
+                  <span className="font-mono">{symbol}{fmt(debtTotal)}</span>
+                  <span className="font-mono text-success">{symbol}{fmt(debtPaid)}</span>
+                  <span className="font-mono text-orange-500">{symbol}{fmt(debtBalance)}</span>
                 </div>
               )}
             </TabsContent>
