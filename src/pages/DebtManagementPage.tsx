@@ -343,6 +343,7 @@ const DebtManagementPage = () => {
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customer..." className="pl-8 h-9 w-full sm:w-48" />
               </div>
+              <Button size="sm" variant="outline" onClick={handleExportCSV} title="Export to CSV"><FileSpreadsheet className="w-4 h-4" /></Button>
               {canEdit && <Button size="sm" onClick={() => setShowAdd(!showAdd)}><Plus className="w-4 h-4 mr-1" /> Add</Button>}
             </div>
           </CardTitle>
