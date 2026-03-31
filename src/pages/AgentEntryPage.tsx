@@ -24,7 +24,6 @@ const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
   const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = usePersistedState("agent_customerName", "");
   const [commodity, setCommodity] = usePersistedState("agent_commodity", "");
