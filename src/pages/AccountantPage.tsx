@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useNavigate } from "react-router-dom";
 import { FileText, Star, ShoppingCart, Wallet, TrendingUp, Package } from "lucide-react";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEndOfDay } from "@/contexts/EndOfDayContext";
 
