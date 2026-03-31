@@ -345,7 +345,7 @@ const SavingsPage = () => {
         <CardHeader><CardTitle className="text-base">Savings Accounts</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           {/* Desktop */}
-          <div className="hidden md:block">
+          <div className="hidden md:block max-h-[480px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -402,7 +402,7 @@ const SavingsPage = () => {
             </Table>
           </div>
           {/* Mobile */}
-          <div className="md:hidden space-y-2">
+          <div className="md:hidden space-y-2 max-h-[480px] overflow-y-auto">
             {filtered.map((a, i) => (
               <div key={a.id} className="border border-border rounded-lg p-3 space-y-2">
                 <div className="flex justify-between items-start">

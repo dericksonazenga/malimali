@@ -113,7 +113,7 @@ const RatesPage = () => {
             ) : (
               <>
                 {/* Desktop */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                   <Table>
                     <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent ({symbol}/kg)</TableHead><TableHead className="text-right">VIP ({symbol}/kg)</TableHead><TableHead className="text-right">Sales ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
                     <TableBody>
@@ -141,7 +141,7 @@ const RatesPage = () => {
                   </Table>
                 </div>
                 {/* Mobile */}
-                <div className="md:hidden space-y-2">
+                <div className="md:hidden space-y-2 max-h-[480px] overflow-y-auto">
                   {commodities.map((c) => (
                     <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
                       <div className="flex justify-between items-center">

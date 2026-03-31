@@ -148,7 +148,7 @@ const WorkersPage = () => {
           {workers.length > 0 ? (
             <>
               {/* Desktop */}
-              <div className="hidden md:block">
+              <div className="hidden md:block max-h-[480px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -227,7 +227,7 @@ const WorkersPage = () => {
                 </Table>
               </div>
               {/* Mobile */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-3 max-h-[480px] overflow-y-auto">
                 {workers.map((w) => (
                   <div key={w.id} className="border border-border rounded-lg p-3 space-y-2">
                     <div className="flex justify-between items-start">

@@ -109,7 +109,7 @@ const InventoryPage = () => {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto max-h-[480px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,7 +164,7 @@ const InventoryPage = () => {
           ) : (
             <>
               {/* Desktop table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -211,7 +211,7 @@ const InventoryPage = () => {
                 </Table>
               </div>
               {/* Mobile card layout */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-3 max-h-[480px] overflow-y-auto">
                 {adjustments.map((a) => {
                   const diff = a.new_weight - a.previous_weight;
                   return (

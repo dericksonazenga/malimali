@@ -202,7 +202,7 @@ const ExpensesPage = () => {
           {loading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : (
             <>
               {/* Desktop */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                 <Table>
                   <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Verified By</TableHead><TableHead>Notes</TableHead>{canDelete && <TableHead />}</TableRow></TableHeader>
                   <TableBody>
@@ -221,7 +221,7 @@ const ExpensesPage = () => {
                 </Table>
               </div>
               {/* Mobile */}
-              <div className="md:hidden space-y-2">
+              <div className="md:hidden space-y-2 max-h-[480px] overflow-y-auto">
                 {expenses.map((e) => (
                   <div key={e.id} className="border border-border rounded-lg p-3 space-y-1">
                     <div className="flex justify-between items-start">
