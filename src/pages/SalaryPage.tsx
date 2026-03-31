@@ -94,10 +94,10 @@ const SalaryPage = () => {
     });
   }, [payments, period, customFrom, customTo]);
 
-  const handlePay = async (data: { amount: number; type: string; paymentMonth: string }) => {
+  const handlePay = async (data: { amount: number; type: string; paymentMonth: string; paymentMethod: string; accountNumber?: string }) => {
     if (!payingWorker) return;
     const worker = payingWorker;
-    const { amount, type: payType, paymentMonth } = data;
+    const { amount, type: payType, paymentMonth, paymentMethod, accountNumber } = data;
 
     const newPaid = worker.paid + amount;
     const newBalance = worker.salary - newPaid;
@@ -108,19 +108,25 @@ const SalaryPage = () => {
       .eq("id", worker.id);
     if (error) { toast.error("Failed to record payment"); return; }
 
+    const notes = [
+      payType === "advance" ? "Advance salary" : "Regular payment",
+      accountNumber ? `(${paymentMethod === "mpesa" ? "M-Pesa" : "Acct"}: ${accountNumber})` : "",
+    ].filter(Boolean).join(" ");
+
     await supabase.from("salary_payments").insert({
       worker_id: worker.id,
       worker_name: worker.name,
       amount,
       type: payType,
       paid_by_name: user?.name || "Unknown",
-      notes: payType === "advance" ? "Advance salary" : "Regular payment",
+      notes,
       payment_month: paymentMonth,
+      payment_method: paymentMethod,
     });
 
     await logAuditEvent({
       tableName: "salaries", recordId: worker.id, action: "payment",
-      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance, payment_month: paymentMonth },
+      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance, payment_month: paymentMonth, payment_method: paymentMethod },
       changedByName: user?.name || "Unknown",
     });
     toast.success(`${payType === "advance" ? "Advance" : "Payment"} of ${symbol}${amount.toLocaleString()} for ${paymentMonth} recorded`);
@@ -342,47 +348,67 @@ const SalaryPage = () => {
         </CardContent>
       </Card>
 
-      {/* Recent Payment History */}
+      {/* Payment History Grouped by Worker */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ArrowUpDown className="w-5 h-5 text-primary" /> Payment History ({filteredPayments.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-background">
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>For Month</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Paid By</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayments.slice(0, 100).map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-mono text-sm">{format(new Date(p.created_at), "MMM dd, HH:mm")}</TableCell>
-                    <TableCell className="font-medium text-sm">{p.worker_name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.payment_month || "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={p.type === "advance" ? "secondary" : "outline"} className="text-xs">
-                        {p.type === "advance" ? "Advance" : "Regular"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-success">{symbol}{p.amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{p.paid_by_name}</TableCell>
-                  </TableRow>
-                ))}
-                {filteredPayments.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No payments in this period</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+        <CardContent className="space-y-4">
+          {(() => {
+            const grouped = filteredPayments.reduce<Record<string, SalaryPayment[]>>((acc, p) => {
+              if (!acc[p.worker_name]) acc[p.worker_name] = [];
+              acc[p.worker_name].push(p);
+              return acc;
+            }, {});
+            const workerNames = Object.keys(grouped).sort();
+            if (workerNames.length === 0) {
+              return <p className="text-center text-muted-foreground py-6">No payments in this period</p>;
+            }
+            return workerNames.map(name => (
+              <div key={name} className="border border-border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-4 py-2 flex justify-between items-center">
+                  <span className="font-semibold text-sm">{name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {grouped[name].length} payment{grouped[name].length > 1 ? "s" : ""} • Total: {symbol}{grouped[name].reduce((s, p) => s + p.amount, 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="overflow-x-auto max-h-[240px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-background">
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>For Month</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Paid By</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {grouped[name].map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-sm">{format(new Date(p.created_at), "MMM dd, HH:mm")}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{p.payment_month || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant={p.type === "advance" ? "secondary" : "outline"} className="text-xs">
+                              {p.type === "advance" ? "Advance" : "Regular"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs capitalize">{(p as any).payment_method || "cash"}</TableCell>
+                          <TableCell className="text-right font-mono text-success">{symbol}{p.amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{p.paid_by_name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{p.notes || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ));
+          })()}
         </CardContent>
       </Card>
 

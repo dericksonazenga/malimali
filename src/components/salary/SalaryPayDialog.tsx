@@ -4,13 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
 
 interface SalaryPayDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workerName: string;
-  onSubmit: (data: { amount: number; type: string; paymentMonth: string }) => void;
+  onSubmit: (data: { amount: number; type: string; paymentMonth: string; paymentMethod: string; accountNumber?: string }) => void;
 }
 
 const months = [
@@ -27,14 +26,24 @@ const SalaryPayDialog = ({ open, onOpenChange, workerName, onSubmit }: SalaryPay
   const [year, setYear] = useState(String(currentYear));
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("regular");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [accountNumber, setAccountNumber] = useState("");
 
   const handleSubmit = () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return;
     const m = String(Number(month) + 1).padStart(2, "0");
-    onSubmit({ amount: amt, type, paymentMonth: `${year}-${m}` });
+    onSubmit({
+      amount: amt,
+      type,
+      paymentMonth: `${year}-${m}`,
+      paymentMethod,
+      accountNumber: (paymentMethod === "bank" || paymentMethod === "mpesa") ? accountNumber || undefined : undefined,
+    });
     setAmount("");
     setType("regular");
+    setPaymentMethod("cash");
+    setAccountNumber("");
     onOpenChange(false);
   };
 
@@ -69,16 +78,41 @@ const SalaryPayDialog = ({ open, onOpenChange, workerName, onSubmit }: SalaryPay
               </Select>
             </div>
           </div>
-          <div>
-            <Label className="text-xs text-muted-foreground">Payment Type</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="regular">Regular</SelectItem>
-                <SelectItem value="advance">Advance</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Payment Type</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular</SelectItem>
+                  <SelectItem value="advance">Advance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {paymentMethod === "bank" && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Account Number (optional)</Label>
+              <Input placeholder="Enter account number" className="h-9 text-sm" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} />
+            </div>
+          )}
+          {paymentMethod === "mpesa" && (
+            <div>
+              <Label className="text-xs text-muted-foreground">M-Pesa Number (optional)</Label>
+              <Input placeholder="Enter M-Pesa number" className="h-9 text-sm" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} />
+            </div>
+          )}
           <div>
             <Label className="text-xs text-muted-foreground">Amount</Label>
             <Input type="number" placeholder="Enter amount" className="h-9" value={amount} onChange={e => setAmount(e.target.value)} autoFocus />
