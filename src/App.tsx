@@ -35,7 +35,7 @@ import SavingsPage from "@/pages/SavingsPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSystemAdmin } = useAuth();
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar">
