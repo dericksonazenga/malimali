@@ -24,7 +24,6 @@ const VipEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
   const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll, refresh } = useInventory();
   const [customerName, setCustomerName] = usePersistedState("vip_customerName", "");
   const [commodity, setCommodity] = usePersistedState("vip_commodity", "");
