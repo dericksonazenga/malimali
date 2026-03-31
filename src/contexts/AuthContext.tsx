@@ -7,6 +7,8 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  companyId: string | null;
+  isSystemAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, displayName: string, role?: UserRole) => Promise<string | null>;
   logout: () => Promise<void>;
