@@ -88,15 +88,15 @@ const RatesPage = () => {
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Zinc" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Agent ({symbol})</Label>
+                <Label className="text-xs">{labels.agent} ({symbol})</Label>
                 <Input type="number" value={newAgent} onChange={(e) => setNewAgent(e.target.value)} placeholder="0" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">VIP ({symbol})</Label>
+                <Label className="text-xs">{labels.vip} ({symbol})</Label>
                 <Input type="number" value={newVip} onChange={(e) => setNewVip(e.target.value)} placeholder="0" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Sales ({symbol})</Label>
+                <Label className="text-xs">{labels.sales} ({symbol})</Label>
                 <div className="flex gap-2">
                   <Input type="number" value={newSales} onChange={(e) => setNewSales(e.target.value)} placeholder="0" className="h-10" />
                   <Button size="sm" className="h-10 px-4" onClick={handleAdd}><Save className="w-4 h-4" /></Button>
