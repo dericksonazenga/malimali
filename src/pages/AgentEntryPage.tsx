@@ -17,6 +17,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
 import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const AgentEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
@@ -26,10 +27,10 @@ const AgentEntryPage = () => {
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
   const { agentEntries: entries, addAgentEntry, removeAgentEntry, clearAll, refresh } = useInventory();
-  const [customerName, setCustomerName] = useState("");
-  const [commodity, setCommodity] = useState("");
-  const [weightExpr, setWeightExpr] = useState("");
-  const [rateOverride, setRateOverride] = useState("");
+  const [customerName, setCustomerName] = usePersistedState("agent_customerName", "");
+  const [commodity, setCommodity] = usePersistedState("agent_commodity", "");
+  const [weightExpr, setWeightExpr] = usePersistedState("agent_weightExpr", "");
+  const [rateOverride, setRateOverride] = usePersistedState("agent_rateOverride", "");
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {

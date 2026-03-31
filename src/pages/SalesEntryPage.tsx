@@ -18,6 +18,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
 import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
@@ -27,14 +28,14 @@ const SalesEntryPage = () => {
   const { resetSignal } = useEndOfDay();
   const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll, refresh } = useInventory();
   const { commodities } = useCommodities();
-  const [customerName, setCustomerName] = useState("");
-  const [commodity, setCommodity] = useState("");
-  const [weightExpr, setWeightExpr] = useState("");
-  const [rateOverride, setRateOverride] = useState("");
-  const [isExchange, setIsExchange] = useState(false);
-  const [exchangeCommodity, setExchangeCommodity] = useState("");
-  const [exchangeWeight, setExchangeWeight] = useState("");
-  const [exchangeFee, setExchangeFee] = useState("");
+  const [customerName, setCustomerName] = usePersistedState("sales_customerName", "");
+  const [commodity, setCommodity] = usePersistedState("sales_commodity", "");
+  const [weightExpr, setWeightExpr] = usePersistedState("sales_weightExpr", "");
+  const [rateOverride, setRateOverride] = usePersistedState("sales_rateOverride", "");
+  const [isExchange, setIsExchange] = usePersistedState("sales_isExchange", false);
+  const [exchangeCommodity, setExchangeCommodity] = usePersistedState("sales_exchangeCommodity", "");
+  const [exchangeWeight, setExchangeWeight] = usePersistedState("sales_exchangeWeight", "");
+  const [exchangeFee, setExchangeFee] = usePersistedState("sales_exchangeFee", "");
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
