@@ -417,8 +417,8 @@ const DebtManagementPage = () => {
           {debtDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
-              <div className="hidden lg:block"><Table>{desktopTableHeaders}<TableBody>{debtDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2">{debtDebts.map(renderDebtCard)}</div>
+              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{debtDebts.map(renderDebtRow)}</TableBody></Table></div>
+              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{debtDebts.map(renderDebtCard)}</div>
             </div>
           )}
 
