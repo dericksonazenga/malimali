@@ -227,8 +227,20 @@ const SalesEntryPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search customer..."
+              className="pl-9 h-9"
+            />
+          </div>
           {(() => {
-            const grouped = entries.reduce((acc, entry) => {
+            const filtered = searchQuery
+              ? entries.filter(e => (e.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) || (e.commodity || "").toLowerCase().includes(searchQuery.toLowerCase()))
+              : entries;
+            const grouped = filtered.reduce((acc, entry) => {
               const key = (entry.customerName || "Walk-in").trim().toLowerCase();
               if (!acc[key]) acc[key] = { displayName: entry.customerName || "Walk-in", entries: [] };
               acc[key].entries.push(entry);
