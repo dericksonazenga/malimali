@@ -148,7 +148,7 @@ const WorkersPage = () => {
           {workers.length > 0 ? (
             <>
               {/* Desktop */}
-              <div className="hidden md:block">
+              <div className="hidden md:block max-h-[480px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
