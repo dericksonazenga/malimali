@@ -69,6 +69,8 @@ const SalesEntryPage = () => {
 
     const entryKey = isExchange
       ? `exchange|${exchangeCommodity}|${exchangeWeight}|${exchangeFee}`
+      : isSpecial
+      ? `special|${customerName.trim().toLowerCase()}|${actualWeight}`
       : `${customerName.trim().toLowerCase()}|${commodity}|${actualWeight}`;
     const now = Date.now();
     if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
