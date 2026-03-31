@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
-  BarChart3, Package, Users, Receipt, Loader2, PiggyBank
+  BarChart3, Package, Users, Receipt, Loader2, PiggyBank, CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
@@ -25,21 +25,30 @@ const FinancialReportPage = () => {
   const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
-  // Savings data
+  // Savings data with realtime
   const [savingsAccounts, setSavingsAccounts] = useState<any[]>([]);
   const [savingsTransactions, setSavingsTransactions] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchSavings = async () => {
-      const [{ data: accounts }, { data: txns }] = await Promise.all([
-        supabase.from("savings_accounts").select("*").order("customer_name"),
-        supabase.from("savings_transactions").select("*").order("created_at", { ascending: false }),
-      ]);
-      if (accounts) setSavingsAccounts(accounts as any[]);
-      if (txns) setSavingsTransactions(txns as any[]);
-    };
-    fetchSavings();
+  const fetchSavings = useCallback(async () => {
+    const [{ data: accounts }, { data: txns }] = await Promise.all([
+      supabase.from("savings_accounts").select("*").order("customer_name"),
+      supabase.from("savings_transactions").select("*").order("created_at", { ascending: false }),
+    ]);
+    if (accounts) setSavingsAccounts(accounts as any[]);
+    if (txns) setSavingsTransactions(txns as any[]);
   }, []);
+
+  useEffect(() => { fetchSavings(); }, [fetchSavings]);
+
+  // Realtime for savings
+  useEffect(() => {
+    const channel = supabase
+      .channel("report-savings-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_accounts" }, () => fetchSavings())
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_transactions" }, () => fetchSavings())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchSavings]);
 
   if (loading || !data) {
     return (
@@ -51,8 +60,10 @@ const FinancialReportPage = () => {
 
   const {
     agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
+    debts, debtPayments,
     agentTotal, vipTotal, salesTotal, expenseTotal,
     salaryTotal, salaryPaid, salaryBalance,
+    debtTotal, debtPaid, debtBalance,
     totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
     commodityProfitBreakdown,
   } = data;
@@ -64,9 +75,8 @@ const FinancialReportPage = () => {
   const rangeLabel = range.preset === "custom" 
     ? "Custom" 
     : range.preset.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const filePrefix = `RachelScrap_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
+  const filePrefix = `Report_${rangeLabel.replace(/ /g, "")}_${new Date().toISOString().split("T")[0]}`;
 
-  // Helper to auto-fit column widths (snug, not too big)
   const autoFitColumns = (ws: XLSX.WorkSheet, data: any[][]) => {
     if (!data.length || !data[0].length) return ws;
     const colWidths = data[0].map((_, colIdx) => {
@@ -80,11 +90,8 @@ const FinancialReportPage = () => {
     return ws;
   };
 
-  // Helper to style headers bold and freeze top row(s)
   const styleSheet = (ws: XLSX.WorkSheet, headerRows: number = 1, totalRowIdx?: number, totalCols?: number) => {
-    // Freeze header rows
     ws["!freeze"] = { xSplit: 0, ySplit: headerRows };
-    // Bold headers
     for (let r = 0; r < headerRows; r++) {
       const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
       for (let c = range.s.c; c <= range.e.c; c++) {
@@ -95,7 +102,6 @@ const FinancialReportPage = () => {
         }
       }
     }
-    // Bold total row
     if (totalRowIdx !== undefined && totalCols) {
       for (let c = 0; c < totalCols; c++) {
         const addr = XLSX.utils.encode_cell({ r: totalRowIdx, c });
@@ -108,7 +114,6 @@ const FinancialReportPage = () => {
     return ws;
   };
 
-  // Full report as multi-sheet Excel
   const downloadFullReport = () => {
     const wb = XLSX.utils.book_new();
 
@@ -123,43 +128,33 @@ const FinancialReportPage = () => {
       ["Total Expenses", expenseTotal],
       ["Salary Paid", salaryPaid],
       ["Net Profit", netProfit],
+      [""],
+      ["Total Debt Outstanding", debtTotal],
+      ["Debt Paid", debtPaid],
+      ["Debt Balance", debtBalance],
     ];
     XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(summaryData), summaryData), "Summary");
 
-
-
-
-    // Helper to build grouped-by-customer sheet for Agent/VIP
+    // Helper to build grouped-by-customer sheet
     const buildGroupedSheet = (entries: any[], sheetName: string) => {
       const groups = groupEntriesByCustomer(entries);
-      const aoa: any[][] = [
-        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"],
-      ];
+      const aoa: any[][] = [["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"]];
       groups.forEach(g => {
-        g.entries.forEach((e: any) => {
-          aoa.push([e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]);
-        });
-        // Subtotal row per customer
+        g.entries.forEach((e: any) => { aoa.push([e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]); });
         aoa.push([`${g.customerName} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, ""]);
-        aoa.push([]); // blank separator
+        aoa.push([]);
       });
-      // Grand total
       const grandWeight = entries.reduce((s: number, e: any) => s + Number(e.actual_weight), 0);
       const grandAmount = entries.reduce((s: number, e: any) => s + Number(e.amount), 0);
       aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, ""]);
-
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       autoFitColumns(ws, aoa);
       styleSheet(ws, 1, aoa.length - 1, 6);
-      // Bold each subtotal row
       let rowIdx = 1;
       groups.forEach(g => {
         rowIdx += g.entries.length;
-        for (let c = 0; c < 6; c++) {
-          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
-          if (ws[addr]) ws[addr].s = { font: { bold: true } };
-        }
-        rowIdx += 2; // subtotal + blank
+        for (let c = 0; c < 6; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; }
+        rowIdx += 2;
       });
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
@@ -167,46 +162,29 @@ const FinancialReportPage = () => {
     buildGroupedSheet(agentEntries, "Agent Entries");
     buildGroupedSheet(vipEntries, "VIP Entries");
 
-    // Sales Entries sheet - grouped by customer
+    // Sales Entries sheet
     {
       const salesGroups = groupEntriesByCustomer(salesEntries, "weight");
-      const aoa: any[][] = [
-        ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"],
-      ];
+      const aoa: any[][] = [["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"]];
       salesGroups.forEach(g => {
-        g.entries.forEach((e: any) => {
-          aoa.push([e.customer_name || "", e.commodity || "", Number(e.weight), e.rate ? Number(e.rate) : "", Number(e.amount || 0), e.is_exchange ? "Yes" : "No", e.date]);
-        });
+        g.entries.forEach((e: any) => { aoa.push([e.customer_name || "", e.commodity || "", Number(e.weight), e.rate ? Number(e.rate) : "", Number(e.amount || 0), e.is_exchange ? "Yes" : "No", e.date]); });
         aoa.push([`${g.customerName || "No Name"} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, "", ""]);
         aoa.push([]);
       });
       const grandWeight = salesEntries.reduce((s: number, e: any) => s + Number(e.weight || 0), 0);
       const grandAmount = salesEntries.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
       aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", ""]);
-
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       autoFitColumns(ws, aoa);
       styleSheet(ws, 1, aoa.length - 1, 7);
       let rowIdx = 1;
-      salesGroups.forEach(g => {
-        rowIdx += g.entries.length;
-        for (let c = 0; c < 7; c++) {
-          const addr = XLSX.utils.encode_cell({ r: rowIdx, c });
-          if (ws[addr]) ws[addr].s = { font: { bold: true } };
-        }
-        rowIdx += 2;
-      });
+      salesGroups.forEach(g => { rowIdx += g.entries.length; for (let c = 0; c < 7; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; } rowIdx += 2; });
       XLSX.utils.book_append_sheet(wb, ws, "Sales Entries");
     }
 
     // Expenses sheet
     const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
-    const expData = [
-      ["Category", "Amount", "Notes", "Date"],
-      ...expRows2,
-      [],
-      ["TOTAL", expRows2.reduce((s, r) => s + Number(r[1]), 0), "", ""],
-    ];
+    const expData = [["Category", "Amount", "Notes", "Date"], ...expRows2, [], ["TOTAL", expRows2.reduce((s, r) => s + Number(r[1]), 0), "", ""]];
     const expWs = XLSX.utils.aoa_to_sheet(expData);
     autoFitColumns(expWs, expData);
     styleSheet(expWs, 1, expData.length - 1, 4);
@@ -214,12 +192,7 @@ const FinancialReportPage = () => {
 
     // Commodity Flow sheet
     const flowRows = Object.entries(commodityBreakdown).map(([c, v]) => [c, v.bought, v.sold, v.net]);
-    const flowData = [
-      ["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"],
-      ...flowRows,
-      [],
-      ["TOTAL", flowRows.reduce((s, r) => s + Number(r[1]), 0), flowRows.reduce((s, r) => s + Number(r[2]), 0), flowRows.reduce((s, r) => s + Number(r[3]), 0)],
-    ];
+    const flowData = [["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"], ...flowRows, [], ["TOTAL", flowRows.reduce((s, r) => s + Number(r[1]), 0), flowRows.reduce((s, r) => s + Number(r[2]), 0), flowRows.reduce((s, r) => s + Number(r[3]), 0)]];
     const flowWs = XLSX.utils.aoa_to_sheet(flowData);
     autoFitColumns(flowWs, flowData);
     styleSheet(flowWs, 1, flowData.length - 1, 4);
@@ -227,12 +200,7 @@ const FinancialReportPage = () => {
 
     // Current Stock sheet
     const stockRows2 = stockData.map((s: any) => [s.commodity, s.weight]);
-    const stockSheetData = [
-      ["Commodity", "Weight (kg)"],
-      ...stockRows2,
-      [],
-      ["TOTAL", stockRows2.reduce((s, r) => s + Number(r[1]), 0)],
-    ];
+    const stockSheetData = [["Commodity", "Weight (kg)"], ...stockRows2, [], ["TOTAL", stockRows2.reduce((s, r) => s + Number(r[1]), 0)]];
     const stockWs = XLSX.utils.aoa_to_sheet(stockSheetData);
     autoFitColumns(stockWs, stockSheetData);
     styleSheet(stockWs, 1, stockSheetData.length - 1, 2);
@@ -240,12 +208,7 @@ const FinancialReportPage = () => {
 
     // Payroll sheet
     const payrollRows2 = workers.map((w: any) => [w.name, w.role, w.salary, w.paid, w.balance]);
-    const payrollData = [
-      ["Worker", "Role", "Salary", "Paid", "Balance"],
-      ...payrollRows2,
-      [],
-      ["TOTAL", "", payrollRows2.reduce((s, r) => s + Number(r[2]), 0), payrollRows2.reduce((s, r) => s + Number(r[3]), 0), payrollRows2.reduce((s, r) => s + Number(r[4]), 0)],
-    ];
+    const payrollData = [["Worker", "Role", "Salary", "Paid", "Balance"], ...payrollRows2, [], ["TOTAL", "", payrollRows2.reduce((s, r) => s + Number(r[2]), 0), payrollRows2.reduce((s, r) => s + Number(r[3]), 0), payrollRows2.reduce((s, r) => s + Number(r[4]), 0)]];
     const payrollWs = XLSX.utils.aoa_to_sheet(payrollData);
     autoFitColumns(payrollWs, payrollData);
     styleSheet(payrollWs, 1, payrollData.length - 1, 5);
@@ -253,33 +216,29 @@ const FinancialReportPage = () => {
 
     // Commodity Profit sheet
     const profitRows2 = commodityProfitBreakdown.map((c) => [c.commodity, c.avgBuyRate, c.avgSellRate, c.marginPerKg, c.totalWeightSold, c.totalProfit]);
-    const profitData = [
-      ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
-      ...profitRows2,
-      [],
-      ["TOTAL", "", "", "", profitRows2.reduce((s, r) => s + Number(r[4]), 0), profitRows2.reduce((s, r) => s + Number(r[5]), 0)],
-    ];
+    const profitData = [["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"], ...profitRows2, [], ["TOTAL", "", "", "", profitRows2.reduce((s, r) => s + Number(r[4]), 0), profitRows2.reduce((s, r) => s + Number(r[5]), 0)]];
     const profitWs = XLSX.utils.aoa_to_sheet(profitData);
     autoFitColumns(profitWs, profitData);
     styleSheet(profitWs, 1, profitData.length - 1, 6);
     XLSX.utils.book_append_sheet(wb, profitWs, "Commodity Profit");
 
+    // Debts sheet
+    const debtSheetRows = debts.map((d: any) => [d.customer_name, d.description, d.total_amount, d.paid_amount, d.balance, d.status]);
+    const debtSheetData = [["Customer", "Description", "Total", "Paid", "Balance", "Status"], ...debtSheetRows, [], ["TOTAL", "", debtTotal, debtPaid, debtBalance, ""]];
+    const debtWs = XLSX.utils.aoa_to_sheet(debtSheetData);
+    autoFitColumns(debtWs, debtSheetData);
+    styleSheet(debtWs, 1, debtSheetData.length - 1, 6);
+    XLSX.utils.book_append_sheet(wb, debtWs, "Debts");
+
     // Savings sheet
     const savingsRows = savingsAccounts.map(a => [a.customer_name, a.balance]);
-    const savingsData = [
-      ["Customer", "Balance"],
-      ...savingsRows,
-      [],
-      ["Total Deposits", totalDeposits],
-      ["Total Withdrawals", totalWithdrawals],
-      ["Net Savings Held", netSavingsHeld],
-    ];
+    const savingsData = [["Customer", "Balance"], ...savingsRows, [], ["Total Deposits", totalDeposits], ["Total Withdrawals", totalWithdrawals], ["Net Savings Held", netSavingsHeld]];
     const savingsWs = XLSX.utils.aoa_to_sheet(savingsData);
     autoFitColumns(savingsWs, savingsData);
     styleSheet(savingsWs, 1);
     XLSX.utils.book_append_sheet(wb, savingsWs, "Savings");
 
-    // Style summary sheet too
+    // Style summary sheet
     const summaryWs = wb.Sheets["Summary"];
     if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
 
@@ -287,53 +246,17 @@ const FinancialReportPage = () => {
     toast.success("Full report downloaded!");
   };
 
-  // Section-specific CSV builders
-  const agentCSV = () => [
-    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"],
-    ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
-  ];
-  const vipCSV = () => [
-    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"],
-    ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date]),
-  ];
-  const salesCSV = () => [
-    ["Customer", "Commodity", "Weight", "Rate", "Amount", "Exchange", "Date"],
-    ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No", e.date]),
-  ];
-  const expenseCSV = () => [
-    ["Category", "Amount", "Notes", "Date"],
-    ...expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]),
-  ];
-  const inventoryCSV = () => [
-    ["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"],
-    ...Object.entries(commodityBreakdown).map(([c, v]) => [c, String(v.bought), String(v.sold), String(v.net)]),
-  ];
-  const stockCSV = () => [
-    ["Commodity", "Current Weight (kg)"],
-    ...stockData.map((s: any) => [s.commodity, String(s.weight)]),
-  ];
-  const payrollCSV = () => [
-    ["Worker", "Role", "Salary", "Paid", "Balance"],
-    ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)]),
-  ];
-  const savingsCSV = () => [
-    ["Customer", "Balance"],
-    ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]),
-    [],
-    ["Total Deposits", String(totalDeposits)],
-    ["Total Withdrawals", String(totalWithdrawals)],
-    ["Net Savings Held", String(netSavingsHeld)],
-  ];
-  const revenueCSV = () => [
-    ["Category", "Amount"],
-    ["Sales Revenue", String(salesTotal)],
-    ["Agent Purchases", String(-agentTotal)],
-    ["VIP Purchases", String(-vipTotal)],
-    ["Total Expenses", String(-expenseTotal)],
-    ["Salary Paid", String(-salaryPaid)],
-    ["Gross Profit", String(grossProfit)],
-    ["Net Profit", String(netProfit)],
-  ];
+  // CSV builders
+  const agentCSV = () => [["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"], ...agentEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date])];
+  const vipCSV = () => [["Customer", "Commodity", "Weight", "Rate", "Amount", "Date"], ...vipEntries.map((e: any) => [e.customer_name, e.commodity, e.actual_weight, e.rate, e.amount, e.date])];
+  const salesCSV = () => [["Customer", "Commodity", "Weight", "Rate", "Amount", "Exchange", "Date"], ...salesEntries.map((e: any) => [e.customer_name || "", e.commodity || "", e.weight, e.rate || "", e.amount || "", e.is_exchange ? "Yes" : "No", e.date])];
+  const expenseCSV = () => [["Category", "Amount", "Notes", "Date"], ...expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date])];
+  const inventoryCSV = () => [["Commodity", "Bought (kg)", "Sold (kg)", "Net Change (kg)"], ...Object.entries(commodityBreakdown).map(([c, v]) => [c, String(v.bought), String(v.sold), String(v.net)])];
+  const stockCSV = () => [["Commodity", "Current Weight (kg)"], ...stockData.map((s: any) => [s.commodity, String(s.weight)])];
+  const payrollCSV = () => [["Worker", "Role", "Salary", "Paid", "Balance"], ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)])];
+  const debtCSV = () => [["Customer", "Description", "Total", "Paid", "Balance", "Status"], ...debts.map((d: any) => [d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status])];
+  const savingsCSV = () => [["Customer", "Balance"], ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]), [], ["Total Deposits", String(totalDeposits)], ["Total Withdrawals", String(totalWithdrawals)], ["Net Savings Held", String(netSavingsHeld)]];
+  const revenueCSV = () => [["Category", "Amount"], ["Sales Revenue", String(salesTotal)], ["Agent Purchases", String(-agentTotal)], ["VIP Purchases", String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
   const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
     <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
@@ -373,6 +296,10 @@ const FinancialReportPage = () => {
             stockData={stockData}
             commodityBreakdown={commodityBreakdown}
             commodityProfitBreakdown={commodityProfitBreakdown}
+            debts={debts}
+            debtTotal={debtTotal}
+            debtPaid={debtPaid}
+            debtBalance={debtBalance}
           />
           <Button onClick={downloadFullReport} className="h-10 gap-2 text-xs sm:text-sm">
             <FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">Download</span> Full Report
@@ -384,16 +311,17 @@ const FinancialReportPage = () => {
       <DateRangeSelector value={range} onChange={setRange} />
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { label: "Sales Revenue", value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
           { label: "Total Purchases", value: totalPurchases, icon: <TrendingDown className="w-4 h-4 text-info" />, color: "text-info" },
           { label: "Total Expenses", value: expenseTotal, icon: <DollarSign className="w-4 h-4 text-destructive" />, color: "text-destructive" },
+          { label: "Debt Balance", value: debtBalance, icon: <CreditCard className="w-4 h-4 text-orange-500" />, color: debtBalance > 0 ? "text-orange-500" : "text-success" },
           { label: "Net Profit", value: netProfit, icon: <BarChart3 className="w-4 h-4 text-primary" />, color: netProfit >= 0 ? "text-success" : "text-destructive" },
         ].map(kpi => (
           <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-1">{kpi.icon}<span className="text-xs text-muted-foreground">{kpi.label}</span></div>
-           <p className={`text-lg sm:text-xl font-bold font-mono ${kpi.color} break-all`}>{symbol}{fmt(kpi.value)}</p>
+            <p className={`text-lg sm:text-xl font-bold font-mono ${kpi.color} break-all`}>{symbol}{fmt(kpi.value)}</p>
           </div>
         ))}
       </div>
@@ -430,11 +358,37 @@ const FinancialReportPage = () => {
             <StatRow label="Expenses" value={expenseTotal} negative />
             <StatRow label="Salary Paid" value={salaryPaid} negative />
             <StatRow label="Gross Profit (Sales Margin)" value={grossProfit} bold />
-            <StatRow label="Net Profit (Gross - Expenses - Salary)" value={netProfit} bold />
+            <StatRow label="Net Profit (Gross - Expenses)" value={netProfit} bold />
           </div>
         </AnalyticsSection>
 
-        {/* Agent Entries - Grouped */}
+        {/* Debt Summary */}
+        <AnalyticsSection
+          title={`Debts (${debts.length})`}
+          icon={<CreditCard className="w-4 h-4 text-orange-500" />}
+          csvRows={debtCSV()}
+          csvFilename={`${filePrefix}_Debts.csv`}
+        >
+          <div className="space-y-0.5">
+            <StatRow label="Total Debt" value={debtTotal} />
+            <StatRow label="Paid" value={debtPaid} />
+            <StatRow label="Outstanding Balance" value={debtBalance} bold />
+          </div>
+          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+            {debts.length === 0 && <p className="text-sm text-muted-foreground">No debts</p>}
+            {debts.map((d: any) => (
+              <div key={d.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">{d.customer_name} {d.description ? `(${d.description})` : ""}</span>
+                <div className="flex gap-2 font-mono text-xs shrink-0">
+                  <span className="text-orange-500">{symbol}{fmt(Number(d.balance))}</span>
+                  <Badge variant={d.status === "paid" ? "default" : "secondary"} className="text-[10px] h-4">{d.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
+
+        {/* Agent Entries */}
         <AnalyticsSection
           title={`Agent Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
@@ -472,7 +426,7 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* VIP Entries - Grouped */}
+        {/* VIP Entries */}
         <AnalyticsSection
           title={`VIP Entries (${vipEntries.length})`}
           icon={<Users className="w-4 h-4 text-primary" />}
@@ -510,7 +464,7 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Sales Entries - Grouped */}
+        {/* Sales Entries */}
         <AnalyticsSection
           title={`Sales Entries (${salesEntries.length})`}
           icon={<TrendingUp className="w-4 h-4 text-success" />}
@@ -569,7 +523,7 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Inventory / Commodity Flow */}
+        {/* Commodity Flow */}
         <AnalyticsSection
           title="Commodity Flow"
           icon={<Package className="w-4 h-4 text-accent-foreground" />}
@@ -610,57 +564,42 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Per-Commodity Profit Breakdown */}
+        {/* Commodity Profit Breakdown */}
         <AnalyticsSection
           title="Commodity Profit Breakdown"
           icon={<BarChart3 className="w-4 h-4 text-primary" />}
           csvRows={[
             ["Commodity", "Avg Buy Rate", "Avg Sell Rate", "Margin/kg", "Weight Sold (kg)", "Total Profit"],
-            ...commodityProfitBreakdown.map((c) => [
-              c.commodity, fmt(c.avgBuyRate), fmt(c.avgSellRate), fmt(c.marginPerKg),
-              fmt(c.totalWeightSold), fmt(c.totalProfit),
-            ]),
+            ...commodityProfitBreakdown.map((c) => [c.commodity, fmt(c.avgBuyRate), fmt(c.avgSellRate), fmt(c.marginPerKg), fmt(c.totalWeightSold), fmt(c.totalProfit)]),
           ]}
           csvFilename={`${filePrefix}_CommodityProfit.csv`}
         >
           <div className="space-y-1">
             {commodityProfitBreakdown.length === 0 && <p className="text-sm text-muted-foreground">No data</p>}
             <div className="hidden sm:grid grid-cols-6 text-xs text-muted-foreground font-medium pb-1 border-b border-border">
-              <span>Commodity</span>
-              <span className="text-right">Buy/kg</span>
-              <span className="text-right">Sell/kg</span>
-              <span className="text-right">Margin/kg</span>
-              <span className="text-right">Sold (kg)</span>
-              <span className="text-right">Profit</span>
+              <span>Commodity</span><span className="text-right">Buy/kg</span><span className="text-right">Sell/kg</span>
+              <span className="text-right">Margin/kg</span><span className="text-right">Sold (kg)</span><span className="text-right">Profit</span>
             </div>
             {commodityProfitBreakdown.map((c) => (
-              <>
-                {/* Desktop row */}
-                <div key={c.commodity} className="hidden sm:grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
+              <div key={c.commodity}>
+                <div className="hidden sm:grid grid-cols-6 text-sm py-1.5 border-b border-border/50">
                   <span className="truncate font-medium">{c.commodity}</span>
                   <span className="text-right font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span>
                   <span className="text-right font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span>
-                  <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>
-                    {symbol}{fmt(c.marginPerKg)}
-                  </span>
+                  <span className={`text-right font-mono font-semibold ${c.marginPerKg >= 0 ? "text-success" : "text-destructive"}`}>{symbol}{fmt(c.marginPerKg)}</span>
                   <span className="text-right font-mono">{fmt(c.totalWeightSold)}</span>
-                  <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                    {symbol}{fmt(c.totalProfit)}
-                  </span>
+                  <span className={`text-right font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>{symbol}{fmt(c.totalProfit)}</span>
                 </div>
-                {/* Mobile card */}
-                <div key={`m-${c.commodity}`} className="sm:hidden border border-border/50 rounded-lg p-2 space-y-1">
+                <div className="sm:hidden border border-border/50 rounded-lg p-2 space-y-1">
                   <p className="font-medium text-sm">{c.commodity}</p>
                   <div className="grid grid-cols-2 gap-1 text-xs">
                     <span className="text-muted-foreground">Buy: <span className="font-mono text-info">{symbol}{fmt(c.avgBuyRate)}</span></span>
                     <span className="text-muted-foreground">Sell: <span className="font-mono text-success">{symbol}{fmt(c.avgSellRate)}</span></span>
                     <span className="text-muted-foreground">Sold: <span className="font-mono">{fmt(c.totalWeightSold)}kg</span></span>
-                    <span className={`font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>
-                      Profit: {symbol}{fmt(c.totalProfit)}
-                    </span>
+                    <span className={`font-mono font-bold ${c.totalProfit >= 0 ? "text-success" : "text-destructive"}`}>Profit: {symbol}{fmt(c.totalProfit)}</span>
                   </div>
                 </div>
-              </>
+              </div>
             ))}
           </div>
           {commodityProfitBreakdown.length > 0 && (
