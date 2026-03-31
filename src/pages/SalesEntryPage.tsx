@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package, Sparkles } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -32,6 +32,7 @@ const SalesEntryPage = () => {
   const [weightExpr, setWeightExpr] = useState("");
   const [rateOverride, setRateOverride] = useState("");
   const [isExchange, setIsExchange] = useState(false);
+  const [isSpecial, setIsSpecial] = useState(false);
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
   const [exchangeFee, setExchangeFee] = useState("");
@@ -49,8 +50,8 @@ const SalesEntryPage = () => {
     clearAll();
   }, [resetSignal]);
 
-  const selectedCommodity = commodities.find((c) => c.name === commodity);
-  const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
+  const selectedCommodity = isSpecial ? null : commodities.find((c) => c.name === commodity);
+  const rate = rateOverride ? parseFloat(rateOverride) : (isSpecial ? 0 : (selectedCommodity?.salesRate || 0));
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = rate > 0 ? actualWeight * rate : undefined;
   const exchFee = parseFloat(exchangeFee) || 0;
@@ -60,12 +61,16 @@ const SalesEntryPage = () => {
     e.preventDefault();
     if (isExchange) {
       if (!exchangeCommodity || !exchangeWeight) { toast.error("Fill exchange fields"); return; }
+    } else if (isSpecial) {
+      if (!weightExpr) { toast.error("Fill weight field"); return; }
     } else {
       if (!commodity || !weightExpr) { toast.error("Fill required fields"); return; }
     }
 
     const entryKey = isExchange
       ? `exchange|${exchangeCommodity}|${exchangeWeight}|${exchangeFee}`
+      : isSpecial
+      ? `special|${customerName.trim().toLowerCase()}|${actualWeight}`
       : `${customerName.trim().toLowerCase()}|${commodity}|${actualWeight}`;
     const now = Date.now();
     if (lastSubmit && lastSubmit.key === entryKey && now - lastSubmit.time < 15000) {
@@ -73,11 +78,12 @@ const SalesEntryPage = () => {
       return;
     }
 
+    const specialCommodity = isSpecial ? "Heavy" : commodity;
     const entryAmount = isExchange ? exchFee : amount;
     await addSalesEntry({
       id: Date.now().toString(),
       customerName,
-      commodity: isExchange ? exchangeCommodity : commodity,
+      commodity: isExchange ? exchangeCommodity : specialCommodity,
       grossWeight: isExchange ? 0 : actualWeight,
       containerWeight: 0,
       weight: isExchange ? (parseFloat(exchangeWeight) || 0) : actualWeight,
@@ -92,8 +98,8 @@ const SalesEntryPage = () => {
     });
     setLastSubmit({ key: entryKey, time: now });
     setCustomerName(""); setCommodity(""); setWeightExpr(""); setRateOverride("");
-    setIsExchange(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
-    toast.success("Sales entry added!");
+    setIsExchange(false); setIsSpecial(false); setExchangeCommodity(""); setExchangeWeight(""); setExchangeFee("");
+    toast.success(isSpecial ? "Special entry added! Weight deducted from Heavy inventory." : "Sales entry added!");
   };
 
   const canEntry = hasPermission("data_entry");
@@ -113,18 +119,28 @@ const SalesEntryPage = () => {
           <CardContent>
             {!bulkMode ? (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
-                <div className="space-y-2">
-                  <Label>Commodity *</Label>
-                  <Select value={commodity} onValueChange={setCommodity}>
-                    <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                    <SelectContent>
-                      {commodities.map((c) => (
-                        <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Special Toggle */}
+                <div className="lg:col-span-3 flex items-center gap-3">
+                  <Sparkles className={`w-4 h-4 ${isSpecial ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <Label htmlFor="special-toggle" className="cursor-pointer font-semibold">Special (Heavy Inventory)</Label>
+                  <Switch id="special-toggle" checked={isSpecial} onCheckedChange={(v) => { setIsSpecial(v); if (v) { setCommodity(""); setIsExchange(false); } }} />
+                  {isSpecial && <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded">Deducts from Heavy stock</span>}
                 </div>
+
+                <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
+                {!isSpecial && (
+                  <div className="space-y-2">
+                    <Label>Commodity *</Label>
+                    <Select value={commodity} onValueChange={setCommodity}>
+                      <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                      <SelectContent>
+                        {commodities.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Weight (kg) *</Label>
                   <Input
@@ -139,7 +155,7 @@ const SalesEntryPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Rate ({symbol}/kg)</Label>
-                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={isSpecial ? "Enter rate" : `${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
                 </div>
                 <div className="space-y-2">
                   <Label>Calculated</Label>
