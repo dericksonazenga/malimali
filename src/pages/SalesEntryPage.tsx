@@ -43,11 +43,6 @@ const SalesEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  useEffect(() => {
-    if (resetSignal === 0) return;
-    clearAll();
-  }, [resetSignal]);
-
   const selectedCommodity = commodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);

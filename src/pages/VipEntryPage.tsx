@@ -38,11 +38,6 @@ const VipEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  useEffect(() => {
-    if (resetSignal === 0) return;
-    clearAll();
-  }, [resetSignal]);
-
   const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.vipRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);
