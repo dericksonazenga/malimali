@@ -60,16 +60,15 @@ interface BulkEntryFormProps {
   onSubmitEntries: (entries: ParsedEntry[], customerName: string) => Promise<void>;
 }
 
-const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => {
+const BulkEntryForm = ({ type, title, storageKeyPrefix, onSubmitEntries }: BulkEntryFormProps) => {
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { hasPermission } = useAuth();
+  const prefix = storageKeyPrefix || `bulk_${type}`;
 
-  const [customerName, setCustomerName] = useState("");
-  // Map of commodity name → raw weight expression string
-  const [weightExpressions, setWeightExpressions] = useState<Record<string, string>>({});
-  // Map of commodity name → rate override
-  const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
+  const [customerName, setCustomerName, clearCustomerName] = usePersistedState(`${prefix}_customerName`, "");
+  const [weightExpressions, setWeightExpressions, clearWeightExpr] = usePersistedState<Record<string, string>>(`${prefix}_weightExpr`, {});
+  const [rateOverrides, setRateOverrides, clearRateOverrides] = usePersistedState<Record<string, string>>(`${prefix}_rateOverrides`, {});
   const [submitting, setSubmitting] = useState(false);
   const [lastBulkSubmit, setLastBulkSubmit] = useState<{ key: string; time: number } | null>(null);
 
