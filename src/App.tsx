@@ -10,6 +10,7 @@ import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { CommodityProvider } from "@/contexts/CommodityContext";
+import { CategoryLabelsProvider } from "@/contexts/CategoryLabelsContext";
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/LoginPage";
@@ -80,19 +81,21 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <CommodityProvider>
-          <CurrencyProvider>
-            <InventoryProvider>
-              <EndOfDayProvider>
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/attendance-scan" element={<AttendanceScanPage />} />
-                    <Route path="/*" element={<AuthenticatedApp />} />
-                  </Routes>
-                </BrowserRouter>
-              </EndOfDayProvider>
-            </InventoryProvider>
-          </CurrencyProvider>
+          <CategoryLabelsProvider>
+            <CurrencyProvider>
+              <InventoryProvider>
+                <EndOfDayProvider>
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/attendance-scan" element={<AttendanceScanPage />} />
+                      <Route path="/*" element={<AuthenticatedApp />} />
+                    </Routes>
+                  </BrowserRouter>
+                </EndOfDayProvider>
+              </InventoryProvider>
+            </CurrencyProvider>
+          </CategoryLabelsProvider>
         </CommodityProvider>
       </AuthProvider>
     </TooltipProvider>

@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useInventory } from "@/contexts/InventoryContext";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,6 +30,7 @@ const DashboardPage = () => {
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
+  const { labels } = useCategoryLabels();
   const navigate = useNavigate();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
@@ -85,10 +87,10 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
-        <StatCard title="Agent Purchases" value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
-        <StatCard title="VIP Purchases" value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
+        <StatCard title={`${labels.agent} Purchases`} value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
+        <StatCard title={`${labels.vip} Purchases`} value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
         <StatCard title="Total Purchases" value={`${symbol}${(agentTotal + vipTotal).toLocaleString()}`} subtitle={`${agentEntries.length + vipEntries.length} entries`} icon={<TrendingDown className="w-5 h-5 text-orange-500" />} color="text-foreground" />
-        <StatCard title="Sales" value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
+        <StatCard title={labels.sales} value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
         <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
       </div>
 
@@ -128,9 +130,9 @@ const DashboardPage = () => {
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <span className="font-medium">{c.name}</span>
                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm font-mono justify-end">
-                    <span className="text-muted-foreground whitespace-nowrap">A: {symbol}{c.agentRate}</span>
-                    <span className="text-primary whitespace-nowrap">V: {symbol}{c.vipRate}</span>
-                    <span className="text-success whitespace-nowrap">S: {symbol}{c.salesRate}</span>
+                     <span className="text-muted-foreground whitespace-nowrap">{labels.agent[0]}: {symbol}{c.agentRate}</span>
+                     <span className="text-primary whitespace-nowrap">{labels.vip[0]}: {symbol}{c.vipRate}</span>
+                     <span className="text-success whitespace-nowrap">{labels.sales[0]}: {symbol}{c.salesRate}</span>
                   </div>
                 </div>
               ))}

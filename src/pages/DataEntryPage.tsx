@@ -4,10 +4,12 @@ import { FileText, Star, ShoppingCart } from "lucide-react";
 import AgentEntryPage from "./AgentEntryPage";
 import VipEntryPage from "./VipEntryPage";
 import SalesEntryPage from "./SalesEntryPage";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 const DataEntryPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "agent";
+  const { labels } = useCategoryLabels();
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -18,13 +20,13 @@ const DataEntryPage = () => {
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-3 h-12">
           <TabsTrigger value="agent" className="gap-2 text-sm font-semibold">
-            <FileText className="w-4 h-4" /> Agent
+            <FileText className="w-4 h-4" /> {labels.agent}
           </TabsTrigger>
           <TabsTrigger value="vip" className="gap-2 text-sm font-semibold">
-            <Star className="w-4 h-4" /> VIP
+            <Star className="w-4 h-4" /> {labels.vip}
           </TabsTrigger>
           <TabsTrigger value="sales" className="gap-2 text-sm font-semibold">
-            <ShoppingCart className="w-4 h-4" /> Sales
+            <ShoppingCart className="w-4 h-4" /> {labels.sales}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="agent"><AgentEntryPage /></TabsContent>

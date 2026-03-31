@@ -12,11 +12,13 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import RateHistory from "@/components/RateHistory";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 const RatesPage = () => {
   const { symbol } = useCurrency();
   const { user } = useAuth();
   const { commodities, loading, addCommodity, updateCommodity } = useCommodities();
+  const { labels } = useCategoryLabels();
   const [editing, setEditing] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ agentRate: 0, vipRate: 0, salesRate: 0 });
   const [showAdd, setShowAdd] = useState(false);
@@ -86,15 +88,15 @@ const RatesPage = () => {
                 <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Zinc" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Agent ({symbol})</Label>
+                <Label className="text-xs">{labels.agent} ({symbol})</Label>
                 <Input type="number" value={newAgent} onChange={(e) => setNewAgent(e.target.value)} placeholder="0" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">VIP ({symbol})</Label>
+                <Label className="text-xs">{labels.vip} ({symbol})</Label>
                 <Input type="number" value={newVip} onChange={(e) => setNewVip(e.target.value)} placeholder="0" className="h-10" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Sales ({symbol})</Label>
+                <Label className="text-xs">{labels.sales} ({symbol})</Label>
                 <div className="flex gap-2">
                   <Input type="number" value={newSales} onChange={(e) => setNewSales(e.target.value)} placeholder="0" className="h-10" />
                   <Button size="sm" className="h-10 px-4" onClick={handleAdd}><Save className="w-4 h-4" /></Button>
@@ -117,7 +119,7 @@ const RatesPage = () => {
                 {/* Desktop */}
                 <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                   <Table>
-                    <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent ({symbol}/kg)</TableHead><TableHead className="text-right">VIP ({symbol}/kg)</TableHead><TableHead className="text-right">Sales ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">{labels.agent} ({symbol}/kg)</TableHead><TableHead className="text-right">{labels.vip} ({symbol}/kg)</TableHead><TableHead className="text-right">{labels.sales} ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
                     <TableBody>
                       {commodities.map((c) => (
                         <TableRow key={c.id}>
@@ -157,23 +159,23 @@ const RatesPage = () => {
                       {editing === c.id ? (
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">Agent</span>
+                            <span className="text-xs text-muted-foreground">{labels.agent}</span>
                             <Input type="number" value={editValues.agentRate} onChange={(e) => setEditValues((v) => ({ ...v, agentRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">VIP</span>
+                            <span className="text-xs text-muted-foreground">{labels.vip}</span>
                             <Input type="number" value={editValues.vipRate} onChange={(e) => setEditValues((v) => ({ ...v, vipRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">Sales</span>
+                            <span className="text-xs text-muted-foreground">{labels.sales}</span>
                             <Input type="number" value={editValues.salesRate} onChange={(e) => setEditValues((v) => ({ ...v, salesRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div><span className="text-muted-foreground">Agent</span><p className="font-mono font-semibold">{symbol}{c.agentRate}</p></div>
-                          <div><span className="text-muted-foreground">VIP</span><p className="font-mono font-semibold text-primary">{symbol}{c.vipRate}</p></div>
-                          <div><span className="text-muted-foreground">Sales</span><p className="font-mono font-semibold text-success">{symbol}{c.salesRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.agent}</span><p className="font-mono font-semibold">{symbol}{c.agentRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.vip}</span><p className="font-mono font-semibold text-primary">{symbol}{c.vipRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.sales}</span><p className="font-mono font-semibold text-success">{symbol}{c.salesRate}</p></div>
                         </div>
                       )}
                     </div>
