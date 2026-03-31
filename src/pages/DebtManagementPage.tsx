@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet } from "lucide-react";
+import { downloadCSV } from "@/utils/downloadCSV";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/utils/auditLog";
@@ -331,6 +332,26 @@ const DebtManagementPage = () => {
     </TableHeader>
   );
 
+  const handleExportCSV = async () => {
+    // Fetch all payments
+    const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
+    const rows: string[][] = [
+      ["Type", "Customer", "Description", "Total Amount", "Paid", "Balance", "Status", "Created At", "Payment Amount", "Payment Method", "Paid By", "Paid To", "Payment Notes", "Payment Date"]
+    ];
+    for (const d of debts) {
+      const dPayments = (allPayments || []).filter((p: any) => p.debt_id === d.id);
+      if (dPayments.length === 0) {
+        rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), "", "", "", "", "", ""]);
+      } else {
+        for (const p of dPayments) {
+          rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), String(p.amount), p.payment_method, p.paid_by_name, p.paid_to_name, p.notes || "", format(new Date(p.created_at), "yyyy-MM-dd HH:mm")]);
+        }
+      }
+    }
+    downloadCSV(rows, `debt-management-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    toast.success("Debt report exported!");
+  };
+
   return (
     <div className="space-y-4 max-w-6xl">
       <Card>
@@ -342,6 +363,7 @@ const DebtManagementPage = () => {
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customer..." className="pl-8 h-9 w-full sm:w-48" />
               </div>
+              <Button size="sm" variant="outline" onClick={handleExportCSV} title="Export to CSV"><FileSpreadsheet className="w-4 h-4" /></Button>
               {canEdit && <Button size="sm" onClick={() => setShowAdd(!showAdd)}><Plus className="w-4 h-4 mr-1" /> Add</Button>}
             </div>
           </CardTitle>
