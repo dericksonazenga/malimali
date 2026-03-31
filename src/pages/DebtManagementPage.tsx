@@ -332,6 +332,26 @@ const DebtManagementPage = () => {
     </TableHeader>
   );
 
+  const handleExportCSV = async () => {
+    // Fetch all payments
+    const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
+    const rows: string[][] = [
+      ["Type", "Customer", "Description", "Total Amount", "Paid", "Balance", "Status", "Created At", "Payment Amount", "Payment Method", "Paid By", "Paid To", "Payment Notes", "Payment Date"]
+    ];
+    for (const d of debts) {
+      const dPayments = (allPayments || []).filter((p: any) => p.debt_id === d.id);
+      if (dPayments.length === 0) {
+        rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), "", "", "", "", "", ""]);
+      } else {
+        for (const p of dPayments) {
+          rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), String(p.amount), p.payment_method, p.paid_by_name, p.paid_to_name, p.notes || "", format(new Date(p.created_at), "yyyy-MM-dd HH:mm")]);
+        }
+      }
+    }
+    downloadCSV(rows, `debt-management-${format(new Date(), "yyyy-MM-dd")}.csv`);
+    toast.success("Debt report exported!");
+  };
+
   return (
     <div className="space-y-4 max-w-6xl">
       <Card>
