@@ -60,9 +60,18 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(id);
   }, [lockedUntil]);
 
+  // Load verified state from session
   useEffect(() => {
     const stored = sessionStorage.getItem(SESSION_KEY);
     if (stored === "true") setVerified(true);
+  }, []);
+
+  // Clear verified state when navigating away from system-admin
+  useEffect(() => {
+    return () => {
+      // This cleanup runs when the gate unmounts (user navigates away)
+      sessionStorage.removeItem(SESSION_KEY);
+    };
   }, []);
 
   if (!isSystemAdmin) {
