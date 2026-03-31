@@ -73,6 +73,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const filteredNav = navItems.filter(
     (item) => {
       if (item.permission === "__admin_only__") return user?.role === "admin";
+      if (item.permission === "__system_admin__") return isSystemAdmin;
       return !item.permission || hasPermission(item.permission);
     }
   );
