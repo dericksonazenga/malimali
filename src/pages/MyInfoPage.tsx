@@ -43,9 +43,13 @@ interface MessageItem {
   sender_name: string;
 }
 
-interface SalaryPayment {
+interface SalaryPaymentRecord {
+  id: string;
   amount: number;
-  date: string;
+  type: string;
+  paid_by_name: string;
+  notes: string;
+  created_at: string;
 }
 
 const MyInfoPage = () => {
