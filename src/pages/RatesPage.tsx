@@ -18,6 +18,7 @@ const RatesPage = () => {
   const { symbol } = useCurrency();
   const { user } = useAuth();
   const { commodities, loading, addCommodity, updateCommodity } = useCommodities();
+  const { labels } = useCategoryLabels();
   const [editing, setEditing] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ agentRate: 0, vipRate: 0, salesRate: 0 });
   const [showAdd, setShowAdd] = useState(false);
