@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
-  Area, AreaChart, ReferenceLine,
+  ReferenceLine,
 } from "recharts";
 import { DailyProfit } from "@/hooks/useAnalyticsData";
 import { format, parseISO } from "date-fns";
@@ -47,22 +47,34 @@ const AnalyticsCharts = ({
     { name: "Net", value: netProfit, fill: netProfit >= 0 ? COLORS[0] : COLORS[2] },
   ];
 
-  // Expense breakdown pie
-  const expenseByCat: Record<string, number> = {};
+  // Expense breakdown pie — merge similar names (case-insensitive, trimmed)
+  const expenseByCat: Record<string, { display: string; total: number }> = {};
   expenses.forEach((e: any) => {
-    expenseByCat[e.category] = (expenseByCat[e.category] || 0) + Number(e.amount);
+    const key = (e.category || "Other").trim().toLowerCase();
+    if (!expenseByCat[key]) expenseByCat[key] = { display: e.category?.trim() || "Other", total: 0 };
+    expenseByCat[key].total += Number(e.amount);
   });
-  const expensePieData = Object.entries(expenseByCat).map(([name, value]) => ({ name, value }));
+  const expensePieData = Object.values(expenseByCat).map(v => ({ name: v.display, value: v.total }));
 
   // Commodity flow bar
   const commodityBarData = Object.entries(commodityBreakdown).map(([name, v]) => ({
     name, bought: v.bought, sold: v.sold,
   }));
 
-  // Stock pie
-  const stockPieData = stockData
-    .filter((s: any) => Number(s.weight) > 0)
-    .map((s: any) => ({ name: s.commodity, value: Number(s.weight) }));
+  // Stock pie — merge duplicate commodities by name
+  const stockAgg: Record<string, number> = {};
+  stockData.forEach((s: any) => {
+    const key = (s.commodity || "").trim().toLowerCase();
+    const display = s.commodity?.trim() || "Unknown";
+    if (!stockAgg[key]) stockAgg[key] = 0;
+    stockAgg[key] += Number(s.weight);
+  });
+  const stockPieData = Object.entries(stockAgg)
+    .filter(([, v]) => v > 0)
+    .map(([key, value]) => {
+      const original = stockData.find((s: any) => (s.commodity || "").trim().toLowerCase() === key);
+      return { name: original?.commodity?.trim() || key, value };
+    });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -123,27 +135,17 @@ const AnalyticsCharts = ({
             <p className="text-sm text-muted-foreground text-center py-10">No data for this period</p>
           ) : (
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(0, 0%, 80%)" strokeOpacity={0.3} />
                 <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${symbol}${(v / 1000).toFixed(0)}k`} />
                 <Tooltip content={<ProfitTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <ReferenceLine y={0} stroke="hsl(0, 0%, 50%)" strokeDasharray="3 3" />
-                <Area type="monotone" dataKey="sales" name="Sales" stroke={COLORS[1]} fill="url(#salesGrad)" strokeWidth={1.5} />
-                <Area type="monotone" dataKey="purchases" name="Purchases" stroke={COLORS[2]} fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
-                <Area type="monotone" dataKey="profit" name="Profit" stroke={COLORS[0]} fill="url(#profitGrad)" strokeWidth={2.5} />
-              </AreaChart>
+                <Line type="monotone" dataKey="sales" name="Sales" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="purchases" name="Purchases" stroke="hsl(0, 84%, 60%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="profit" name="Profit" stroke="hsl(142, 71%, 45%)" strokeWidth={2.5} dot={false} />
+              </LineChart>
             </ResponsiveContainer>
           )}
         </CardContent>
@@ -224,66 +226,37 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={stockPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={65}
-                  innerRadius={25}
-                  paddingAngle={3}
-                  label={({ cx: pcx, cy: pcy, midAngle, outerRadius: oR, name, percent, index }) => {
-                    const RADIAN = Math.PI / 180;
-                    const total = stockPieData.length;
-                    // Stagger radius so adjacent labels don't overlap
-                    const baseRadius = (oR as number) + 28;
-                    const stagger = index % 2 === 0 ? 0 : 18;
-                    const radius = baseRadius + stagger;
-                    // Compute anchor point on outer edge
-                    const ax = (pcx as number) + ((oR as number) + 8) * Math.cos(-midAngle * RADIAN);
-                    const ay = (pcy as number) + ((oR as number) + 8) * Math.sin(-midAngle * RADIAN);
-                    // Compute elbow (bend) point
-                    const ex = (pcx as number) + radius * Math.cos(-midAngle * RADIAN);
-                    const ey = (pcy as number) + radius * Math.sin(-midAngle * RADIAN);
-                    // Horizontal tail direction
-                    const isLeft = midAngle > 90 && midAngle < 270;
-                    const tailLen = 20;
-                    const tx = isLeft ? ex - tailLen : ex + tailLen;
-                    return (
-                      <g>
-                        {/* Connector line: slice edge → elbow → horizontal tail */}
-                        <polyline
-                          points={`${ax},${ay} ${ex},${ey} ${tx},${ey}`}
-                          fill="none"
-                          stroke="hsl(var(--muted-foreground))"
-                          strokeWidth={1}
-                        />
-                        {/* Small dot at slice edge */}
-                        <circle cx={ax} cy={ay} r={2} fill="hsl(var(--muted-foreground))" />
-                        {/* Label text at tail end */}
-                        <text
-                          x={tx + (isLeft ? -4 : 4)}
-                          y={ey}
-                          textAnchor={isLeft ? "end" : "start"}
-                          dominantBaseline="central"
-                          fontSize={10}
-                          fill="hsl(var(--foreground))"
-                        >
-                          {name} {(percent * 100).toFixed(0)}%
-                        </text>
-                      </g>
-                    );
-                  }}
-                  labelLine={false}
-                >
-                  {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col items-center gap-3">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={stockPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={85}
+                    innerRadius={0}
+                    paddingAngle={1}
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                    fontSize={10}
+                  >
+                    {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 px-2">
+                {stockPieData.map((item, i) => (
+                  <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                    <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span>{item.name}</span>
+                    <span className="text-muted-foreground font-mono">({item.value.toLocaleString()}kg)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
