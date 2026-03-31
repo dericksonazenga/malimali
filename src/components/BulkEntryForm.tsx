@@ -56,6 +56,7 @@ function parseWeightExpression(expr: string): { gross: number; container: number
 interface BulkEntryFormProps {
   type: BulkEntryType;
   title: string;
+  storageKeyPrefix?: string;
   onSubmitEntries: (entries: ParsedEntry[], customerName: string) => Promise<void>;
 }
 
