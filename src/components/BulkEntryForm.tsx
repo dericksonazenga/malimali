@@ -141,9 +141,9 @@ const BulkEntryForm = ({ type, title, storageKeyPrefix, onSubmitEntries }: BulkE
     try {
       await onSubmitEntries(allParsed, customerName.trim());
       setLastBulkSubmit({ key: bulkKey, time: now });
-      setCustomerName("");
-      setWeightExpressions({});
-      setRateOverrides({});
+      clearCustomerName();
+      clearWeightExpr();
+      clearRateOverrides();
       toast.success(`${totalEntries} entries added for ${customerName}!`);
     } catch (err) {
       toast.error("Failed to add entries");
