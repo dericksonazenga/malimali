@@ -94,10 +94,10 @@ const SalaryPage = () => {
     });
   }, [payments, period, customFrom, customTo]);
 
-  const handlePay = async (data: { amount: number; type: string; paymentMonth: string }) => {
+  const handlePay = async (data: { amount: number; type: string; paymentMonth: string; paymentMethod: string; accountNumber?: string }) => {
     if (!payingWorker) return;
     const worker = payingWorker;
-    const { amount, type: payType, paymentMonth } = data;
+    const { amount, type: payType, paymentMonth, paymentMethod, accountNumber } = data;
 
     const newPaid = worker.paid + amount;
     const newBalance = worker.salary - newPaid;
@@ -108,19 +108,25 @@ const SalaryPage = () => {
       .eq("id", worker.id);
     if (error) { toast.error("Failed to record payment"); return; }
 
+    const notes = [
+      payType === "advance" ? "Advance salary" : "Regular payment",
+      accountNumber ? `(${paymentMethod === "mpesa" ? "M-Pesa" : "Acct"}: ${accountNumber})` : "",
+    ].filter(Boolean).join(" ");
+
     await supabase.from("salary_payments").insert({
       worker_id: worker.id,
       worker_name: worker.name,
       amount,
       type: payType,
       paid_by_name: user?.name || "Unknown",
-      notes: payType === "advance" ? "Advance salary" : "Regular payment",
+      notes,
       payment_month: paymentMonth,
+      payment_method: paymentMethod,
     });
 
     await logAuditEvent({
       tableName: "salaries", recordId: worker.id, action: "payment",
-      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance, payment_month: paymentMonth },
+      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance, payment_month: paymentMonth, payment_method: paymentMethod },
       changedByName: user?.name || "Unknown",
     });
     toast.success(`${payType === "advance" ? "Advance" : "Payment"} of ${symbol}${amount.toLocaleString()} for ${paymentMonth} recorded`);
