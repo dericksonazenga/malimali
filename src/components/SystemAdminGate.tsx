@@ -144,9 +144,15 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
             <p className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">{error}</p>
           )}
 
-          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting}>
+          {lockCountdown && (
+            <div className="text-center text-sm text-destructive font-mono bg-destructive/10 rounded-lg p-3">
+              🔒 Locked — try again in {lockCountdown}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full h-12 text-base font-semibold gap-2" disabled={submitting || !!lockedUntil}>
             <Lock className="w-4 h-4" />
-            {submitting ? "Verifying..." : "Unlock"}
+            {submitting ? "Verifying..." : lockedUntil ? "Locked" : "Unlock"}
           </Button>
 
           <Button
