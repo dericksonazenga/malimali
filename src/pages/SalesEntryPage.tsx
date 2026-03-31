@@ -119,18 +119,28 @@ const SalesEntryPage = () => {
           <CardContent>
             {!bulkMode ? (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
-                <div className="space-y-2">
-                  <Label>Commodity *</Label>
-                  <Select value={commodity} onValueChange={setCommodity}>
-                    <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
-                    <SelectContent>
-                      {commodities.map((c) => (
-                        <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Special Toggle */}
+                <div className="lg:col-span-3 flex items-center gap-3">
+                  <Sparkles className={`w-4 h-4 ${isSpecial ? "text-amber-500" : "text-muted-foreground"}`} />
+                  <Label htmlFor="special-toggle" className="cursor-pointer font-semibold">Special (Heavy Inventory)</Label>
+                  <Switch id="special-toggle" checked={isSpecial} onCheckedChange={(v) => { setIsSpecial(v); if (v) { setCommodity(""); setIsExchange(false); } }} />
+                  {isSpecial && <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded">Deducts from Heavy stock</span>}
                 </div>
+
+                <div className="space-y-2"><Label>Customer Name</Label><Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Buyer name (optional)" className="h-12" /></div>
+                {!isSpecial && (
+                  <div className="space-y-2">
+                    <Label>Commodity *</Label>
+                    <Select value={commodity} onValueChange={setCommodity}>
+                      <SelectTrigger className="h-12"><SelectValue placeholder="Select commodity" /></SelectTrigger>
+                      <SelectContent>
+                        {commodities.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>{c.name} — {symbol}{c.salesRate}/kg</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Weight (kg) *</Label>
                   <Input
@@ -145,7 +155,7 @@ const SalesEntryPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Rate ({symbol}/kg)</Label>
-                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={isSpecial ? "Enter rate" : `${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
                 </div>
                 <div className="space-y-2">
                   <Label>Calculated</Label>
