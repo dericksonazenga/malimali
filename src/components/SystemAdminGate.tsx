@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShieldCheck, Lock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const SESSION_KEY = "sysadmin_verified";
 const LOCKOUT_KEY = "sysadmin_lockout";
@@ -16,6 +16,7 @@ const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const { isSystemAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [verified, setVerified] = useState(false);
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,9 +60,18 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(id);
   }, [lockedUntil]);
 
+  // Load verified state from session
   useEffect(() => {
     const stored = sessionStorage.getItem(SESSION_KEY);
     if (stored === "true") setVerified(true);
+  }, []);
+
+  // Clear verified state when navigating away from system-admin
+  useEffect(() => {
+    return () => {
+      // This cleanup runs when the gate unmounts (user navigates away)
+      sessionStorage.removeItem(SESSION_KEY);
+    };
   }, []);
 
   if (!isSystemAdmin) {

@@ -56,18 +56,68 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify PIN
-    const { pin } = await req.json();
+    const body = await req.json();
+    const { action, pin, newPin } = body;
+
     const correctPin = Deno.env.get("SYSADMIN_PIN");
 
-    if (!correctPin) {
+    // Change PIN action
+    if (action === "change") {
+      if (!newPin || newPin.length < 4) {
+        return new Response(JSON.stringify({ error: "PIN must be at least 4 characters" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Update the secret - we store it as an environment variable
+      // Since we can't dynamically update Deno env vars, we'll store in the database
+      const { error: upsertError } = await adminClient
+        .from("app_settings")
+        .upsert(
+          { key: "sysadmin_pin", value: newPin, company_id: "00000000-0000-0000-0000-000000000001" },
+          { onConflict: "key,company_id" }
+        );
+
+      if (upsertError) {
+        return new Response(JSON.stringify({ error: "Failed to update PIN" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify PIN action (default)
+    if (!correctPin && !pin) {
       return new Response(JSON.stringify({ error: "PIN not configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (pin !== correctPin) {
+    // Check DB-stored PIN first (takes precedence if changed), fall back to env var
+    const { data: dbPin } = await adminClient
+      .from("app_settings")
+      .select("value")
+      .eq("key", "sysadmin_pin")
+      .eq("company_id", "00000000-0000-0000-0000-000000000001")
+      .single();
+
+    const activePin = dbPin?.value || correctPin;
+
+    if (!activePin) {
+      return new Response(JSON.stringify({ error: "PIN not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (pin !== activePin) {
       return new Response(JSON.stringify({ valid: false }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

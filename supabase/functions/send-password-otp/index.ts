@@ -174,6 +174,47 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (action === "verify_only") {
+      const { otp } = body;
+      if (!otp) {
+        return new Response(JSON.stringify({ error: "OTP required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: otpData, error: otpError } = await adminClient
+        .from("password_change_otps")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("otp_code", otp)
+        .eq("verified", false)
+        .gte("expires_at", new Date().toISOString())
+        .single();
+
+      if (otpError || !otpData) {
+        return new Response(JSON.stringify({ error: "Invalid or expired OTP" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await adminClient
+        .from("password_change_otps")
+        .update({ verified: true })
+        .eq("id", otpData.id);
+
+      await adminClient
+        .from("password_change_otps")
+        .delete()
+        .eq("user_id", user.id);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
