@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,19 +56,19 @@ function parseWeightExpression(expr: string): { gross: number; container: number
 interface BulkEntryFormProps {
   type: BulkEntryType;
   title: string;
+  storageKeyPrefix?: string;
   onSubmitEntries: (entries: ParsedEntry[], customerName: string) => Promise<void>;
 }
 
-const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => {
+const BulkEntryForm = ({ type, title, storageKeyPrefix, onSubmitEntries }: BulkEntryFormProps) => {
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { hasPermission } = useAuth();
+  const prefix = storageKeyPrefix || `bulk_${type}`;
 
-  const [customerName, setCustomerName] = useState("");
-  // Map of commodity name → raw weight expression string
-  const [weightExpressions, setWeightExpressions] = useState<Record<string, string>>({});
-  // Map of commodity name → rate override
-  const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
+  const [customerName, setCustomerName, clearCustomerName] = usePersistedState(`${prefix}_customerName`, "");
+  const [weightExpressions, setWeightExpressions, clearWeightExpr] = usePersistedState<Record<string, string>>(`${prefix}_weightExpr`, {});
+  const [rateOverrides, setRateOverrides, clearRateOverrides] = usePersistedState<Record<string, string>>(`${prefix}_rateOverrides`, {});
   const [submitting, setSubmitting] = useState(false);
   const [lastBulkSubmit, setLastBulkSubmit] = useState<{ key: string; time: number } | null>(null);
 
@@ -140,9 +141,9 @@ const BulkEntryForm = ({ type, title, onSubmitEntries }: BulkEntryFormProps) => 
     try {
       await onSubmitEntries(allParsed, customerName.trim());
       setLastBulkSubmit({ key: bulkKey, time: now });
-      setCustomerName("");
-      setWeightExpressions({});
-      setRateOverrides({});
+      clearCustomerName();
+      clearWeightExpr();
+      clearRateOverrides();
       toast.success(`${totalEntries} entries added for ${customerName}!`);
     } catch (err) {
       toast.error("Failed to add entries");
