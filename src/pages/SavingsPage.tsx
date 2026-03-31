@@ -345,7 +345,7 @@ const SavingsPage = () => {
         <CardHeader><CardTitle className="text-base">Savings Accounts</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           {/* Desktop */}
-          <div className="hidden md:block">
+          <div className="hidden md:block max-h-[480px] overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
