@@ -495,6 +495,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_change_otps: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          otp_code: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       persistent_stock: {
         Row: {
           commodity: string
@@ -899,6 +926,7 @@ export type Database = {
     }
     Functions: {
       check_pre_registration: { Args: { check_email: string }; Returns: Json }
+      cleanup_expired_otps: { Args: never; Returns: undefined }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
