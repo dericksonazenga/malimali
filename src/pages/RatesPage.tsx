@@ -159,15 +159,15 @@ const RatesPage = () => {
                       {editing === c.id ? (
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">Agent</span>
+                            <span className="text-xs text-muted-foreground">{labels.agent}</span>
                             <Input type="number" value={editValues.agentRate} onChange={(e) => setEditValues((v) => ({ ...v, agentRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">VIP</span>
+                            <span className="text-xs text-muted-foreground">{labels.vip}</span>
                             <Input type="number" value={editValues.vipRate} onChange={(e) => setEditValues((v) => ({ ...v, vipRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">Sales</span>
+                            <span className="text-xs text-muted-foreground">{labels.sales}</span>
                             <Input type="number" value={editValues.salesRate} onChange={(e) => setEditValues((v) => ({ ...v, salesRate: +e.target.value }))} className="h-8 text-sm" />
                           </div>
                         </div>
