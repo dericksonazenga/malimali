@@ -109,7 +109,7 @@ const InventoryPage = () => {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto max-h-[480px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
