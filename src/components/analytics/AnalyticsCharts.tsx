@@ -61,10 +61,20 @@ const AnalyticsCharts = ({
     name, bought: v.bought, sold: v.sold,
   }));
 
-  // Stock pie
-  const stockPieData = stockData
-    .filter((s: any) => Number(s.weight) > 0)
-    .map((s: any) => ({ name: s.commodity, value: Number(s.weight) }));
+  // Stock pie — merge duplicate commodities by name
+  const stockAgg: Record<string, number> = {};
+  stockData.forEach((s: any) => {
+    const key = (s.commodity || "").trim().toLowerCase();
+    const display = s.commodity?.trim() || "Unknown";
+    if (!stockAgg[key]) stockAgg[key] = 0;
+    stockAgg[key] += Number(s.weight);
+  });
+  const stockPieData = Object.entries(stockAgg)
+    .filter(([, v]) => v > 0)
+    .map(([key, value]) => {
+      const original = stockData.find((s: any) => (s.commodity || "").trim().toLowerCase() === key);
+      return { name: original?.commodity?.trim() || key, value };
+    });
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
