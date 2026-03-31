@@ -689,6 +689,7 @@ export type Database = {
           notes: string | null
           paid_by_name: string
           payment_method: string
+          payment_month: string
           type: string
           worker_id: string
           worker_name: string
@@ -700,6 +701,7 @@ export type Database = {
           notes?: string | null
           paid_by_name?: string
           payment_method?: string
+          payment_month?: string
           type?: string
           worker_id: string
           worker_name: string
@@ -711,6 +713,7 @@ export type Database = {
           notes?: string | null
           paid_by_name?: string
           payment_method?: string
+          payment_month?: string
           type?: string
           worker_id?: string
           worker_name?: string
