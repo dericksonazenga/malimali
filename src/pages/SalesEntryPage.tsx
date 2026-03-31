@@ -32,6 +32,7 @@ const SalesEntryPage = () => {
   const [weightExpr, setWeightExpr] = useState("");
   const [rateOverride, setRateOverride] = useState("");
   const [isExchange, setIsExchange] = useState(false);
+  const [isSpecial, setIsSpecial] = useState(false);
   const [exchangeCommodity, setExchangeCommodity] = useState("");
   const [exchangeWeight, setExchangeWeight] = useState("");
   const [exchangeFee, setExchangeFee] = useState("");
