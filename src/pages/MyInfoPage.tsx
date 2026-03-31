@@ -56,6 +56,7 @@ const MyInfoPage = () => {
   const { symbol } = useCurrency();
   const { user } = useAuth();
   const [salaryInfo, setSalaryInfo] = useState<SalaryInfo | null>(null);
+  const [salaryPayments, setSalaryPayments] = useState<SalaryPaymentRecord[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [profile, setProfile] = useState<ProfileDetails | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
