@@ -24,7 +24,6 @@ const SalesEntryPage = () => {
   const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
   const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll, refresh } = useInventory();
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = usePersistedState("sales_customerName", "");
