@@ -50,7 +50,7 @@ const SalesEntryPage = () => {
     clearAll();
   }, [resetSignal]);
 
-  const selectedCommodity = commodities.find((c) => c.name === commodity);
+  const selectedCommodity = isSpecial ? null : commodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = rate > 0 ? actualWeight * rate : undefined;
