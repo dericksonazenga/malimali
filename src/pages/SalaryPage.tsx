@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Banknote, Plus, AlertTriangle, Pencil, Check, X, ArrowUpDown } from "lucide-react";
@@ -12,7 +11,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
-import { differenceInDays, format, setDate, isBefore, addMonths } from "date-fns";
+import { differenceInDays, format, setDate, isBefore, addMonths, isWithinInterval } from "date-fns";
+import SalaryPayDialog from "@/components/salary/SalaryPayDialog";
+import PeriodPicker, { getDateRange, type PeriodOption } from "@/components/salary/PeriodPicker";
 
 interface WorkerRow {
   id: string;
@@ -34,6 +35,7 @@ interface SalaryPayment {
   paid_by_name: string;
   notes: string;
   created_at: string;
+  payment_month: string;
 }
 
 const SalaryPage = () => {
@@ -42,23 +44,25 @@ const SalaryPage = () => {
   const canEdit = user?.role === "admin" || hasPermission("edit_records");
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
-  const [payAmounts, setPayAmounts] = useState<Record<string, string>>({});
-  const [payTypes, setPayTypes] = useState<Record<string, string>>({});
   const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
   const [editSalaryValue, setEditSalaryValue] = useState("");
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [payingWorker, setPayingWorker] = useState<WorkerRow | null>(null);
+
+  // Period picker state
+  const [period, setPeriod] = useState<PeriodOption>("this_month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const fetchWorkers = useCallback(async () => {
     const { data } = await supabase.from("workers").select("*").order("name");
     if (data) {
-      setWorkers(data.map((w: any) => {
-        const createdDate = new Date(w.created_at);
-        const payDay = createdDate.getDate();
-        return {
-          id: w.id, name: w.name, role: w.role,
-          salary: Number(w.salary), paid: Number(w.paid),
-          balance: Number(w.balance), created_at: w.created_at, pay_day: payDay,
-        };
-      }));
+      setWorkers(data.map((w: any) => ({
+        id: w.id, name: w.name, role: w.role,
+        salary: Number(w.salary), paid: Number(w.paid),
+        balance: Number(w.balance), created_at: w.created_at,
+        pay_day: new Date(w.created_at).getDate(),
+      })));
     }
   }, []);
 
@@ -67,7 +71,7 @@ const SalaryPage = () => {
       .from("salary_payments")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(500);
     if (data) setPayments(data as SalaryPayment[]);
   }, []);
 
@@ -81,40 +85,45 @@ const SalaryPage = () => {
     return () => { supabase.removeChannel(ch1); };
   }, [fetchWorkers, fetchPayments]);
 
-  const handlePay = async (id: string) => {
-    const amount = parseFloat(payAmounts[id] || "0");
-    if (amount <= 0) { toast.error("Enter a valid amount"); return; }
-    const worker = workers.find((w) => w.id === id);
-    if (!worker) return;
+  // Filter payments by period
+  const filteredPayments = useMemo(() => {
+    const range = getDateRange(period, customFrom, customTo);
+    return payments.filter(p => {
+      const d = new Date(p.created_at);
+      return isWithinInterval(d, { start: range.from, end: range.to });
+    });
+  }, [payments, period, customFrom, customTo]);
 
-    const payType = payTypes[id] || "regular";
+  const handlePay = async (data: { amount: number; type: string; paymentMonth: string }) => {
+    if (!payingWorker) return;
+    const worker = payingWorker;
+    const { amount, type: payType, paymentMonth } = data;
+
     const newPaid = worker.paid + amount;
     const newBalance = worker.salary - newPaid;
 
     const { error } = await supabase
       .from("workers")
       .update({ paid: newPaid, balance: newBalance })
-      .eq("id", id);
+      .eq("id", worker.id);
     if (error) { toast.error("Failed to record payment"); return; }
 
-    // Record payment in salary_payments
     await supabase.from("salary_payments").insert({
-      worker_id: id,
+      worker_id: worker.id,
       worker_name: worker.name,
       amount,
       type: payType,
       paid_by_name: user?.name || "Unknown",
       notes: payType === "advance" ? "Advance salary" : "Regular payment",
+      payment_month: paymentMonth,
     });
 
     await logAuditEvent({
-      tableName: "salaries", recordId: id, action: "payment",
-      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance },
+      tableName: "salaries", recordId: worker.id, action: "payment",
+      newData: { worker: worker.name, payment_amount: amount, type: payType, paid_by: user?.name, new_paid: newPaid, new_balance: newBalance, payment_month: paymentMonth },
       changedByName: user?.name || "Unknown",
     });
-    setPayAmounts((prev) => ({ ...prev, [id]: "" }));
-    setPayTypes((prev) => ({ ...prev, [id]: "regular" }));
-    toast.success(`${payType === "advance" ? "Advance" : "Payment"} of ${symbol}${amount.toLocaleString()} recorded`);
+    toast.success(`${payType === "advance" ? "Advance" : "Payment"} of ${symbol}${amount.toLocaleString()} for ${paymentMonth} recorded`);
   };
 
   const saveSalary = async (workerId: string) => {
@@ -142,16 +151,23 @@ const SalaryPage = () => {
     return { label: "Pending", variant: "secondary" as const, alert: false };
   };
 
+  // Check if worker is paid for current month
+  const isWorkerPaidForMonth = (workerId: string, monthKey: string) => {
+    return filteredPayments.some(p => p.worker_id === workerId && p.payment_month === monthKey);
+  };
+
+  const currentMonthKey = format(new Date(), "yyyy-MM");
+
   const alertWorkers = useMemo(() => workers.filter(w => getSalaryStatus(w).alert), [workers]);
 
   const totalSalary = workers.reduce((s, w) => s + w.salary, 0);
-  const totalPaid = workers.reduce((s, w) => s + w.paid, 0);
+  const totalPaid = filteredPayments.reduce((s, p) => s + p.amount, 0);
   const totalBalance = workers.reduce((s, w) => s + w.balance, 0);
-  const totalAdvance = payments.filter(p => p.type === "advance").reduce((s, p) => s + p.amount, 0);
+  const totalAdvance = filteredPayments.filter(p => p.type === "advance").reduce((s, p) => s + p.amount, 0);
 
-  // Get worker payments for detail
-  const getWorkerPayments = (workerId: string) => payments.filter(p => p.worker_id === workerId);
-  const getWorkerAdvance = (workerId: string) => getWorkerPayments(workerId).filter(p => p.type === "advance").reduce((s, p) => s + p.amount, 0);
+  const getWorkerPeriodPayments = (workerId: string) => filteredPayments.filter(p => p.worker_id === workerId);
+  const getWorkerPeriodPaid = (workerId: string) => getWorkerPeriodPayments(workerId).reduce((s, p) => s + p.amount, 0);
+  const getWorkerPeriodAdvance = (workerId: string) => getWorkerPeriodPayments(workerId).filter(p => p.type === "advance").reduce((s, p) => s + p.amount, 0);
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -173,13 +189,27 @@ const SalaryPage = () => {
         </Card>
       )}
 
+      {/* Period Picker */}
+      <Card>
+        <CardContent className="p-4">
+          <PeriodPicker
+            period={period}
+            onPeriodChange={setPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card><CardContent className="p-5 text-center">
           <p className="text-sm text-muted-foreground">Total Salary</p>
           <p className="text-2xl font-bold font-mono text-primary">{symbol}{totalSalary.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="p-5 text-center">
-          <p className="text-sm text-muted-foreground">Total Paid</p>
+          <p className="text-sm text-muted-foreground">Period Paid</p>
           <p className="text-2xl font-bold font-mono text-success">{symbol}{totalPaid.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="p-5 text-center">
@@ -187,7 +217,7 @@ const SalaryPage = () => {
           <p className="text-2xl font-bold font-mono text-destructive">{symbol}{totalBalance.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="p-5 text-center">
-          <p className="text-sm text-muted-foreground">Total Advances</p>
+          <p className="text-sm text-muted-foreground">Period Advances</p>
           <p className="text-2xl font-bold font-mono text-warning">{symbol}{totalAdvance.toLocaleString()}</p>
         </CardContent></Card>
       </div>
@@ -202,24 +232,26 @@ const SalaryPage = () => {
           {/* Desktop */}
           <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead>Worker</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Pay Day</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Salary</TableHead>
-                  <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Advance</TableHead>
+                  <TableHead className="text-right">Period Paid</TableHead>
+                  <TableHead className="text-right">Period Advance</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Pay</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {workers.map((w) => {
                   const status = getSalaryStatus(w);
-                  const advanceTotal = getWorkerAdvance(w.id);
+                  const periodPaid = getWorkerPeriodPaid(w.id);
+                  const periodAdvance = getWorkerPeriodAdvance(w.id);
+                  const paidThisMonth = isWorkerPaidForMonth(w.id, currentMonthKey);
                   return (
                     <TableRow key={w.id} className={status.alert ? "bg-destructive/5" : ""}>
                       <TableCell className="font-medium">{w.name}</TableCell>
@@ -241,29 +273,24 @@ const SalaryPage = () => {
                           <span>{symbol}{w.salary.toLocaleString()}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-success">{symbol}{w.paid.toLocaleString()}</TableCell>
-                      <TableCell className="text-right font-mono text-warning">{symbol}{advanceTotal.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-success">{symbol}{periodPaid.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono text-warning">{symbol}{periodAdvance.toLocaleString()}</TableCell>
                       <TableCell className={`text-right font-mono ${w.balance < 0 ? "text-warning" : "text-destructive"}`}>
                         {symbol}{w.balance.toLocaleString()}
                         {w.balance < 0 && <span className="text-[10px] ml-1">(overpaid)</span>}
                       </TableCell>
                       <TableCell>
-                        {canEdit && (
-                          <Select value={payTypes[w.id] || "regular"} onValueChange={(v) => setPayTypes(prev => ({ ...prev, [w.id]: v }))}>
-                            <SelectTrigger className="w-24 h-9 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="regular">Regular</SelectItem>
-                              <SelectItem value="advance">Advance</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        {paidThisMonth ? (
+                          <Badge variant="default" className="text-xs bg-success/20 text-success border-success/30">✓ Paid</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">Unpaid</Badge>
                         )}
                       </TableCell>
                       <TableCell>
                         {canEdit ? (
-                          <div className="flex gap-1">
-                            <Input type="number" placeholder="Amount" className="w-24 h-9" value={payAmounts[w.id] || ""} onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))} />
-                            <Button size="sm" className="h-9" onClick={() => handlePay(w.id)}><Plus className="w-3 h-3" /></Button>
-                          </div>
+                          <Button size="sm" className="h-8 gap-1" onClick={() => { setPayingWorker(w); setPayDialogOpen(true); }}>
+                            <Plus className="w-3 h-3" /> Pay
+                          </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">No access</span>
                         )}
@@ -278,7 +305,9 @@ const SalaryPage = () => {
           <div className="md:hidden space-y-3 max-h-[480px] overflow-y-auto">
             {workers.map((w) => {
               const status = getSalaryStatus(w);
-              const advanceTotal = getWorkerAdvance(w.id);
+              const periodPaid = getWorkerPeriodPaid(w.id);
+              const periodAdvance = getWorkerPeriodAdvance(w.id);
+              const paidThisMonth = isWorkerPaidForMonth(w.id, currentMonthKey);
               return (
                 <div key={w.id} className={`border border-border rounded-lg p-3 space-y-2 ${status.alert ? "border-destructive/50 bg-destructive/5" : ""}`}>
                   <div className="flex justify-between items-start">
@@ -286,28 +315,25 @@ const SalaryPage = () => {
                       <p className="font-medium text-sm">{w.name}</p>
                       <p className="text-xs text-muted-foreground">{w.role} • Pay day: {w.pay_day || 1}th</p>
                     </div>
-                    <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
+                    <div className="flex items-center gap-1.5">
+                      {paidThisMonth ? (
+                        <Badge variant="default" className="text-[10px] bg-success/20 text-success border-success/30">✓ Paid</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-muted-foreground">Unpaid</Badge>
+                      )}
+                      <Badge variant={status.variant} className="text-[10px]">{status.label}</Badge>
+                    </div>
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div><span className="text-muted-foreground">Salary</span><p className="font-mono font-semibold">{symbol}{w.salary.toLocaleString()}</p></div>
-                    <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-success">{symbol}{w.paid.toLocaleString()}</p></div>
-                    <div><span className="text-muted-foreground">Advance</span><p className="font-mono text-warning">{symbol}{advanceTotal.toLocaleString()}</p></div>
+                    <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-success">{symbol}{periodPaid.toLocaleString()}</p></div>
+                    <div><span className="text-muted-foreground">Advance</span><p className="font-mono text-warning">{symbol}{periodAdvance.toLocaleString()}</p></div>
                     <div><span className="text-muted-foreground">Balance</span><p className={`font-mono ${w.balance < 0 ? "text-warning" : "text-destructive"}`}>{symbol}{w.balance.toLocaleString()}</p></div>
                   </div>
                   {canEdit && (
-                    <div className="space-y-2">
-                      <Select value={payTypes[w.id] || "regular"} onValueChange={(v) => setPayTypes(prev => ({ ...prev, [w.id]: v }))}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="regular">Regular</SelectItem>
-                          <SelectItem value="advance">Advance</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <div className="flex gap-2">
-                        <Input type="number" placeholder="Amount" className="h-8 flex-1 text-sm" value={payAmounts[w.id] || ""} onChange={(e) => setPayAmounts((prev) => ({ ...prev, [w.id]: e.target.value }))} />
-                        <Button size="sm" className="h-8" onClick={() => handlePay(w.id)}>Pay</Button>
-                      </div>
-                    </div>
+                    <Button size="sm" className="w-full h-8 gap-1" onClick={() => { setPayingWorker(w); setPayDialogOpen(true); }}>
+                      <Plus className="w-3 h-3" /> Pay
+                    </Button>
                   )}
                 </div>
               );
@@ -320,26 +346,28 @@ const SalaryPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ArrowUpDown className="w-5 h-5 text-primary" /> Recent Payment History
+            <ArrowUpDown className="w-5 h-5 text-primary" /> Payment History ({filteredPayments.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Worker</TableHead>
+                  <TableHead>For Month</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead>Paid By</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payments.slice(0, 50).map((p) => (
+                {filteredPayments.slice(0, 100).map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-sm">{format(new Date(p.created_at), "MMM dd, HH:mm")}</TableCell>
                     <TableCell className="font-medium text-sm">{p.worker_name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.payment_month || "—"}</TableCell>
                     <TableCell>
                       <Badge variant={p.type === "advance" ? "secondary" : "outline"} className="text-xs">
                         {p.type === "advance" ? "Advance" : "Regular"}
@@ -349,8 +377,8 @@ const SalaryPage = () => {
                     <TableCell className="text-sm text-muted-foreground">{p.paid_by_name}</TableCell>
                   </TableRow>
                 ))}
-                {payments.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No payments recorded yet</TableCell></TableRow>
+                {filteredPayments.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No payments in this period</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -359,6 +387,15 @@ const SalaryPage = () => {
       </Card>
 
       <AuditLogViewer tableName="salaries" title="Salary & Payment History" />
+
+      {payingWorker && (
+        <SalaryPayDialog
+          open={payDialogOpen}
+          onOpenChange={setPayDialogOpen}
+          workerName={payingWorker.name}
+          onSubmit={handlePay}
+        />
+      )}
     </div>
   );
 };

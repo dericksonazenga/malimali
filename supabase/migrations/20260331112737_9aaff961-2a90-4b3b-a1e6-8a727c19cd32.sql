@@ -1,0 +1,1 @@
+ALTER TABLE public.salary_payments ADD COLUMN payment_month text NOT NULL DEFAULT to_char(now(), 'YYYY-MM');
