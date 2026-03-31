@@ -30,6 +30,7 @@ const DashboardPage = () => {
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
+  const { labels } = useCategoryLabels();
   const navigate = useNavigate();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
