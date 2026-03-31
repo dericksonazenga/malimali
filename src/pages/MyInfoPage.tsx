@@ -357,26 +357,32 @@ const MyInfoPage = () => {
         <TabsContent value="salary" className="space-y-4 mt-4">
           {salaryInfo ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-sm text-muted-foreground">Monthly Salary</p>
-                    <p className="text-2xl font-bold font-mono text-primary">{symbol}{salaryInfo.salary.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-sm text-muted-foreground">Paid So Far</p>
-                    <p className="text-2xl font-bold font-mono text-success">{symbol}{salaryInfo.paid.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-5 text-center">
-                    <p className="text-sm text-muted-foreground">Remaining Balance</p>
-                    <p className="text-2xl font-bold font-mono text-destructive">{symbol}{salaryInfo.balance.toLocaleString()}</p>
-                  </CardContent>
-                </Card>
-              </div>
+              {(() => {
+                const advanceTotal = salaryPayments.filter(p => p.type === "advance").reduce((s, p) => s + p.amount, 0);
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <Card><CardContent className="p-5 text-center">
+                      <p className="text-sm text-muted-foreground">Monthly Salary</p>
+                      <p className="text-2xl font-bold font-mono text-primary">{symbol}{salaryInfo.salary.toLocaleString()}</p>
+                    </CardContent></Card>
+                    <Card><CardContent className="p-5 text-center">
+                      <p className="text-sm text-muted-foreground">Paid So Far</p>
+                      <p className="text-2xl font-bold font-mono text-success">{symbol}{salaryInfo.paid.toLocaleString()}</p>
+                    </CardContent></Card>
+                    <Card><CardContent className="p-5 text-center">
+                      <p className="text-sm text-muted-foreground">Advance Taken</p>
+                      <p className="text-2xl font-bold font-mono text-warning">{symbol}{advanceTotal.toLocaleString()}</p>
+                    </CardContent></Card>
+                    <Card><CardContent className="p-5 text-center">
+                      <p className="text-sm text-muted-foreground">Balance</p>
+                      <p className={`text-2xl font-bold font-mono ${salaryInfo.balance < 0 ? "text-warning" : "text-destructive"}`}>
+                        {symbol}{salaryInfo.balance.toLocaleString()}
+                        {salaryInfo.balance < 0 && <span className="text-xs ml-1">(overpaid)</span>}
+                      </p>
+                    </CardContent></Card>
+                  </div>
+                );
+              })()}
 
               <Card>
                 <CardContent className="p-5 space-y-3">
@@ -390,6 +396,47 @@ const MyInfoPage = () => {
                   <p className="text-xs text-muted-foreground">
                     {salaryInfo.balance > 0 ? `${symbol}${salaryInfo.balance.toLocaleString()} remaining to be paid` : "Fully paid! ✅"}
                   </p>
+                </CardContent>
+              </Card>
+
+              {/* Payment History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Banknote className="w-4 h-4 text-primary" /> Payment History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {salaryPayments.length > 0 ? (
+                    <div className="overflow-x-auto max-h-[360px] overflow-y-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Paid By</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {salaryPayments.map((p) => (
+                            <TableRow key={p.id}>
+                              <TableCell className="font-mono text-sm">{format(new Date(p.created_at), "MMM dd, yyyy HH:mm")}</TableCell>
+                              <TableCell>
+                                <Badge variant={p.type === "advance" ? "secondary" : "outline"} className="text-xs">
+                                  {p.type === "advance" ? "Advance" : "Regular"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-success">{symbol}{p.amount.toLocaleString()}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{p.paid_by_name}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-muted-foreground py-4">No payment records yet</p>
+                  )}
                 </CardContent>
               </Card>
             </>
