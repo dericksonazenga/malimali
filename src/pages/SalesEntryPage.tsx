@@ -61,6 +61,8 @@ const SalesEntryPage = () => {
     e.preventDefault();
     if (isExchange) {
       if (!exchangeCommodity || !exchangeWeight) { toast.error("Fill exchange fields"); return; }
+    } else if (isSpecial) {
+      if (!weightExpr) { toast.error("Fill weight field"); return; }
     } else {
       if (!commodity || !weightExpr) { toast.error("Fill required fields"); return; }
     }
