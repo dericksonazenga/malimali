@@ -55,6 +55,8 @@ const buildUser = async (profile: { user_id: string; display_name: string; role:
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
 
   const fetchProfile = async (supabaseUser: SupabaseUser) => {
     const { data, error } = await supabase
