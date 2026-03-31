@@ -119,7 +119,7 @@ const RatesPage = () => {
                 {/* Desktop */}
                 <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                   <Table>
-                    <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">Agent ({symbol}/kg)</TableHead><TableHead className="text-right">VIP ({symbol}/kg)</TableHead><TableHead className="text-right">Sales ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>Commodity</TableHead><TableHead className="text-right">{labels.agent} ({symbol}/kg)</TableHead><TableHead className="text-right">{labels.vip} ({symbol}/kg)</TableHead><TableHead className="text-right">{labels.sales} ({symbol}/kg)</TableHead><TableHead /></TableRow></TableHeader>
                     <TableBody>
                       {commodities.map((c) => (
                         <TableRow key={c.id}>
