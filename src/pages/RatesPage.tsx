@@ -173,9 +173,9 @@ const RatesPage = () => {
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div><span className="text-muted-foreground">Agent</span><p className="font-mono font-semibold">{symbol}{c.agentRate}</p></div>
-                          <div><span className="text-muted-foreground">VIP</span><p className="font-mono font-semibold text-primary">{symbol}{c.vipRate}</p></div>
-                          <div><span className="text-muted-foreground">Sales</span><p className="font-mono font-semibold text-success">{symbol}{c.salesRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.agent}</span><p className="font-mono font-semibold">{symbol}{c.agentRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.vip}</span><p className="font-mono font-semibold text-primary">{symbol}{c.vipRate}</p></div>
+                          <div><span className="text-muted-foreground">{labels.sales}</span><p className="font-mono font-semibold text-success">{symbol}{c.salesRate}</p></div>
                         </div>
                       )}
                     </div>
