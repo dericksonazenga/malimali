@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { SalesEntry } from "@/types";
-import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { Button } from "@/components/ui/button";
