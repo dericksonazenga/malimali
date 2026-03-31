@@ -113,9 +113,10 @@ const SavingsPage = () => {
       accountId = existing.id;
     } else {
       // Create new account
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
       const { data, error } = await supabase
         .from("savings_accounts")
-        .insert({ customer_name: name, balance: depositAmount, created_by: user?.id })
+        .insert({ customer_name: name, balance: depositAmount, created_by: user?.id, company_id })
         .select("id")
         .single();
       if (error || !data) { toast.error("Failed to create account"); return; }
@@ -123,6 +124,7 @@ const SavingsPage = () => {
     }
 
     // Record transaction
+    const txCompanyId = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: txError } = await supabase.from("savings_transactions").insert({
       account_id: accountId,
       type: "deposit",
@@ -130,6 +132,7 @@ const SavingsPage = () => {
       payment_method: paymentMethod,
       served_by_name: user?.name || "Unknown",
       notes,
+      company_id: txCompanyId,
     });
     if (txError) { toast.error("Failed to record transaction"); return; }
 
@@ -166,6 +169,7 @@ const SavingsPage = () => {
       .eq("id", selectedAccount.id);
     if (error) { toast.error("Failed to update balance"); return; }
 
+    const wCompanyId = await (await import("@/utils/getCompanyId")).getCompanyId();
     await supabase.from("savings_transactions").insert({
       account_id: selectedAccount.id,
       type: "withdrawal",
@@ -173,6 +177,7 @@ const SavingsPage = () => {
       payment_method: paymentMethod,
       served_by_name: user?.name || "Unknown",
       notes,
+      company_id: wCompanyId,
     });
 
     await logAuditEvent({

@@ -152,6 +152,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchToday, fetchPersistentStock]);
 
   const addAgentEntry = useCallback(async (entry: AgentEntry) => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("agent_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
@@ -161,11 +162,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       rate: entry.rate,
       amount: entry.amount,
       created_by: (await supabase.auth.getUser()).data.user?.id,
+      company_id,
     });
     if (error) console.error("Failed to add agent entry:", error);
   }, []);
 
   const addVipEntry = useCallback(async (entry: VipEntry) => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("vip_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
@@ -175,11 +178,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       rate: entry.rate,
       amount: entry.amount,
       created_by: (await supabase.auth.getUser()).data.user?.id,
+      company_id,
     });
     if (error) console.error("Failed to add vip entry:", error);
   }, []);
 
   const addSalesEntry = useCallback(async (entry: SalesEntry) => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("sales_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
@@ -193,6 +198,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       exchange_weight: entry.exchangeWeight || null,
       exchange_fee: entry.exchangeFee || 0,
       created_by: (await supabase.auth.getUser()).data.user?.id,
+      company_id,
     });
     if (error) console.error("Failed to add sales entry:", error);
   }, []);
@@ -228,12 +234,13 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Upsert each commodity delta into persistent_stock
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     for (const [commodity, delta] of Object.entries(updates)) {
       const currentWeight = persistentStock[commodity] || 0;
       const newWeight = currentWeight + delta;
       await supabase.from("persistent_stock").upsert(
-        { commodity, weight: newWeight, updated_at: new Date().toISOString() },
-        { onConflict: "commodity" }
+        { commodity, weight: newWeight, updated_at: new Date().toISOString(), company_id },
+        { onConflict: "commodity,company_id" }
       );
     }
 

@@ -151,6 +151,7 @@ const DebtManagementPage = () => {
 
   const saveDebt = async (amt: number, desc?: string) => {
     // status: "unpaid" = advance payment, "money_out" = debt
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase.from("debts").insert({
       customer_name: customerName.trim(),
       description: desc ?? description,
@@ -158,6 +159,7 @@ const DebtManagementPage = () => {
       balance: amt,
       created_by: user?.id,
       status: debtType === "debt" ? "money_out" : "unpaid",
+      company_id,
     }).select("id").single();
     if (error) { toast.error("Failed to add"); return; }
     await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
@@ -190,6 +192,7 @@ const DebtManagementPage = () => {
     if (amt <= 0) { toast.error("Invalid amount"); return; }
     if (amt > payDebt.balance) { toast.error("Amount exceeds balance"); return; }
 
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: payErr } = await supabase.from("debt_payments").insert({
       debt_id: payDebt.id,
       amount: amt,
@@ -198,6 +201,7 @@ const DebtManagementPage = () => {
       payment_method: payMethod,
       paid_by_name: user?.name || "Unknown",
       paid_to_name: payToName.trim() || payDebt.customer_name,
+      company_id,
     });
     if (payErr) { toast.error("Payment failed"); return; }
 

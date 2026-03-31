@@ -7,6 +7,8 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  companyId: string | null;
+  isSystemAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, displayName: string, role?: UserRole) => Promise<string | null>;
   logout: () => Promise<void>;
@@ -53,13 +55,19 @@ const buildUser = async (profile: { user_id: string; display_name: string; role:
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
 
   const fetchProfile = async (supabaseUser: SupabaseUser) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("user_id, display_name, role")
+      .select("user_id, display_name, role, company_id")
       .eq("user_id", supabaseUser.id)
       .single();
+
+    // Check system admin status
+    const { data: sysAdmin } = await supabase.rpc("is_system_admin", { _user_id: supabaseUser.id });
+    setIsSystemAdmin(!!sysAdmin);
 
     if (error || !data) {
       console.error("Profile fetch error:", error);
@@ -87,6 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    setCompanyId(data.company_id);
     const u = await buildUser(data);
     u.email = supabaseUser.email || "";
     setUser(u);
@@ -184,6 +193,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setCompanyId(null);
+    setIsSystemAdmin(false);
+    // Clear cached company id
+    (await import("@/utils/getCompanyId")).clearCompanyIdCache();
   };
 
   const hasPermission = (permission: string) => {
@@ -192,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, loading, companyId, isSystemAdmin, login, signup, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

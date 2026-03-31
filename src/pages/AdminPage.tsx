@@ -143,6 +143,7 @@ const AdminPage = () => {
 
     setRecruiting(true);
 
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: recruitErr } = await supabase.from("recruited_workers").insert({
       name: newName.trim(),
       email: newEmail.trim() || null,
@@ -150,12 +151,13 @@ const AdminPage = () => {
       role: newRole,
       recruited_by: user?.id,
       identification_number: newIdNumber.trim() || null,
+      company_id,
     });
     if (recruitErr) { toast.error("Failed to add worker: " + recruitErr.message); setRecruiting(false); return; }
 
     const salary = parseFloat(newSalary) || 0;
     const { error: workerErr } = await supabase.from("workers").insert({
-      name: newName.trim(), role: newRole, salary, paid: 0, balance: salary, created_by: user?.id,
+      name: newName.trim(), role: newRole, salary, paid: 0, balance: salary, created_by: user?.id, company_id,
     });
     if (workerErr) {
       toast.error("Recruited but failed to create salary record: " + workerErr.message);

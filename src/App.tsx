@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import SystemAdminPage from "@/pages/SystemAdminPage";
 import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
@@ -34,7 +35,7 @@ import SavingsPage from "@/pages/SavingsPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSystemAdmin } = useAuth();
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar">
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        {isSystemAdmin && <Route path="/system-admin" element={<SystemAdminPage />} />}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

@@ -68,11 +68,13 @@ export const CommodityProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchCommodities]);
 
   const addCommodity = useCallback(async (c: Commodity) => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("commodities").insert({
       name: c.name,
       agent_rate: c.agentRate,
       vip_rate: c.vipRate,
       sales_rate: c.salesRate,
+      company_id,
     });
     if (error) {
       toast.error("Failed to add commodity");

@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank,
+  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,10 +36,11 @@ const navItems: NavItem[] = [
   { label: "Attendance", path: "/attendance", icon: <ClipboardList className="w-5 h-5" />, permission: "manage_workers" },
   { label: "My Info", path: "/my-info", icon: <UserCircle className="w-5 h-5" />, permission: "view_my_info" },
   { label: "Settings", path: "/settings", icon: <Cog className="w-5 h-5" />, permission: "view_settings" },
+  { label: "System Admin", path: "/system-admin", icon: <Building2 className="w-5 h-5" />, permission: "__system_admin__" },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, logout, hasPermission, isSystemAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -72,6 +73,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const filteredNav = navItems.filter(
     (item) => {
       if (item.permission === "__admin_only__") return user?.role === "admin";
+      if (item.permission === "__system_admin__") return isSystemAdmin;
       return !item.permission || hasPermission(item.permission);
     }
   );

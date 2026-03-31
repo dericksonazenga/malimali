@@ -18,6 +18,7 @@ export const logAuditEvent = async ({
   changedByName,
 }: AuditLogEntry) => {
   const userId = (await supabase.auth.getUser()).data.user?.id;
+  const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
   await supabase.from("audit_log").insert({
     table_name: tableName,
     record_id: recordId,
@@ -26,5 +27,6 @@ export const logAuditEvent = async ({
     new_data: newData as any,
     changed_by: userId,
     changed_by_name: changedByName,
+    company_id,
   });
 };

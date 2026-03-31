@@ -78,7 +78,8 @@ const PermissionsManager = () => {
     } else {
       for (const perm of ALL_PERMISSIONS) {
         if (!matrix[role]?.has(perm.key)) {
-          await supabase.from("role_permissions").insert({ role, permission: perm.key });
+          const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+          await supabase.from("role_permissions").insert({ role, permission: perm.key, company_id });
         }
       }
     }
@@ -105,7 +106,7 @@ const PermissionsManager = () => {
     } else {
       const { error } = await supabase
         .from("role_permissions")
-        .insert({ role, permission });
+        .insert({ role, permission, company_id: await (await import("@/utils/getCompanyId")).getCompanyId() });
       if (error) {
         toast.error("Failed to add permission");
         return;

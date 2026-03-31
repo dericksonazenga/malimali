@@ -25,8 +25,10 @@ const EndOfDayButton = () => {
     // 3. Log this EOD trigger — this MUST happen after clearAll
     // so the next fetch filters out pre-EOD entries
     const userId = (await supabase.auth.getUser()).data.user?.id;
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     await supabase.from("end_of_day_log").insert({
       triggered_by: userId,
+      company_id,
     });
 
     // 4. Signal UI reset

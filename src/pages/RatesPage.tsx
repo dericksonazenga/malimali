@@ -31,6 +31,7 @@ const RatesPage = () => {
     const old = commodities.find(c => c.id === id);
     if (old) {
       // Log rate change history
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
       await supabase.from("rate_change_history").insert({
         commodity_id: id,
         commodity_name: old.name,
@@ -42,6 +43,7 @@ const RatesPage = () => {
         new_sales_rate: editValues.salesRate,
         changed_by: user?.id,
         changed_by_name: user?.name || "",
+        company_id,
       });
     }
     await updateCommodity(id, editValues);
