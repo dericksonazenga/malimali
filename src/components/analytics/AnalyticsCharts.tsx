@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
-  Area, AreaChart, ReferenceLine,
+  ReferenceLine,
 } from "recharts";
 import { DailyProfit } from "@/hooks/useAnalyticsData";
 import { format, parseISO } from "date-fns";
