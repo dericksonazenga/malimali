@@ -61,9 +61,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = async (supabaseUser: SupabaseUser) => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("user_id, display_name, role")
+      .select("user_id, display_name, role, company_id")
       .eq("user_id", supabaseUser.id)
       .single();
+
+    // Check system admin status
+    const { data: sysAdmin } = await supabase.rpc("is_system_admin", { _user_id: supabaseUser.id });
+    setIsSystemAdmin(!!sysAdmin);
 
     if (error || !data) {
       console.error("Profile fetch error:", error);
@@ -91,6 +95,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    setCompanyId(data.company_id);
     const u = await buildUser(data);
     u.email = supabaseUser.email || "";
     setUser(u);
