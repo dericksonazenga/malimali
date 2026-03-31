@@ -409,7 +409,7 @@ const DebtManagementPage = () => {
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance Payments ({advanceDebts.length})</h3>
               <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{advanceDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2">{advanceDebts.map(renderDebtCard)}</div>
+              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{advanceDebts.map(renderDebtCard)}</div>
             </div>
           )}
 
