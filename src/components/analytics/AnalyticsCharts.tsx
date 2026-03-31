@@ -47,12 +47,14 @@ const AnalyticsCharts = ({
     { name: "Net", value: netProfit, fill: netProfit >= 0 ? COLORS[0] : COLORS[2] },
   ];
 
-  // Expense breakdown pie
-  const expenseByCat: Record<string, number> = {};
+  // Expense breakdown pie — merge similar names (case-insensitive, trimmed)
+  const expenseByCat: Record<string, { display: string; total: number }> = {};
   expenses.forEach((e: any) => {
-    expenseByCat[e.category] = (expenseByCat[e.category] || 0) + Number(e.amount);
+    const key = (e.category || "Other").trim().toLowerCase();
+    if (!expenseByCat[key]) expenseByCat[key] = { display: e.category?.trim() || "Other", total: 0 };
+    expenseByCat[key].total += Number(e.amount);
   });
-  const expensePieData = Object.entries(expenseByCat).map(([name, value]) => ({ name, value }));
+  const expensePieData = Object.values(expenseByCat).map(v => ({ name: v.display, value: v.total }));
 
   // Commodity flow bar
   const commodityBarData = Object.entries(commodityBreakdown).map(([name, v]) => ({
