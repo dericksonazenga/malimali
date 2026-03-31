@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const SESSION_KEY = "sysadmin_verified";
+const LOCKOUT_KEY = "sysadmin_lockout";
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const { isSystemAdmin } = useAuth();
@@ -17,6 +20,44 @@ const SystemAdminGate = ({ children }: { children: React.ReactNode }) => {
   const [pin, setPin] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState("");
+
+  // Restore lockout state from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem(LOCKOUT_KEY);
+    if (stored) {
+      const until = parseInt(stored, 10);
+      if (Date.now() < until) {
+        setLockedUntil(until);
+      } else {
+        sessionStorage.removeItem(LOCKOUT_KEY);
+      }
+    }
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!lockedUntil) { setLockCountdown(""); return; }
+    const tick = () => {
+      const remaining = lockedUntil - Date.now();
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        setAttempts(0);
+        setLockCountdown("");
+        setError("");
+        sessionStorage.removeItem(LOCKOUT_KEY);
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.ceil((remaining % 60000) / 1000);
+      setLockCountdown(`${mins}:${secs.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockedUntil]);
 
   useEffect(() => {
     const stored = sessionStorage.getItem(SESSION_KEY);
