@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
   { label: "Attendance", path: "/attendance", icon: <ClipboardList className="w-5 h-5" />, permission: "manage_workers" },
   { label: "My Info", path: "/my-info", icon: <UserCircle className="w-5 h-5" />, permission: "view_my_info" },
   { label: "Settings", path: "/settings", icon: <Cog className="w-5 h-5" />, permission: "view_settings" },
+  { label: "System Admin", path: "/system-admin", icon: <Building2 className="w-5 h-5" />, permission: "__system_admin__" },
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
