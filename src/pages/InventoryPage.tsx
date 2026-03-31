@@ -164,7 +164,7 @@ const InventoryPage = () => {
           ) : (
             <>
               {/* Desktop table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto max-h-[480px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
