@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { SalesEntry } from "@/types";
-import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package, Search } from "lucide-react";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -25,8 +24,8 @@ const SalesEntryPage = () => {
   const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
-  const { salesEntries: entries, addSalesEntry, removeSalesEntry, clearAll, refresh } = useInventory();
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, refresh } = useInventory();
+  const [searchQuery, setSearchQuery] = useState("");
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = usePersistedState("sales_customerName", "");
   const [commodity, setCommodity] = usePersistedState("sales_commodity", "");
@@ -44,11 +43,6 @@ const SalesEntryPage = () => {
     setRefreshing(false);
     toast.success("Entries refreshed");
   };
-
-  useEffect(() => {
-    if (resetSignal === 0) return;
-    clearAll();
-  }, [resetSignal]);
 
   const selectedCommodity = commodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
@@ -233,8 +227,20 @@ const SalesEntryPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search customer..."
+              className="pl-9 h-9"
+            />
+          </div>
           {(() => {
-            const grouped = entries.reduce((acc, entry) => {
+            const filtered = searchQuery
+              ? entries.filter(e => (e.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) || (e.commodity || "").toLowerCase().includes(searchQuery.toLowerCase()))
+              : entries;
+            const grouped = filtered.reduce((acc, entry) => {
               const key = (entry.customerName || "Walk-in").trim().toLowerCase();
               if (!acc[key]) acc[key] = { displayName: entry.customerName || "Walk-in", entries: [] };
               acc[key].entries.push(entry);

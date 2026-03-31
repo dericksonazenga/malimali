@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { VipEntry } from "@/types";
-import { useEndOfDay } from "@/contexts/EndOfDayContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Star, RefreshCw, Package } from "lucide-react";
+import { Trash2, Star, RefreshCw, Package, Search } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,8 +24,8 @@ const VipEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { resetSignal } = useEndOfDay();
-  const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll, refresh } = useInventory();
+  const { vipEntries: entries, addVipEntry, removeVipEntry, refresh } = useInventory();
+  const [searchQuery, setSearchQuery] = useState("");
   const [customerName, setCustomerName] = usePersistedState("vip_customerName", "");
   const [commodity, setCommodity] = usePersistedState("vip_commodity", "");
   const [weightExpr, setWeightExpr] = usePersistedState("vip_weightExpr", "");
@@ -39,11 +38,6 @@ const VipEntryPage = () => {
     setRefreshing(false);
     toast.success("Entries refreshed");
   };
-
-  useEffect(() => {
-    if (resetSignal === 0) return;
-    clearAll();
-  }, [resetSignal]);
 
   const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.vipRate || 0);
@@ -169,8 +163,20 @@ const VipEntryPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search customer..."
+              className="pl-9 h-9"
+            />
+          </div>
           {(() => {
-            const grouped = entries.reduce((acc, entry) => {
+            const filtered = searchQuery
+              ? entries.filter(e => e.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || e.commodity.toLowerCase().includes(searchQuery.toLowerCase()))
+              : entries;
+            const grouped = filtered.reduce((acc, entry) => {
               const key = entry.customerName.trim().toLowerCase();
               if (!acc[key]) acc[key] = { displayName: entry.customerName, entries: [] };
               acc[key].entries.push(entry);
