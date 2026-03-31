@@ -193,6 +193,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setCompanyId(null);
+    setIsSystemAdmin(false);
+    // Clear cached company id
+    (await import("@/utils/getCompanyId")).clearCompanyIdCache();
   };
 
   const hasPermission = (permission: string) => {
