@@ -13,15 +13,16 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
   const { user, hasPermission } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [category, setCategory] = useState("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [notes, setNotes] = useState("");
+  const [category, setCategory] = usePersistedState("expense_category", "");
+  const [amount, setAmount] = usePersistedState("expense_amount", "");
+  const [date, setDate] = usePersistedState("expense_date", new Date().toISOString().split("T")[0]);
+  const [notes, setNotes] = usePersistedState("expense_notes", "");
   const [loading, setLoading] = useState(true);
 
   const [showWorkerPicker, setShowWorkerPicker] = useState(false);

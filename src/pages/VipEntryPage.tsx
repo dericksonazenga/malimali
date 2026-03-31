@@ -17,6 +17,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
 import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 const VipEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
@@ -26,10 +27,10 @@ const VipEntryPage = () => {
   const { symbol } = useCurrency();
   const { resetSignal } = useEndOfDay();
   const { vipEntries: entries, addVipEntry, removeVipEntry, clearAll, refresh } = useInventory();
-  const [customerName, setCustomerName] = useState("");
-  const [commodity, setCommodity] = useState("");
-  const [weightExpr, setWeightExpr] = useState("");
-  const [rateOverride, setRateOverride] = useState("");
+  const [customerName, setCustomerName] = usePersistedState("vip_customerName", "");
+  const [commodity, setCommodity] = usePersistedState("vip_commodity", "");
+  const [weightExpr, setWeightExpr] = usePersistedState("vip_weightExpr", "");
+  const [rateOverride, setRateOverride] = usePersistedState("vip_rateOverride", "");
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {

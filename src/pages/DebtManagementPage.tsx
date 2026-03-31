@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Debt {
   id: string;
@@ -55,10 +56,10 @@ const DebtManagementPage = () => {
 
   // Add form
   const [showAdd, setShowAdd] = useState(false);
-  const [debtType, setDebtType] = useState<"advance" | "debt">("advance");
-  const [customerName, setCustomerName] = useState("");
-  const [description, setDescription] = useState("");
-  const [totalAmount, setTotalAmount] = useState("");
+  const [debtType, setDebtType] = usePersistedState<"advance" | "debt">("debt_type", "advance");
+  const [customerName, setCustomerName] = usePersistedState("debt_customerName", "");
+  const [description, setDescription] = usePersistedState("debt_description", "");
+  const [totalAmount, setTotalAmount] = usePersistedState("debt_totalAmount", "");
 
   // Deduction dialog for debt (money_out)
   const [showDeduction, setShowDeduction] = useState(false);
