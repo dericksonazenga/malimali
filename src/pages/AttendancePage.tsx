@@ -405,7 +405,7 @@ const AttendancePage = () => {
                 <CalendarDays className="w-5 h-5" /> Today's Attendance — {format(today, "PPP")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent className="overflow-x-auto max-h-[480px] overflow-y-auto">
               {todayRecords.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No attendance records for today</p>
               ) : (
