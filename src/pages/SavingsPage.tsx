@@ -124,6 +124,7 @@ const SavingsPage = () => {
     }
 
     // Record transaction
+    const txCompanyId = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: txError } = await supabase.from("savings_transactions").insert({
       account_id: accountId,
       type: "deposit",
@@ -131,6 +132,7 @@ const SavingsPage = () => {
       payment_method: paymentMethod,
       served_by_name: user?.name || "Unknown",
       notes,
+      company_id: txCompanyId,
     });
     if (txError) { toast.error("Failed to record transaction"); return; }
 
