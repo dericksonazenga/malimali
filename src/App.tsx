@@ -66,7 +66,7 @@ const AuthenticatedApp = () => {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        {isSystemAdmin && <Route path="/system-admin" element={<SystemAdminPage />} />}
+        {isSystemAdmin && <Route path="/system-admin" element={<SystemAdminGate><SystemAdminPage /></SystemAdminGate>} />}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
