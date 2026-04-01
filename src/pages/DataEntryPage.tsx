@@ -18,17 +18,19 @@ const DataEntryPage = () => {
   return (
     <div className="space-y-4 max-w-6xl">
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-3 h-12">
-          <TabsTrigger value="agent" className="gap-2 text-sm font-semibold">
-            <FileText className="w-4 h-4" /> {labels.agent}
-          </TabsTrigger>
-          <TabsTrigger value="vip" className="gap-2 text-sm font-semibold">
-            <Star className="w-4 h-4" /> {labels.vip}
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="gap-2 text-sm font-semibold">
-            <ShoppingCart className="w-4 h-4" /> {labels.sales}
-          </TabsTrigger>
-        </TabsList>
+        <div className="sticky top-0 z-10 bg-background pb-2">
+          <TabsList className="grid w-full grid-cols-3 h-12">
+            <TabsTrigger value="agent" className="gap-2 text-sm font-semibold">
+              <FileText className="w-4 h-4" /> {labels.agent}
+            </TabsTrigger>
+            <TabsTrigger value="vip" className="gap-2 text-sm font-semibold">
+              <Star className="w-4 h-4" /> {labels.vip}
+            </TabsTrigger>
+            <TabsTrigger value="sales" className="gap-2 text-sm font-semibold">
+              <ShoppingCart className="w-4 h-4" /> {labels.sales}
+            </TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="agent"><AgentEntryPage /></TabsContent>
         <TabsContent value="vip"><VipEntryPage /></TabsContent>
         <TabsContent value="sales"><SalesEntryPage /></TabsContent>
