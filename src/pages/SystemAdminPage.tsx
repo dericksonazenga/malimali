@@ -7,9 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2 } from "lucide-react";
+import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Company {
   id: string;
@@ -25,6 +32,9 @@ const SystemAdminPage = () => {
   const [adminEmail, setAdminEmail] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const fetchCompanies = async () => {
     const { data } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
@@ -81,6 +91,29 @@ const SystemAdminPage = () => {
     } else {
       toast.success(`${company.name} ${company.is_active ? "deactivated" : "activated"}`);
       fetchCompanies();
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!deleteTarget || deleteConfirmName !== deleteTarget.name) {
+      toast.error("Company name does not match");
+      return;
+    }
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("companies")
+        .delete()
+        .eq("id", deleteTarget.id);
+      if (error) throw error;
+      toast.success(`"${deleteTarget.name}" and all its data permanently deleted`);
+      setDeleteTarget(null);
+      setDeleteConfirmName("");
+      fetchCompanies();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete company");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -145,6 +178,30 @@ const SystemAdminPage = () => {
                       {c.is_active ? <PowerOff className="w-3 h-3" /> : <Power className="w-3 h-3" />}
                       {c.is_active ? "Deactivate" : "Activate"}
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="gap-1">
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete "{c.name}"?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the company and <strong>ALL</strong> associated data including entries, workers, expenses, debts, messages, stock, attendance, and user profiles. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => { setDeleteTarget(c); setDeleteConfirmName(""); }}
+                          >
+                            Continue to Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
@@ -155,6 +212,41 @@ const SystemAdminPage = () => {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Final delete confirmation dialog — type company name */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeleteConfirmName(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="w-5 h-5" /> Final Confirmation
+            </DialogTitle>
+            <DialogDescription>
+              Type <strong className="text-foreground">{deleteTarget?.name}</strong> below to confirm permanent deletion of this company and all its data.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder="Type company name to confirm"
+            value={deleteConfirmName}
+            onChange={(e) => setDeleteConfirmName(e.target.value)}
+            className="mt-2"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setDeleteTarget(null); setDeleteConfirmName(""); }} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting || deleteConfirmName !== deleteTarget?.name}
+              onClick={handleDeleteCompany}
+              className="gap-2"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Permanently Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ChangePinCard />
     </div>
   );
