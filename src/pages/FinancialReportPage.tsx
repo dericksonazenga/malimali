@@ -122,9 +122,9 @@ const FinancialReportPage = () => {
     // Summary sheet
     const summaryData = [
       ["Metric", "Amount"],
-      ["Sales Revenue", salesTotal],
-      ["Agent Purchases", agentTotal],
-      ["VIP Purchases", vipTotal],
+      [`${labels.sales} Revenue`, salesTotal],
+      [`${labels.agent} Purchases`, agentTotal],
+      [`${labels.vip} Purchases`, vipTotal],
       ["Total Purchases", totalPurchases],
       ["Gross Profit", grossProfit],
       ["Total Expenses", expenseTotal],
