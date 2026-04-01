@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { groupEntriesByCustomer } from "@/utils/groupEntries";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import * as XLSX from "xlsx";
 import DateRangeSelector from "@/components/analytics/DateRangeSelector";
 import AnalyticsSection from "@/components/analytics/AnalyticsSection";
@@ -22,6 +23,7 @@ const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 
 
 const FinancialReportPage = () => {
   const { symbol, currency } = useCurrency();
+  const { labels } = useCategoryLabels();
   const [range, setRange] = useState<DateRangeValue>({ preset: "today" });
   const { data, loading } = useAnalyticsData(range);
 
@@ -120,9 +122,9 @@ const FinancialReportPage = () => {
     // Summary sheet
     const summaryData = [
       ["Metric", "Amount"],
-      ["Sales Revenue", salesTotal],
-      ["Agent Purchases", agentTotal],
-      ["VIP Purchases", vipTotal],
+      [`${labels.sales} Revenue`, salesTotal],
+      [`${labels.agent} Purchases`, agentTotal],
+      [`${labels.vip} Purchases`, vipTotal],
       ["Total Purchases", totalPurchases],
       ["Gross Profit", grossProfit],
       ["Total Expenses", expenseTotal],
@@ -159,8 +161,8 @@ const FinancialReportPage = () => {
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    buildGroupedSheet(agentEntries, "Agent Entries");
-    buildGroupedSheet(vipEntries, "VIP Entries");
+    buildGroupedSheet(agentEntries, `${labels.agent} Entries`);
+    buildGroupedSheet(vipEntries, `${labels.vip} Entries`);
 
     // Sales Entries sheet
     {
@@ -179,7 +181,7 @@ const FinancialReportPage = () => {
       styleSheet(ws, 1, aoa.length - 1, 7);
       let rowIdx = 1;
       salesGroups.forEach(g => { rowIdx += g.entries.length; for (let c = 0; c < 7; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; } rowIdx += 2; });
-      XLSX.utils.book_append_sheet(wb, ws, "Sales Entries");
+      XLSX.utils.book_append_sheet(wb, ws, `${labels.sales} Entries`);
     }
 
     // Expenses sheet
@@ -256,7 +258,7 @@ const FinancialReportPage = () => {
   const payrollCSV = () => [["Worker", "Role", "Salary", "Paid", "Balance"], ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)])];
   const debtCSV = () => [["Customer", "Description", "Total", "Paid", "Balance", "Status"], ...debts.map((d: any) => [d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status])];
   const savingsCSV = () => [["Customer", "Balance"], ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]), [], ["Total Deposits", String(totalDeposits)], ["Total Withdrawals", String(totalWithdrawals)], ["Net Savings Held", String(netSavingsHeld)]];
-  const revenueCSV = () => [["Category", "Amount"], ["Sales Revenue", String(salesTotal)], ["Agent Purchases", String(-agentTotal)], ["VIP Purchases", String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
+  const revenueCSV = () => [["Category", "Amount"], [`${labels.sales} Revenue`, String(salesTotal)], [`${labels.agent} Purchases`, String(-agentTotal)], [`${labels.vip} Purchases`, String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
   const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
     <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
@@ -313,7 +315,7 @@ const FinancialReportPage = () => {
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "Sales Revenue", value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
+          { label: `${labels.sales} Revenue`, value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
           { label: "Total Purchases", value: totalPurchases, icon: <TrendingDown className="w-4 h-4 text-info" />, color: "text-info" },
           { label: "Total Expenses", value: expenseTotal, icon: <DollarSign className="w-4 h-4 text-destructive" />, color: "text-destructive" },
           { label: "Debt Balance", value: debtBalance, icon: <CreditCard className="w-4 h-4 text-orange-500" />, color: debtBalance > 0 ? "text-orange-500" : "text-success" },
@@ -352,9 +354,9 @@ const FinancialReportPage = () => {
           csvFilename={`${filePrefix}_Revenue.csv`}
         >
           <div className="space-y-0.5">
-            <StatRow label="Sales Revenue" value={salesTotal} />
-            <StatRow label="Agent Purchases" value={agentTotal} negative />
-            <StatRow label="VIP Purchases" value={vipTotal} negative />
+            <StatRow label={`${labels.sales} Revenue`} value={salesTotal} />
+            <StatRow label={`${labels.agent} Purchases`} value={agentTotal} negative />
+            <StatRow label={`${labels.vip} Purchases`} value={vipTotal} negative />
             <StatRow label="Expenses" value={expenseTotal} negative />
             <StatRow label="Salary Paid" value={salaryPaid} negative />
             <StatRow label="Gross Profit (Sales Margin)" value={grossProfit} bold />
@@ -390,10 +392,10 @@ const FinancialReportPage = () => {
 
         {/* Agent Entries */}
         <AnalyticsSection
-          title={`Agent Entries (${agentEntries.length})`}
+          title={`${labels.agent} Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
           csvRows={agentCSV()}
-          csvFilename={`${filePrefix}_Agents.csv`}
+          csvFilename={`${filePrefix}_${labels.agent}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {agentEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
@@ -428,10 +430,10 @@ const FinancialReportPage = () => {
 
         {/* VIP Entries */}
         <AnalyticsSection
-          title={`VIP Entries (${vipEntries.length})`}
+          title={`${labels.vip} Entries (${vipEntries.length})`}
           icon={<Users className="w-4 h-4 text-primary" />}
           csvRows={vipCSV()}
-          csvFilename={`${filePrefix}_VIP.csv`}
+          csvFilename={`${filePrefix}_${labels.vip}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {vipEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
@@ -466,10 +468,10 @@ const FinancialReportPage = () => {
 
         {/* Sales Entries */}
         <AnalyticsSection
-          title={`Sales Entries (${salesEntries.length})`}
+          title={`${labels.sales} Entries (${salesEntries.length})`}
           icon={<TrendingUp className="w-4 h-4 text-success" />}
           csvRows={salesCSV()}
-          csvFilename={`${filePrefix}_Sales.csv`}
+          csvFilename={`${filePrefix}_${labels.sales}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {salesEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}

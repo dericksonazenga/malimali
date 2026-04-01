@@ -9,6 +9,7 @@ import { Eye, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { groupEntriesByCustomer } from "@/utils/groupEntries";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 interface ReportSheetViewProps {
   symbol: string;
@@ -47,6 +48,7 @@ const ReportSheetView = ({
   commodityBreakdown, commodityProfitBreakdown,
   debts = [], debtTotal = 0, debtPaid = 0, debtBalance = 0,
 }: ReportSheetViewProps) => {
+  const { labels } = useCategoryLabels();
   const [search, setSearch] = useState("");
   const q = search.toLowerCase().trim();
 
@@ -137,9 +139,9 @@ const ReportSheetView = ({
           <div className="px-4 pt-2 border-b border-border overflow-x-auto">
             <TabsList className="h-8 gap-1">
               <TabsTrigger value="summary" className="text-xs h-7 px-2.5">Summary</TabsTrigger>
-              <TabsTrigger value="agents" className="text-xs h-7 px-2.5">Agents</TabsTrigger>
-              <TabsTrigger value="vip" className="text-xs h-7 px-2.5">VIP</TabsTrigger>
-              <TabsTrigger value="sales" className="text-xs h-7 px-2.5">Sales</TabsTrigger>
+              <TabsTrigger value="agents" className="text-xs h-7 px-2.5">{labels.agent}</TabsTrigger>
+              <TabsTrigger value="vip" className="text-xs h-7 px-2.5">{labels.vip}</TabsTrigger>
+              <TabsTrigger value="sales" className="text-xs h-7 px-2.5">{labels.sales}</TabsTrigger>
               <TabsTrigger value="expenses" className="text-xs h-7 px-2.5">Expenses</TabsTrigger>
               <TabsTrigger value="debts" className="text-xs h-7 px-2.5">Debts</TabsTrigger>
               <TabsTrigger value="inventory" className="text-xs h-7 px-2.5">Inventory</TabsTrigger>
@@ -160,9 +162,9 @@ const ReportSheetView = ({
                 </TableHeader>
                 <TableBody>
                   {[
-                    { label: "Sales Revenue", value: salesTotal, color: "text-success" },
-                    { label: "Agent Purchases", value: agentTotal, color: "text-info" },
-                    { label: "VIP Purchases", value: vipTotal, color: "text-info" },
+                    { label: `${labels.sales} Revenue`, value: salesTotal, color: "text-success" },
+                    { label: `${labels.agent} Purchases`, value: agentTotal, color: "text-info" },
+                    { label: `${labels.vip} Purchases`, value: vipTotal, color: "text-info" },
                     { label: "Total Purchases", value: totalPurchases, color: "text-muted-foreground" },
                     { label: "Gross Profit", value: grossProfit, color: grossProfit >= 0 ? "text-success" : "text-destructive", bold: true },
                     { label: "Total Expenses", value: expenseTotal, color: "text-destructive" },

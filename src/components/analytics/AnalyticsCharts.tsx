@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { DailyProfit } from "@/hooks/useAnalyticsData";
 import { format, parseISO } from "date-fns";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 const COLORS = [
   "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)", "hsl(0, 84%, 60%)",
@@ -32,11 +33,12 @@ const AnalyticsCharts = ({
   symbol, salesTotal, agentTotal, vipTotal, expenseTotal, salaryPaid,
   grossProfit, netProfit, commodityBreakdown, stockData, expenses, dailyProfitTrend,
 }: Props) => {
+  const { labels } = useCategoryLabels();
   // Revenue bar chart data
   const revenueBarData = [
-    { name: "Sales", value: salesTotal, fill: COLORS[0] },
-    { name: "Agent", value: agentTotal, fill: COLORS[1] },
-    { name: "VIP", value: vipTotal, fill: COLORS[2] },
+    { name: labels.sales, value: salesTotal, fill: COLORS[0] },
+    { name: labels.agent, value: agentTotal, fill: COLORS[1] },
+    { name: labels.vip, value: vipTotal, fill: COLORS[2] },
     { name: "Expenses", value: expenseTotal, fill: COLORS[3] },
     { name: "Salary", value: salaryPaid, fill: COLORS[4] },
   ];
