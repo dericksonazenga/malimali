@@ -315,7 +315,7 @@ const FinancialReportPage = () => {
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
-          { label: "Sales Revenue", value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
+          { label: `${labels.sales} Revenue`, value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
           { label: "Total Purchases", value: totalPurchases, icon: <TrendingDown className="w-4 h-4 text-info" />, color: "text-info" },
           { label: "Total Expenses", value: expenseTotal, icon: <DollarSign className="w-4 h-4 text-destructive" />, color: "text-destructive" },
           { label: "Debt Balance", value: debtBalance, icon: <CreditCard className="w-4 h-4 text-orange-500" />, color: debtBalance > 0 ? "text-orange-500" : "text-success" },
