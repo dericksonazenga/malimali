@@ -181,7 +181,7 @@ const FinancialReportPage = () => {
       styleSheet(ws, 1, aoa.length - 1, 7);
       let rowIdx = 1;
       salesGroups.forEach(g => { rowIdx += g.entries.length; for (let c = 0; c < 7; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; } rowIdx += 2; });
-      XLSX.utils.book_append_sheet(wb, ws, "Sales Entries");
+      XLSX.utils.book_append_sheet(wb, ws, `${labels.sales} Entries`);
     }
 
     // Expenses sheet
