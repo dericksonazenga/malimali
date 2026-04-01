@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { DailyProfit } from "@/hooks/useAnalyticsData";
 import { format, parseISO } from "date-fns";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 const COLORS = [
   "hsl(142, 71%, 45%)", "hsl(217, 91%, 60%)", "hsl(0, 84%, 60%)",
