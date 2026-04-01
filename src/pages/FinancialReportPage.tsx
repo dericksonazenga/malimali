@@ -258,7 +258,7 @@ const FinancialReportPage = () => {
   const payrollCSV = () => [["Worker", "Role", "Salary", "Paid", "Balance"], ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)])];
   const debtCSV = () => [["Customer", "Description", "Total", "Paid", "Balance", "Status"], ...debts.map((d: any) => [d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status])];
   const savingsCSV = () => [["Customer", "Balance"], ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]), [], ["Total Deposits", String(totalDeposits)], ["Total Withdrawals", String(totalWithdrawals)], ["Net Savings Held", String(netSavingsHeld)]];
-  const revenueCSV = () => [["Category", "Amount"], ["Sales Revenue", String(salesTotal)], ["Agent Purchases", String(-agentTotal)], ["VIP Purchases", String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
+  const revenueCSV = () => [["Category", "Amount"], [`${labels.sales} Revenue`, String(salesTotal)], [`${labels.agent} Purchases`, String(-agentTotal)], [`${labels.vip} Purchases`, String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
   const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
     <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
