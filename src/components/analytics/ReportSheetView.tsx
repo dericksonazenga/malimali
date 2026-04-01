@@ -9,6 +9,7 @@ import { Eye, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { groupEntriesByCustomer } from "@/utils/groupEntries";
+import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 
 interface ReportSheetViewProps {
   symbol: string;
