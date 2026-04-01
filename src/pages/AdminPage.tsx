@@ -72,9 +72,11 @@ const AdminPage = () => {
   const [editRecruitValues, setEditRecruitValues] = useState<{ name: string; email: string; phone: string; id_number: string }>({ name: "", email: "", phone: "", id_number: "" });
 
   const fetchProfiles = useCallback(async () => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase
       .from("profiles")
       .select("id, user_id, display_name, role")
+      .eq("company_id", company_id)
       .order("created_at", { ascending: true });
     if (error) { console.error("Failed to fetch profiles:", error); return; }
     setProfiles(data || []);
@@ -82,9 +84,11 @@ const AdminPage = () => {
   }, []);
 
   const fetchRecruits = useCallback(async () => {
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase
       .from("recruited_workers")
       .select("*")
+      .eq("company_id", company_id)
       .order("created_at", { ascending: false });
     if (error) { console.error("Failed to fetch recruits:", error); return; }
     setRecruits((data as RecruitedWorker[]) || []);
