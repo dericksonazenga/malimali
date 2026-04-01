@@ -468,10 +468,10 @@ const FinancialReportPage = () => {
 
         {/* Sales Entries */}
         <AnalyticsSection
-          title={`Sales Entries (${salesEntries.length})`}
+          title={`${labels.sales} Entries (${salesEntries.length})`}
           icon={<TrendingUp className="w-4 h-4 text-success" />}
           csvRows={salesCSV()}
-          csvFilename={`${filePrefix}_Sales.csv`}
+          csvFilename={`${filePrefix}_${labels.sales}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {salesEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}

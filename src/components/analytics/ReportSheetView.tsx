@@ -162,9 +162,9 @@ const ReportSheetView = ({
                 </TableHeader>
                 <TableBody>
                   {[
-                    { label: "Sales Revenue", value: salesTotal, color: "text-success" },
-                    { label: "Agent Purchases", value: agentTotal, color: "text-info" },
-                    { label: "VIP Purchases", value: vipTotal, color: "text-info" },
+                    { label: `${labels.sales} Revenue`, value: salesTotal, color: "text-success" },
+                    { label: `${labels.agent} Purchases`, value: agentTotal, color: "text-info" },
+                    { label: `${labels.vip} Purchases`, value: vipTotal, color: "text-info" },
                     { label: "Total Purchases", value: totalPurchases, color: "text-muted-foreground" },
                     { label: "Gross Profit", value: grossProfit, color: grossProfit >= 0 ? "text-success" : "text-destructive", bold: true },
                     { label: "Total Expenses", value: expenseTotal, color: "text-destructive" },
