@@ -354,9 +354,9 @@ const FinancialReportPage = () => {
           csvFilename={`${filePrefix}_Revenue.csv`}
         >
           <div className="space-y-0.5">
-            <StatRow label="Sales Revenue" value={salesTotal} />
-            <StatRow label="Agent Purchases" value={agentTotal} negative />
-            <StatRow label="VIP Purchases" value={vipTotal} negative />
+            <StatRow label={`${labels.sales} Revenue`} value={salesTotal} />
+            <StatRow label={`${labels.agent} Purchases`} value={agentTotal} negative />
+            <StatRow label={`${labels.vip} Purchases`} value={vipTotal} negative />
             <StatRow label="Expenses" value={expenseTotal} negative />
             <StatRow label="Salary Paid" value={salaryPaid} negative />
             <StatRow label="Gross Profit (Sales Margin)" value={grossProfit} bold />
