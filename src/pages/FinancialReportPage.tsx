@@ -392,10 +392,10 @@ const FinancialReportPage = () => {
 
         {/* Agent Entries */}
         <AnalyticsSection
-          title={`Agent Entries (${agentEntries.length})`}
+          title={`${labels.agent} Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
           csvRows={agentCSV()}
-          csvFilename={`${filePrefix}_Agents.csv`}
+          csvFilename={`${filePrefix}_${labels.agent}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {agentEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
