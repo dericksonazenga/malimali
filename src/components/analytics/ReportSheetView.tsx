@@ -48,6 +48,7 @@ const ReportSheetView = ({
   commodityBreakdown, commodityProfitBreakdown,
   debts = [], debtTotal = 0, debtPaid = 0, debtBalance = 0,
 }: ReportSheetViewProps) => {
+  const { labels } = useCategoryLabels();
   const [search, setSearch] = useState("");
   const q = search.toLowerCase().trim();
 
