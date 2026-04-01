@@ -161,8 +161,8 @@ const FinancialReportPage = () => {
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    buildGroupedSheet(agentEntries, "Agent Entries");
-    buildGroupedSheet(vipEntries, "VIP Entries");
+    buildGroupedSheet(agentEntries, `${labels.agent} Entries`);
+    buildGroupedSheet(vipEntries, `${labels.vip} Entries`);
 
     // Sales Entries sheet
     {
