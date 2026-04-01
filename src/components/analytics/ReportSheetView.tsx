@@ -139,9 +139,9 @@ const ReportSheetView = ({
           <div className="px-4 pt-2 border-b border-border overflow-x-auto">
             <TabsList className="h-8 gap-1">
               <TabsTrigger value="summary" className="text-xs h-7 px-2.5">Summary</TabsTrigger>
-              <TabsTrigger value="agents" className="text-xs h-7 px-2.5">Agents</TabsTrigger>
-              <TabsTrigger value="vip" className="text-xs h-7 px-2.5">VIP</TabsTrigger>
-              <TabsTrigger value="sales" className="text-xs h-7 px-2.5">Sales</TabsTrigger>
+              <TabsTrigger value="agents" className="text-xs h-7 px-2.5">{labels.agent}</TabsTrigger>
+              <TabsTrigger value="vip" className="text-xs h-7 px-2.5">{labels.vip}</TabsTrigger>
+              <TabsTrigger value="sales" className="text-xs h-7 px-2.5">{labels.sales}</TabsTrigger>
               <TabsTrigger value="expenses" className="text-xs h-7 px-2.5">Expenses</TabsTrigger>
               <TabsTrigger value="debts" className="text-xs h-7 px-2.5">Debts</TabsTrigger>
               <TabsTrigger value="inventory" className="text-xs h-7 px-2.5">Inventory</TabsTrigger>
