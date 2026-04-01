@@ -488,23 +488,25 @@ const MessagesPage = () => {
 
       <Card>
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full grid grid-cols-3 mx-0">
-            <TabsTrigger value="inbox" className="gap-2">
-              <Inbox className="w-4 h-4" /> Inbox
-              {inboxMessages.length > 0 && (
-                <Badge className="ml-1 h-5 min-w-[20px] px-1.5">{inboxMessages.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="sent" className="gap-2">
-              <Send className="w-4 h-4" /> Sent
-            </TabsTrigger>
-            <TabsTrigger value="drafts" className="gap-2">
-              <FileEdit className="w-4 h-4" /> Drafts
-              {draftMessages.length > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">{draftMessages.length}</Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <div className="sticky top-0 z-10 bg-background pb-2">
+            <TabsList className="w-full grid grid-cols-3 mx-0">
+              <TabsTrigger value="inbox" className="gap-2">
+                <Inbox className="w-4 h-4" /> Inbox
+                {inboxMessages.length > 0 && (
+                  <Badge className="ml-1 h-5 min-w-[20px] px-1.5">{inboxMessages.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="gap-2">
+                <Send className="w-4 h-4" /> Sent
+              </TabsTrigger>
+              <TabsTrigger value="drafts" className="gap-2">
+                <FileEdit className="w-4 h-4" /> Drafts
+                {draftMessages.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">{draftMessages.length}</Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
           <TabsContent value="inbox">
             <MessageList items={inboxMessages} emptyText="No messages in your inbox" />
           </TabsContent>

@@ -342,17 +342,19 @@ const MyInfoPage = () => {
       </Card>
 
       <Tabs defaultValue="salary">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="salary" className="gap-1 text-xs sm:text-sm">
-            <Banknote className="w-4 h-4" /> Salary
-          </TabsTrigger>
-          <TabsTrigger value="attendance" className="gap-1 text-xs sm:text-sm">
-            <ClipboardList className="w-4 h-4" /> Attendance
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm">
-            <MessageSquare className="w-4 h-4" /> Messages
-          </TabsTrigger>
-        </TabsList>
+        <div className="sticky top-0 z-10 bg-background pb-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="salary" className="gap-1 text-xs sm:text-sm">
+              <Banknote className="w-4 h-4" /> Salary
+            </TabsTrigger>
+            <TabsTrigger value="attendance" className="gap-1 text-xs sm:text-sm">
+              <ClipboardList className="w-4 h-4" /> Attendance
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1 text-xs sm:text-sm">
+              <MessageSquare className="w-4 h-4" /> Messages
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* SALARY TAB */}
         <TabsContent value="salary" className="space-y-4 mt-4">

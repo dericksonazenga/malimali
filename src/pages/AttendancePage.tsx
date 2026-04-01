@@ -393,10 +393,12 @@ const AttendancePage = () => {
 
       {/* Tabs: Today / History */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="today" className="gap-2"><CalendarDays className="w-4 h-4" /> Today</TabsTrigger>
-          <TabsTrigger value="history" className="gap-2"><BarChart3 className="w-4 h-4" /> History & Stats</TabsTrigger>
-        </TabsList>
+        <div className="sticky top-0 z-10 bg-background pb-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="today" className="gap-2"><CalendarDays className="w-4 h-4" /> Today</TabsTrigger>
+            <TabsTrigger value="history" className="gap-2"><BarChart3 className="w-4 h-4" /> History & Stats</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TODAY TAB */}
         <TabsContent value="today">
