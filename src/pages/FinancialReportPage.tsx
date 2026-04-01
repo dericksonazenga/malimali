@@ -430,10 +430,10 @@ const FinancialReportPage = () => {
 
         {/* VIP Entries */}
         <AnalyticsSection
-          title={`VIP Entries (${vipEntries.length})`}
+          title={`${labels.vip} Entries (${vipEntries.length})`}
           icon={<Users className="w-4 h-4 text-primary" />}
           csvRows={vipCSV()}
-          csvFilename={`${filePrefix}_VIP.csv`}
+          csvFilename={`${filePrefix}_${labels.vip}.csv`}
         >
           <div className="max-h-64 overflow-y-auto">
             {vipEntries.length === 0 && <p className="text-sm text-muted-foreground">No entries</p>}
