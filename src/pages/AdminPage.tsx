@@ -401,12 +401,9 @@ const AdminPage = () => {
                             <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
                               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
-                                <SelectItem value="accountant">Accountant</SelectItem>
-                                <SelectItem value="data_manager">Data Manager</SelectItem>
-                                <SelectItem value="human_resource">Human Resource</SelectItem>
-                                <SelectItem value="cashier">Cashier</SelectItem>
-                                <SelectItem value="boss">Boss</SelectItem>
+                                {allRoles.filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id)).map(r => (
+                                  <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           ) : (
