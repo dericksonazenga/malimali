@@ -49,8 +49,8 @@ interface Deduction {
 const DebtManagementPage = () => {
   const { symbol } = useCurrency();
   const { user, hasPermission } = useAuth();
-  const canEdit = user?.role === "admin" || hasPermission("edit_records");
-  const [debts, setDebts] = useState<Debt[]>([]);
+  const canEdit = user?.role === "admin" || hasPermission("manage_debts") || hasPermission("edit_records");
+  const canDelete = user?.role === "admin" || hasPermission("delete_debts");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
