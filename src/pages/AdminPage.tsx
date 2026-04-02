@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PermissionsManager from "@/components/PermissionsManager";
 import { isSuperAdmin, isSuperAdminProfile, isSuperAdminEmail, SUPER_ADMIN_EMAIL } from "@/constants/superAdmin";
+import { useCustomRoles } from "@/hooks/useCustomRoles";
 
 interface Profile {
   id: string;
