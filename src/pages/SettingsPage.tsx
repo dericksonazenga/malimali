@@ -160,6 +160,8 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
+      {isAdmin && <RolesManager />}
+
       <ChangePasswordCard />
     </div>
   );
