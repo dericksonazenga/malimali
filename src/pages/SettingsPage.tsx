@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Settings, Globe, User, X, Tags, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ChangePasswordCard from "@/components/ChangePasswordCard";
+import RolesManager from "@/components/RolesManager";
 
 const SettingsPage = () => {
   const { currency, symbol, globalCurrency, globalSymbol, setCurrencyCode, setGlobalCurrency, isPersonalOverride, clearPersonalOverride } = useCurrency();
@@ -158,6 +159,8 @@ const SettingsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {isAdmin && <RolesManager />}
 
       <ChangePasswordCard />
     </div>

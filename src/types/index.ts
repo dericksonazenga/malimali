@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "accountant" | "data_manager" | "human_resource" | "cashier" | "boss";
+export type UserRole = "admin" | "accountant" | "data_manager" | "human_resource" | "cashier" | "boss" | string;
 
 export interface User {
   id: string;
@@ -31,6 +31,7 @@ export type Permission =
   | "delete_expenses"
   | "delete_rates"
   | "manage_debts"
+  | "delete_debts"
   | "edit_records"
   | "view_savings"
   | "manage_savings"

@@ -334,6 +334,38 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_roles: {
+        Row: {
+          company_id: string
+          created_at: string
+          display_name: string
+          id: string
+          role_key: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          role_key: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          role_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_summaries: {
         Row: {
           agent_entries: Json

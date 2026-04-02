@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import PermissionsManager from "@/components/PermissionsManager";
 import { isSuperAdmin, isSuperAdminProfile, isSuperAdminEmail, SUPER_ADMIN_EMAIL } from "@/constants/superAdmin";
+import { useCustomRoles } from "@/hooks/useCustomRoles";
 
 interface Profile {
   id: string;
@@ -40,16 +41,10 @@ const roleBadge = (r: string) =>
   r === "cashier" ? "bg-yellow-500/10 text-yellow-700" :
   "bg-muted text-muted-foreground";
 
-const roleLabel = (r: string) =>
-  r === "admin" ? "Admin" :
-  r === "accountant" ? "Accountant" :
-  r === "data_manager" ? "Data Manager" :
-  r === "human_resource" ? "Human Resource" :
-  r === "cashier" ? "Cashier" : "Boss";
-
 const AdminPage = () => {
   const { user } = useAuth();
   const { symbol } = useCurrency();
+  const { allRoles, getRoleLabel } = useCustomRoles();
   const isAdmin = user?.role === "admin";
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -249,12 +244,9 @@ const AdminPage = () => {
                <Select value={newRole} onValueChange={v => setNewRole(v)}>
                  <SelectTrigger><SelectValue /></SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="boss">Boss (Default)</SelectItem>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="data_manager">Data Manager</SelectItem>
-                    <SelectItem value="human_resource">Human Resource</SelectItem>
-                    <SelectItem value="cashier">Cashier</SelectItem>
-                    {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
+                   {allRoles.filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id)).map(r => (
+                     <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}{r.role_key === "boss" ? " (Default)" : ""}</SelectItem>
+                   ))}
                  </SelectContent>
                </Select>
                <p className="text-xs text-muted-foreground">Only the permanent admin ({SUPER_ADMIN_EMAIL}) can assign the Admin role.</p>
@@ -317,7 +309,7 @@ const AdminPage = () => {
                         ) : (r.identification_number || "—")}
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{getRoleLabel(r.role)}</span>
                       </TableCell>
                       <TableCell>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
@@ -355,7 +347,7 @@ const AdminPage = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium text-sm">{r.name}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{getRoleLabel(r.role)}</span>
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditRecruit(r)}><Pencil className="w-3 h-3" /></Button>
@@ -409,17 +401,14 @@ const AdminPage = () => {
                             <Select value={editRole} onValueChange={v => setEditRole(v as UserRole)}>
                               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
-                                <SelectItem value="accountant">Accountant</SelectItem>
-                                <SelectItem value="data_manager">Data Manager</SelectItem>
-                                <SelectItem value="human_resource">Human Resource</SelectItem>
-                                <SelectItem value="cashier">Cashier</SelectItem>
-                                <SelectItem value="boss">Boss</SelectItem>
+                                {allRoles.filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id)).map(r => (
+                                  <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(p.role)}`}>
-                              {roleLabel(p.role)}
+                              {getRoleLabel(p.role)}
                             </span>
                           )}
                         </TableCell>
