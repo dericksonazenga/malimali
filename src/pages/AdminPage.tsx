@@ -44,6 +44,7 @@ const roleBadge = (r: string) =>
 const AdminPage = () => {
   const { user } = useAuth();
   const { symbol } = useCurrency();
+  const { allRoles, getRoleLabel } = useCustomRoles();
   const isAdmin = user?.role === "admin";
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
