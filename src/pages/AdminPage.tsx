@@ -312,7 +312,7 @@ const AdminPage = () => {
                         ) : (r.identification_number || "—")}
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{getRoleLabel(r.role)}</span>
                       </TableCell>
                       <TableCell>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${r.claimed ? "bg-primary/10 text-primary" : "bg-green-100 text-green-700"}`}>
@@ -350,7 +350,7 @@ const AdminPage = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium text-sm">{r.name}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{roleLabel(r.role)}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(r.role)}`}>{getRoleLabel(r.role)}</span>
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEditRecruit(r)}><Pencil className="w-3 h-3" /></Button>
@@ -414,7 +414,7 @@ const AdminPage = () => {
                             </Select>
                           ) : (
                             <span className={`text-xs px-2 py-0.5 rounded-full ${roleBadge(p.role)}`}>
-                              {roleLabel(p.role)}
+                              {getRoleLabel(p.role)}
                             </span>
                           )}
                         </TableCell>
