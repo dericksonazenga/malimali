@@ -41,13 +41,6 @@ const roleBadge = (r: string) =>
   r === "cashier" ? "bg-yellow-500/10 text-yellow-700" :
   "bg-muted text-muted-foreground";
 
-const roleLabel = (r: string) =>
-  r === "admin" ? "Admin" :
-  r === "accountant" ? "Accountant" :
-  r === "data_manager" ? "Data Manager" :
-  r === "human_resource" ? "Human Resource" :
-  r === "cashier" ? "Cashier" : "Boss";
-
 const AdminPage = () => {
   const { user } = useAuth();
   const { symbol } = useCurrency();
