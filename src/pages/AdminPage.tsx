@@ -244,12 +244,9 @@ const AdminPage = () => {
                <Select value={newRole} onValueChange={v => setNewRole(v)}>
                  <SelectTrigger><SelectValue /></SelectTrigger>
                  <SelectContent>
-                   <SelectItem value="boss">Boss (Default)</SelectItem>
-                    <SelectItem value="accountant">Accountant</SelectItem>
-                    <SelectItem value="data_manager">Data Manager</SelectItem>
-                    <SelectItem value="human_resource">Human Resource</SelectItem>
-                    <SelectItem value="cashier">Cashier</SelectItem>
-                    {isSuperAdmin(user?.id) && <SelectItem value="admin">Admin</SelectItem>}
+                   {allRoles.filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id)).map(r => (
+                     <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}{r.role_key === "boss" ? " (Default)" : ""}</SelectItem>
+                   ))}
                  </SelectContent>
                </Select>
                <p className="text-xs text-muted-foreground">Only the permanent admin ({SUPER_ADMIN_EMAIL}) can assign the Admin role.</p>
