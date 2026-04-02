@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Shield } from "lucide-react";
 import { toast } from "sonner";
+import { useCustomRoles } from "@/hooks/useCustomRoles";
 
-const ALL_ROLES = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"] as const;
 const ALL_PERMISSIONS = [
   { key: "view_dashboard", label: "View Dashboard" },
   { key: "view_data_entry", label: "View Data Entry (Read-Only)" },
@@ -20,6 +20,7 @@ const ALL_PERMISSIONS = [
   { key: "delete_agent_vip_entries", label: "Delete Agent & VIP Entries" },
   { key: "delete_sales_entries", label: "Delete Sales Entries" },
   { key: "delete_expenses", label: "Delete Expenses" },
+  { key: "delete_debts", label: "Delete Debts" },
   { key: "delete_rates", label: "Delete Rate History" },
   { key: "view_reports", label: "View Reports (Legacy)" },
   { key: "view_financial_report", label: "View Financial Report" },
@@ -35,16 +36,8 @@ const ALL_PERMISSIONS = [
   { key: "end_of_day", label: "End of Day" },
 ];
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  accountant: "Accountant",
-  data_manager: "Data Manager",
-  human_resource: "Human Resource",
-  cashier: "Cashier",
-  boss: "Boss",
-};
-
 const PermissionsManager = () => {
+  const { allRoles, loading: rolesLoading } = useCustomRoles();
   const [matrix, setMatrix] = useState<Record<string, Set<string>>>({});
   const [loading, setLoading] = useState(true);
 
@@ -55,9 +48,9 @@ const PermissionsManager = () => {
       return;
     }
     const m: Record<string, Set<string>> = {};
-    ALL_ROLES.forEach((r) => (m[r] = new Set()));
     data?.forEach((row: any) => {
-      if (m[row.role]) m[row.role].add(row.permission);
+      if (!m[row.role]) m[row.role] = new Set();
+      m[row.role].add(row.permission);
     });
     setMatrix(m);
     setLoading(false);
@@ -65,24 +58,35 @@ const PermissionsManager = () => {
 
   useEffect(() => {
     fetchPermissions();
+    const channel = supabase
+      .channel("permissions-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, () => fetchPermissions())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [fetchPermissions]);
 
   const toggleAll = async (role: string) => {
-    const allSelected = ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+    if (role === "admin") return;
+    const currentPerms = matrix[role] || new Set();
+    const allSelected = ALL_PERMISSIONS.every((p) => currentPerms.has(p.key));
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+
     if (allSelected) {
+      // Remove all
       for (const perm of ALL_PERMISSIONS) {
-        if (matrix[role]?.has(perm.key)) {
+        if (currentPerms.has(perm.key)) {
           await supabase.from("role_permissions").delete().eq("role", role).eq("permission", perm.key);
         }
       }
     } else {
+      // Add missing
       for (const perm of ALL_PERMISSIONS) {
-        if (!matrix[role]?.has(perm.key)) {
-          const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+        if (!currentPerms.has(perm.key)) {
           await supabase.from("role_permissions").insert({ role, permission: perm.key, company_id });
         }
       }
     }
+    // Optimistic update
     setMatrix((prev) => {
       const next = { ...prev };
       next[role] = new Set(allSelected ? [] : ALL_PERMISSIONS.map((p) => p.key));
@@ -92,6 +96,7 @@ const PermissionsManager = () => {
   };
 
   const toggle = async (role: string, permission: string) => {
+    if (role === "admin") return;
     const has = matrix[role]?.has(permission);
     if (has) {
       const { error } = await supabase
@@ -104,9 +109,10 @@ const PermissionsManager = () => {
         return;
       }
     } else {
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
       const { error } = await supabase
         .from("role_permissions")
-        .insert({ role, permission, company_id: await (await import("@/utils/getCompanyId")).getCompanyId() });
+        .insert({ role, permission, company_id });
       if (error) {
         toast.error("Failed to add permission");
         return;
@@ -115,7 +121,7 @@ const PermissionsManager = () => {
 
     setMatrix((prev) => {
       const next = { ...prev };
-      next[role] = new Set(prev[role]);
+      next[role] = new Set(prev[role] || []);
       if (has) next[role].delete(permission);
       else next[role].add(permission);
       return next;
@@ -124,7 +130,7 @@ const PermissionsManager = () => {
     toast.success(`Permission ${has ? "removed" : "granted"}`);
   };
 
-  if (loading) return <p className="text-muted-foreground text-sm">Loading permissions…</p>;
+  if (loading || rolesLoading) return <p className="text-muted-foreground text-sm">Loading permissions…</p>;
 
   return (
     <Card>
@@ -138,9 +144,9 @@ const PermissionsManager = () => {
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b">
               <th className="text-left py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20 min-w-[160px]">Permission</th>
-              {ALL_ROLES.map((role) => (
-                <th key={role} className="text-center py-3 px-2 font-semibold text-muted-foreground whitespace-nowrap">
-                  {ROLE_LABELS[role]}
+              {allRoles.map((role) => (
+                <th key={role.role_key} className="text-center py-3 px-2 font-semibold text-muted-foreground whitespace-nowrap">
+                  {role.display_name}
                 </th>
               ))}
             </tr>
@@ -149,12 +155,12 @@ const PermissionsManager = () => {
             {ALL_PERMISSIONS.map((perm) => (
               <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                 <td className="py-3 pr-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
-                {ALL_ROLES.map((role) => (
-                  <td key={role} className="text-center py-3 px-2">
+                {allRoles.map((role) => (
+                  <td key={role.role_key} className="text-center py-3 px-2">
                     <Switch
-                      checked={role === "admin" ? true : (matrix[role]?.has(perm.key) ?? false)}
-                      onCheckedChange={() => toggle(role, perm.key)}
-                      disabled={role === "admin"}
+                      checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
+                      onCheckedChange={() => toggle(role.role_key, perm.key)}
+                      disabled={role.role_key === "admin"}
                       className="mx-auto"
                     />
                   </td>
@@ -163,14 +169,15 @@ const PermissionsManager = () => {
             ))}
             <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
               <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
-              {ALL_ROLES.map((role) => {
-                const allSelected = role === "admin" ? true : ALL_PERMISSIONS.every((p) => matrix[role]?.has(p.key));
+              {allRoles.map((role) => {
+                const currentPerms = matrix[role.role_key] || new Set();
+                const allSelected = role.role_key === "admin" ? true : ALL_PERMISSIONS.every((p) => currentPerms.has(p.key));
                 return (
-                  <td key={role} className="text-center py-3 px-2">
+                  <td key={role.role_key} className="text-center py-3 px-2">
                     <Switch
                       checked={allSelected}
-                      onCheckedChange={() => toggleAll(role)}
-                      disabled={role === "admin"}
+                      onCheckedChange={() => toggleAll(role.role_key)}
+                      disabled={role.role_key === "admin"}
                       className="mx-auto"
                     />
                   </td>
