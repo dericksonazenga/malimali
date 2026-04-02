@@ -310,13 +310,17 @@ const DebtManagementPage = () => {
         <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
         <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
       </div>
-      {canEdit && (
+      {(canEdit || canDelete) && (
         <div className="flex gap-1">
-          {d.status !== "paid" && (
+          {d.status !== "paid" && canEdit && (
             <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
           )}
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          {canEdit && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          )}
         </div>
       )}
     </div>
