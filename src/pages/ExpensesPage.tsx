@@ -53,7 +53,7 @@ const ExpensesPage = () => {
     fetchExpenses();
     // Realtime subscription for expenses
     const channel = supabase
-      .channel("expenses-page-realtime")
+      .channel(`expenses-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

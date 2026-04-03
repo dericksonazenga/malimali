@@ -119,7 +119,7 @@ const AttendancePage = () => {
     fetchWorkers();
     fetchShiftStartTime();
     const channel = supabase
-      .channel("attendance-realtime")
+      .channel(`attendance-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchRecords())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

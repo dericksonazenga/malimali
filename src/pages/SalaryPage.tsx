@@ -78,7 +78,7 @@ const SalaryPage = () => {
   useEffect(() => {
     fetchWorkers();
     fetchPayments();
-    const ch1 = supabase.channel("salary-realtime")
+    const ch1 = supabase.channel(`salary-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchWorkers())
       .on("postgres_changes", { event: "*", schema: "public", table: "salary_payments" }, () => fetchPayments())
       .subscribe();

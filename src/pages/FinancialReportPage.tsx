@@ -45,7 +45,7 @@ const FinancialReportPage = () => {
   // Realtime for savings
   useEffect(() => {
     const channel = supabase
-      .channel("report-savings-realtime")
+      .channel(`report-savings-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_accounts" }, () => fetchSavings())
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_transactions" }, () => fetchSavings())
       .subscribe();

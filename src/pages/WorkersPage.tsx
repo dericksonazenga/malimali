@@ -88,7 +88,7 @@ const WorkersPage = () => {
   useEffect(() => {
     fetchWorkers();
     const channel = supabase
-      .channel("workers-list-realtime")
+      .channel(`workers-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "recruited_workers" }, () => fetchWorkers())
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchWorkers())
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchWorkers())
