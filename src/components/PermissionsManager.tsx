@@ -58,8 +58,9 @@ const PermissionsManager = () => {
 
   useEffect(() => {
     fetchPermissions();
+    const channelName = `permissions-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel("permissions-realtime")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, () => fetchPermissions())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

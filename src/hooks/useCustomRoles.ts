@@ -34,8 +34,9 @@ export const useCustomRoles = () => {
 
   useEffect(() => {
     fetchRoles();
+    const channelName = `custom-roles-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel("custom-roles-realtime")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "custom_roles" }, () => fetchRoles())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
