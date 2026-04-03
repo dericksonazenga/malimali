@@ -93,8 +93,9 @@ const DebtManagementPage = () => {
 
   useEffect(() => {
     fetchDebts();
+    const channelName = `debts-rt-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel("debts-realtime")
+      .channel(channelName)
       .on("postgres_changes", { event: "*", schema: "public", table: "debts" }, () => fetchDebts())
       .on("postgres_changes", { event: "*", schema: "public", table: "debt_payments" }, () => {
         fetchDebts();
