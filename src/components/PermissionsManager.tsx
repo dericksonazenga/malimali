@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomRoles } from "@/hooks/useCustomRoles";
+import { getCompanyId } from "@/utils/getCompanyId";
 
 const ALL_PERMISSIONS = [
   { key: "view_dashboard", label: "View Dashboard" },
@@ -40,9 +41,14 @@ const PermissionsManager = () => {
   const { allRoles, loading: rolesLoading } = useCustomRoles();
   const [matrix, setMatrix] = useState<Record<string, Set<string>>>({});
   const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const fetchPermissions = useCallback(async () => {
-    const { data, error } = await supabase.from("role_permissions").select("role, permission");
+    const company_id = await getCompanyId();
+    const { data, error } = await supabase
+      .from("role_permissions")
+      .select("role, permission")
+      .eq("company_id", company_id);
     if (error) {
       console.error("Failed to load permissions:", error);
       return;
@@ -70,56 +76,51 @@ const PermissionsManager = () => {
     if (role === "admin") return;
     const currentPerms = matrix[role] || new Set();
     const allSelected = ALL_PERMISSIONS.every((p) => currentPerms.has(p.key));
-    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+    const company_id = await getCompanyId();
 
-    if (allSelected) {
-      // Remove all
-      for (const perm of ALL_PERMISSIONS) {
-        if (currentPerms.has(perm.key)) {
-          await supabase.from("role_permissions").delete().eq("role", role).eq("permission", perm.key);
-        }
-      }
-    } else {
-      // Add missing
-      for (const perm of ALL_PERMISSIONS) {
-        if (!currentPerms.has(perm.key)) {
-          await supabase.from("role_permissions").insert({ role, permission: perm.key, company_id });
-        }
-      }
-    }
-    // Optimistic update
+    // Optimistic update first
     setMatrix((prev) => {
       const next = { ...prev };
       next[role] = new Set(allSelected ? [] : ALL_PERMISSIONS.map((p) => p.key));
       return next;
     });
-    toast.success(allSelected ? "All permissions removed" : "All permissions granted");
+
+    try {
+      if (allSelected) {
+        // Remove all permissions for this role in this company
+        const { error } = await supabase
+          .from("role_permissions")
+          .delete()
+          .eq("role", role)
+          .eq("company_id", company_id);
+        if (error) throw error;
+      } else {
+        // Add missing permissions
+        const toInsert = ALL_PERMISSIONS
+          .filter(perm => !currentPerms.has(perm.key))
+          .map(perm => ({ role, permission: perm.key, company_id }));
+        if (toInsert.length > 0) {
+          const { error } = await supabase.from("role_permissions").insert(toInsert);
+          if (error) throw error;
+        }
+      }
+      toast.success(allSelected ? "All permissions removed" : "All permissions granted");
+    } catch (err: any) {
+      toast.error("Failed to update permissions: " + err.message);
+      fetchPermissions(); // Revert optimistic update
+    }
   };
 
   const toggle = async (role: string, permission: string) => {
     if (role === "admin") return;
-    const has = matrix[role]?.has(permission);
-    if (has) {
-      const { error } = await supabase
-        .from("role_permissions")
-        .delete()
-        .eq("role", role)
-        .eq("permission", permission);
-      if (error) {
-        toast.error("Failed to remove permission");
-        return;
-      }
-    } else {
-      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-      const { error } = await supabase
-        .from("role_permissions")
-        .insert({ role, permission, company_id });
-      if (error) {
-        toast.error("Failed to add permission");
-        return;
-      }
-    }
+    const toggleKey = `${role}-${permission}`;
+    if (toggling === toggleKey) return; // Prevent double-click
+    setToggling(toggleKey);
 
+    const has = matrix[role]?.has(permission);
+    const company_id = await getCompanyId();
+
+    // Optimistic update first
     setMatrix((prev) => {
       const next = { ...prev };
       next[role] = new Set(prev[role] || []);
@@ -128,7 +129,28 @@ const PermissionsManager = () => {
       return next;
     });
 
-    toast.success(`Permission ${has ? "removed" : "granted"}`);
+    try {
+      if (has) {
+        const { error } = await supabase
+          .from("role_permissions")
+          .delete()
+          .eq("role", role)
+          .eq("permission", permission)
+          .eq("company_id", company_id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("role_permissions")
+          .insert({ role, permission, company_id });
+        if (error) throw error;
+      }
+      toast.success(`Permission ${has ? "removed" : "granted"}`);
+    } catch (err: any) {
+      toast.error("Failed to update permission: " + err.message);
+      fetchPermissions(); // Revert optimistic update
+    } finally {
+      setToggling(null);
+    }
   };
 
   if (loading || rolesLoading) return <p className="text-muted-foreground text-sm">Loading permissions…</p>;

@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { User, UserRole, Permission } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-
 
 interface AuthContextType {
   user: User | null;
@@ -28,10 +27,33 @@ const ALL_PERMISSIONS: Permission[] = [
 
 const USER_ROLES: string[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];
 
-const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
-  // Admins get all permissions automatically
-  if (role === "admin") return ALL_PERMISSIONS;
+const SESSION_CACHE_KEY = "malimali_user_cache";
 
+const cacheUser = (user: User | null, companyId: string | null) => {
+  if (user) {
+    try {
+      sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ user, companyId, ts: Date.now() }));
+    } catch {}
+  } else {
+    sessionStorage.removeItem(SESSION_CACHE_KEY);
+  }
+};
+
+const getCachedUser = (): { user: User; companyId: string | null } | null => {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Cache valid for 30 minutes
+    if (Date.now() - parsed.ts > 30 * 60 * 1000) return null;
+    return { user: parsed.user, companyId: parsed.companyId };
+  } catch {
+    return null;
+  }
+};
+
+const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
+  if (role === "admin") return ALL_PERMISSIONS;
   const { data, error } = await supabase
     .from("role_permissions")
     .select("permission")
@@ -53,10 +75,12 @@ const buildUser = async (profile: { user_id: string; display_name: string; role:
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const cached = getCachedUser();
+  const [user, setUser] = useState<User | null>(cached?.user ?? null);
+  const [loading, setLoading] = useState(!cached);
+  const [companyId, setCompanyId] = useState<string | null>(cached?.companyId ?? null);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+  const currentUserIdRef = useRef<string | null>(cached?.user?.id ?? null);
 
   const fetchProfile = async (supabaseUser: SupabaseUser) => {
     const { data, error } = await supabase
@@ -65,7 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .eq("user_id", supabaseUser.id)
       .single();
 
-    // Check system admin status
     const { data: sysAdmin } = await supabase.rpc("is_system_admin", { _user_id: supabaseUser.id });
     setIsSystemAdmin(!!sysAdmin);
 
@@ -76,22 +99,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? (metadataRole as UserRole)
         : "boss";
 
-      setUser((prev) => {
-        if (prev && prev.id === supabaseUser.id) {
-          return { ...prev, email: supabaseUser.email || prev.email };
-        }
-
-        return {
-          id: supabaseUser.id,
-          name:
-            (supabaseUser.user_metadata?.display_name as string | undefined) ||
-            supabaseUser.email?.split("@")[0] ||
-            "User",
-          email: supabaseUser.email || "",
-          role: fallbackRole,
-          permissions: fallbackRole === "admin" ? ALL_PERMISSIONS : [],
-        };
-      });
+      const fallbackUser: User = {
+        id: supabaseUser.id,
+        name:
+          (supabaseUser.user_metadata?.display_name as string | undefined) ||
+          supabaseUser.email?.split("@")[0] ||
+          "User",
+        email: supabaseUser.email || "",
+        role: fallbackRole,
+        permissions: fallbackRole === "admin" ? ALL_PERMISSIONS : [],
+      };
+      setUser(fallbackUser);
+      cacheUser(fallbackUser, null);
       return;
     }
 
@@ -99,23 +118,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const u = await buildUser(data);
     u.email = supabaseUser.email || "";
     setUser(u);
+    cacheUser(u, data.company_id);
   };
 
   useEffect(() => {
-    let currentUserId: string | null = null;
     let isMounted = true;
 
     const hydrateFromSession = async (sessionUser: SupabaseUser | null) => {
       if (!isMounted) return;
 
       if (!sessionUser) {
-        currentUserId = null;
+        currentUserIdRef.current = null;
         setUser(null);
         setLoading(false);
+        cacheUser(null, null);
         return;
       }
 
-      currentUserId = sessionUser.id;
+      currentUserIdRef.current = sessionUser.id;
       await fetchProfile(sessionUser);
       if (isMounted) setLoading(false);
     };
@@ -124,13 +144,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isMounted) return;
 
       if (!session?.user) {
-        currentUserId = null;
+        currentUserIdRef.current = null;
         setUser(null);
         setLoading(false);
+        cacheUser(null, null);
         return;
       }
 
-      currentUserId = session.user.id;
+      currentUserIdRef.current = session.user.id;
       setTimeout(() => {
         void fetchProfile(session.user);
       }, 0);
@@ -140,11 +161,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       void hydrateFromSession(session?.user ?? null);
     });
 
-    // Realtime listener for profile changes (e.g. role updated by admin)
+    // Realtime listener for profile and permission changes
+    const channelName = `auth-profile-sync-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel("auth-profile-sync")
+      .channel(channelName)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, async (payload) => {
-        if (currentUserId && payload.new && (payload.new as any).user_id === currentUserId) {
+        if (currentUserIdRef.current && payload.new && (payload.new as any).user_id === currentUserIdRef.current) {
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -152,7 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, async () => {
-        if (currentUserId) {
+        if (currentUserIdRef.current) {
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -195,7 +217,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setCompanyId(null);
     setIsSystemAdmin(false);
-    // Clear cached company id
+    cacheUser(null, null);
     (await import("@/utils/getCompanyId")).clearCompanyIdCache();
   };
 
