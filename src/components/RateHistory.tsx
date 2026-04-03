@@ -46,7 +46,7 @@ const RateHistory = () => {
   useEffect(() => {
     fetchHistory();
     const channel = supabase
-      .channel("rate-history-realtime")
+      .channel(`rate-history-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "rate_change_history" }, () => fetchHistory())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

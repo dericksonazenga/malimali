@@ -48,7 +48,7 @@ export const CommodityProvider = ({ children }: { children: ReactNode }) => {
     fetchCommodities();
 
     const channel = supabase
-      .channel("commodities-realtime")
+      .channel(`commodities-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "commodities" }, () => {
         fetchCommodities();
       })

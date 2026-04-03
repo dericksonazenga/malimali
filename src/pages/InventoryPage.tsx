@@ -63,7 +63,7 @@ const InventoryPage = () => {
   useEffect(() => {
     fetchAdjustments();
     const channel = supabase
-      .channel("stock-adjustments-realtime")
+      .channel(`stock-adj-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_adjustments" }, () => fetchAdjustments())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

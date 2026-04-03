@@ -94,7 +94,7 @@ const AdminPage = () => {
     fetchRecruits();
 
     const channel = supabase
-      .channel("admin-realtime")
+      .channel(`admin-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "recruited_workers" }, () => fetchRecruits())
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchProfiles())
       .subscribe();

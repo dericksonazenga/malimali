@@ -240,7 +240,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       "workers", "persistent_stock", "debts", "debt_payments",
     ];
     const channel = supabase
-      .channel("analytics-realtime")
+      .channel(`analytics-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: tables[0] }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: tables[1] }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: tables[2] }, () => fetchData())

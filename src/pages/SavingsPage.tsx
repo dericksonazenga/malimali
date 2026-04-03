@@ -79,7 +79,7 @@ const SavingsPage = () => {
 
   useEffect(() => {
     const channel = supabase
-      .channel("savings-realtime")
+      .channel(`savings-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_accounts" }, () => fetchAccounts())
       .on("postgres_changes", { event: "*", schema: "public", table: "savings_transactions" }, () => {
         if (selectedAccount) fetchTransactions(selectedAccount.id);

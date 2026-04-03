@@ -62,7 +62,7 @@ const DashboardPage = () => {
     fetchExpenses();
 
     const channel = supabase
-      .channel("dashboard-expenses-realtime")
+      .channel(`dashboard-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
       .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, () => fetchExpenses())
       .subscribe();

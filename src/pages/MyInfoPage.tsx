@@ -229,7 +229,7 @@ const MyInfoPage = () => {
     fetchData();
 
     const channel = supabase
-      .channel("my-info-realtime")
+      .channel(`my-info-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "workers" }, () => fetchData())
       .on("postgres_changes", { event: "*", schema: "public", table: "salary_payments" }, () => fetchData())

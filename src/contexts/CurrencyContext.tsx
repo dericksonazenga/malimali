@@ -51,7 +51,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for realtime changes
     const channel = supabase
-      .channel("app-settings-currency")
+      .channel(`currency-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, (payload: any) => {
         if (payload.new?.key === "global_currency") {
           setGlobalCurrencyCode(payload.new.value);

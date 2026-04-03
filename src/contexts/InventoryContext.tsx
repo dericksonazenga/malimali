@@ -128,7 +128,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     fetchPersistentStock();
 
     const channel = supabase
-      .channel("entries-realtime")
+      .channel(`entries-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "agent_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "vip_entries" }, () => fetchToday())
       .on("postgres_changes", { event: "*", schema: "public", table: "sales_entries" }, () => fetchToday())
