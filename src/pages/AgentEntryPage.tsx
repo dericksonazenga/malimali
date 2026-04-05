@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import AuditLogViewer from "@/components/AuditLogViewer";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { AgentEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
@@ -256,6 +257,8 @@ const AgentEntryPage = () => {
           })()}
         </CardContent>
       </Card>
+
+      <AuditLogViewer tableName="agent_entries" title="Agent Entry History" />
     </div>
   );
 };
