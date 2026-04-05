@@ -31,9 +31,14 @@ const ALL_PERMISSIONS = [
   { key: "manage_expenses", label: "Manage Expenses" },
   { key: "manage_inventory", label: "Manage Inventory" },
   { key: "adjust_stock", label: "Adjust Stock" },
-  { key: "manage_debts", label: "Manage Debts" },
+  { key: "manage_debts", label: "Manage Debts (Add Only)" },
+  { key: "pay_debts", label: "Pay Debts" },
+  { key: "edit_debts", label: "Edit Debts" },
   { key: "view_savings", label: "View Savings (Read-Only)" },
-  { key: "manage_savings", label: "Manage Savings (Add/Edit/Delete)" },
+  { key: "manage_savings", label: "Manage Savings (Deposit Only)" },
+  { key: "edit_savings", label: "Edit/Withdraw Savings" },
+  { key: "delete_savings", label: "Delete Savings" },
+  { key: "delete_history", label: "Delete History Records" },
   { key: "end_of_day", label: "End of Day" },
 ];
 
