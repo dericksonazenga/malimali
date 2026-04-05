@@ -38,6 +38,8 @@ interface SavingsTransaction {
 const SavingsPage = () => {
   const { user, hasPermission } = useAuth();
   const canManage = hasPermission("manage_savings");
+  const canEditSavings = hasPermission("edit_savings") || user?.role === "admin";
+  const canDeleteSavings = hasPermission("delete_savings") || user?.role === "admin";
   const canView = hasPermission("view_savings") || canManage;
 
   const [accounts, setAccounts] = useState<SavingsAccount[]>([]);
