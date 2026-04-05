@@ -38,6 +38,8 @@ interface SavingsTransaction {
 const SavingsPage = () => {
   const { user, hasPermission } = useAuth();
   const canManage = hasPermission("manage_savings");
+  const canEditSavings = hasPermission("edit_savings") || user?.role === "admin";
+  const canDeleteSavings = hasPermission("delete_savings") || user?.role === "admin";
   const canView = hasPermission("view_savings") || canManage;
 
   const [accounts, setAccounts] = useState<SavingsAccount[]>([]);
@@ -375,25 +377,31 @@ const SavingsPage = () => {
                         </Button>
                         {canManage && (
                           <>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                              setSelectedAccount(a);
-                              setAmount("");
-                              setPaymentMethod("cash");
-                              setNotes("");
-                              setShowWithdrawDialog(true);
-                            }} title="Withdraw">
-                              <ArrowUpFromLine className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                              setSelectedAccount(a);
-                              setEditName(a.customer_name);
-                              setShowEditDialog(true);
-                            }} title="Edit">
-                              <Edit className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(a)} title="Delete">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                            {canEditSavings && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                setSelectedAccount(a);
+                                setAmount("");
+                                setPaymentMethod("cash");
+                                setNotes("");
+                                setShowWithdrawDialog(true);
+                              }} title="Withdraw">
+                                <ArrowUpFromLine className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {canEditSavings && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                                setSelectedAccount(a);
+                                setEditName(a.customer_name);
+                                setShowEditDialog(true);
+                              }} title="Edit">
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {canDeleteSavings && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(a)} title="Delete">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>
@@ -423,17 +431,23 @@ const SavingsPage = () => {
                   </Button>
                   {canManage && (
                     <>
-                      <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => {
-                        setSelectedAccount(a); setAmount(""); setPaymentMethod("cash"); setNotes(""); setShowWithdrawDialog(true);
-                      }}>
-                        <ArrowUpFromLine className="w-3 h-3 mr-1" /> Withdraw
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-                        setSelectedAccount(a); setEditName(a.customer_name); setShowEditDialog(true);
-                      }}><Edit className="w-3 h-3" /></Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(a)}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      {canEditSavings && (
+                        <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => {
+                          setSelectedAccount(a); setAmount(""); setPaymentMethod("cash"); setNotes(""); setShowWithdrawDialog(true);
+                        }}>
+                          <ArrowUpFromLine className="w-3 h-3 mr-1" /> Withdraw
+                        </Button>
+                      )}
+                      {canEditSavings && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                          setSelectedAccount(a); setEditName(a.customer_name); setShowEditDialog(true);
+                        }}><Edit className="w-3 h-3" /></Button>
+                      )}
+                      {canDeleteSavings && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(a)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -554,7 +568,7 @@ const SavingsPage = () => {
       </Dialog>
 
       {/* Audit Log */}
-      <AuditLogViewer tableName="savings_accounts" title="Savings Change History" allowDelete />
+      <AuditLogViewer tableName="savings_accounts" title="Savings Change History" />
     </div>
   );
 };

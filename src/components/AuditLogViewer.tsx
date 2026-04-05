@@ -25,7 +25,7 @@ interface AuditLogViewerProps {
   tableName: string;
   title?: string;
   limit?: number;
-  allowDelete?: boolean;
+  allowDelete?: boolean; // kept for backward compat, but delete_history permission is primary
 }
 
 const actionColors: Record<string, string> = {
@@ -61,13 +61,13 @@ const formatChanges = (oldData: Record<string, any> | null, newData: Record<stri
   return "—";
 };
 
-const AuditLogViewer = ({ tableName, title, limit = 50, allowDelete = false }: AuditLogViewerProps) => {
-  const { hasPermission } = useAuth();
+const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) => {
+  const { user, hasPermission } = useAuth();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
 
-  const canDelete = allowDelete && (hasPermission("manage_savings") || hasPermission("delete_entries"));
+  const canDelete = hasPermission("delete_history") || (user?.role === "admin");
 
   const fetchLog = useCallback(async () => {
     const { data } = await supabase
@@ -82,7 +82,7 @@ const AuditLogViewer = ({ tableName, title, limit = 50, allowDelete = false }: A
   useEffect(() => {
     fetchLog();
     const channel = supabase
-      .channel(`audit-${tableName}`)
+      .channel(`audit-${tableName}-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_log" }, () => fetchLog())
       .subscribe();
     return () => { supabase.removeChannel(channel); };

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import AuditLogViewer from "@/components/AuditLogViewer";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { VipEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
@@ -244,6 +245,8 @@ const VipEntryPage = () => {
           })()}
         </CardContent>
       </Card>
+
+      <AuditLogViewer tableName="vip_entries" title="VIP Entry History" />
     </div>
   );
 };

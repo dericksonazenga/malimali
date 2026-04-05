@@ -35,6 +35,11 @@ export type Permission =
   | "edit_records"
   | "view_savings"
   | "manage_savings"
+  | "edit_savings"
+  | "delete_savings"
+  | "pay_debts"
+  | "edit_debts"
+  | "delete_history"
   | "end_of_day";
 
 export interface Commodity {

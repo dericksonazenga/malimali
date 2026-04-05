@@ -22,6 +22,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "manage_workers", "manage_expenses", "manage_inventory", "adjust_stock",
   "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses", "delete_debts",
   "delete_rates", "manage_debts", "edit_records", "view_savings", "manage_savings",
+  "edit_savings", "delete_savings", "pay_debts", "edit_debts", "delete_history",
   "end_of_day",
 ];
 

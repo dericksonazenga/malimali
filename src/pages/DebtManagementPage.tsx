@@ -50,6 +50,8 @@ const DebtManagementPage = () => {
   const { symbol } = useCurrency();
   const { user, hasPermission } = useAuth();
   const canEdit = user?.role === "admin" || hasPermission("manage_debts") || hasPermission("edit_records");
+  const canPay = user?.role === "admin" || hasPermission("pay_debts");
+  const canEditDebt = user?.role === "admin" || hasPermission("edit_debts") || hasPermission("edit_records");
   const canDelete = user?.role === "admin" || hasPermission("delete_debts");
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
@@ -282,10 +284,10 @@ const DebtManagementPage = () => {
         <TableCell>{getStatusBadge(d.status)}</TableCell>
         <TableCell>
           <div className="flex items-center justify-end gap-1">
-            {d.status !== "paid" && canEdit && (
+            {d.status !== "paid" && canPay && (
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
             )}
-            {canEdit && (
+            {canEditDebt && (
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
             )}
             {canDelete && (
@@ -311,12 +313,12 @@ const DebtManagementPage = () => {
         <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
         <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
       </div>
-      {(canEdit || canDelete) && (
+      {(canPay || canEditDebt || canDelete) && (
         <div className="flex gap-1">
-          {d.status !== "paid" && canEdit && (
+          {d.status !== "paid" && canPay && (
             <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
           )}
-          {canEdit && (
+          {canEditDebt && (
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
           )}
           {canDelete && (
