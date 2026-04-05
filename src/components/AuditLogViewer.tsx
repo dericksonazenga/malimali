@@ -25,7 +25,7 @@ interface AuditLogViewerProps {
   tableName: string;
   title?: string;
   limit?: number;
-  allowDelete?: boolean;
+  allowDelete?: boolean; // kept for backward compat, but delete_history permission is primary
 }
 
 const actionColors: Record<string, string> = {
