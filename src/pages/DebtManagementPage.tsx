@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCommodities } from "@/contexts/CommodityContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users } from "lucide-react";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,6 +41,30 @@ interface DebtPayment {
   paid_to_name: string;
 }
 
+interface Creditor {
+  id: string;
+  customer_name: string;
+  commodity: string;
+  kg: number;
+  rate: number;
+  total_amount: number;
+  paid_amount: number;
+  balance: number;
+  status: string;
+  recorded_by_name: string;
+  created_at: string;
+}
+
+interface CreditorPayment {
+  id: string;
+  creditor_id: string;
+  amount: number;
+  payment_method: string;
+  paid_by_name: string;
+  notes: string;
+  created_at: string;
+}
+
 interface Deduction {
   id: string;
   label: string;
@@ -49,6 +74,7 @@ interface Deduction {
 const DebtManagementPage = () => {
   const { symbol } = useCurrency();
   const { user, hasPermission } = useAuth();
+  const { commodities } = useCommodities();
   const canEdit = user?.role === "admin" || hasPermission("manage_debts") || hasPermission("edit_records");
   const canPay = user?.role === "admin" || hasPermission("pay_debts");
   const canEditDebt = user?.role === "admin" || hasPermission("edit_debts") || hasPermission("edit_records");
@@ -59,10 +85,15 @@ const DebtManagementPage = () => {
 
   // Add form
   const [showAdd, setShowAdd] = useState(false);
-  const [debtType, setDebtType] = usePersistedState<"advance" | "debt">("debt_type", "advance");
+  const [debtType, setDebtType] = usePersistedState<"advance" | "debt" | "creditor">("debt_type", "advance");
   const [customerName, setCustomerName] = usePersistedState("debt_customerName", "");
   const [description, setDescription] = usePersistedState("debt_description", "");
   const [totalAmount, setTotalAmount] = usePersistedState("debt_totalAmount", "");
+
+  // Creditor-specific fields
+  const [creditorCommodity, setCreditorCommodity] = usePersistedState("creditor_commodity", "");
+  const [creditorKg, setCreditorKg] = usePersistedState("creditor_kg", "");
+  const [creditorRate, setCreditorRate] = usePersistedState("creditor_rate", "");
 
   // Deduction dialog for debt (money_out)
   const [showDeduction, setShowDeduction] = useState(false);
@@ -84,6 +115,22 @@ const DebtManagementPage = () => {
   const [payToName, setPayToName] = useState("");
   const [payments, setPayments] = useState<DebtPayment[]>([]);
 
+  // Creditors
+  const [creditors, setCreditors] = useState<Creditor[]>([]);
+  const [editCreditor, setEditCreditor] = useState<Creditor | null>(null);
+  const [editCreditorName, setEditCreditorName] = useState("");
+  const [editCreditorCommodity, setEditCreditorCommodity] = useState("");
+  const [editCreditorKg, setEditCreditorKg] = useState("");
+  const [editCreditorRate, setEditCreditorRate] = useState("");
+  const [editCreditorAmount, setEditCreditorAmount] = useState("");
+
+  // Creditor payment
+  const [payCreditor, setPayCreditor] = useState<Creditor | null>(null);
+  const [creditorPayAmount, setCreditorPayAmount] = useState("");
+  const [creditorPayNotes, setCreditorPayNotes] = useState("");
+  const [creditorPayMethod, setCreditorPayMethod] = useState("cash");
+  const [creditorPayments, setCreditorPayments] = useState<CreditorPayment[]>([]);
+
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
       .from("debts")
@@ -93,8 +140,17 @@ const DebtManagementPage = () => {
     setLoading(false);
   }, []);
 
+  const fetchCreditors = useCallback(async () => {
+    const { data } = await supabase
+      .from("creditors")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setCreditors(data.map((c: any) => ({ ...c, kg: Number(c.kg), rate: Number(c.rate), total_amount: Number(c.total_amount), paid_amount: Number(c.paid_amount), balance: Number(c.balance) })));
+  }, []);
+
   useEffect(() => {
     fetchDebts();
+    fetchCreditors();
     const channelName = `debts-rt-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
@@ -103,9 +159,14 @@ const DebtManagementPage = () => {
         fetchDebts();
         if (payDebt) fetchPayments(payDebt.id);
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "creditors" }, () => fetchCreditors())
+      .on("postgres_changes", { event: "*", schema: "public", table: "creditor_payments" }, () => {
+        fetchCreditors();
+        if (payCreditor) fetchCreditorPayments(payCreditor.id);
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchDebts]);
+  }, [fetchDebts, fetchCreditors]);
 
   const fetchPayments = async (debtId: string) => {
     const { data } = await supabase
@@ -114,6 +175,15 @@ const DebtManagementPage = () => {
       .eq("debt_id", debtId)
       .order("created_at", { ascending: false });
     if (data) setPayments(data.map((p: any) => ({ ...p, amount: Number(p.amount) })));
+  };
+
+  const fetchCreditorPayments = async (creditorId: string) => {
+    const { data } = await supabase
+      .from("creditor_payments")
+      .select("*")
+      .eq("creditor_id", creditorId)
+      .order("created_at", { ascending: false });
+    if (data) setCreditorPayments(data.map((p: any) => ({ ...p, amount: Number(p.amount) })));
   };
 
   const grossAmount = parseFloat(totalAmount) || 0;
@@ -136,12 +206,39 @@ const DebtManagementPage = () => {
   };
 
   const handleAddClick = () => {
+    if (debtType === "creditor") {
+      handleAddCreditor();
+      return;
+    }
     if (!customerName.trim() || !totalAmount) { toast.error("Fill required fields"); return; }
     if (debtType === "debt") {
       setShowDeduction(true);
     } else {
       saveDebt(parseFloat(totalAmount));
     }
+  };
+
+  const handleAddCreditor = async () => {
+    if (!customerName.trim() || !creditorCommodity || !creditorKg) { toast.error("Fill required fields"); return; }
+    const kg = parseFloat(creditorKg) || 0;
+    const rate = parseFloat(creditorRate) || 0;
+    const amount = kg * rate;
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+    const { data, error } = await supabase.from("creditors").insert({
+      customer_name: customerName.trim(),
+      commodity: creditorCommodity,
+      kg,
+      rate,
+      total_amount: amount,
+      balance: amount,
+      recorded_by: user?.id,
+      recorded_by_name: user?.name || "Unknown",
+      company_id,
+    }).select("id").single();
+    if (error) { toast.error("Failed to add creditor"); return; }
+    await logAuditEvent({ tableName: "creditors", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), commodity: creditorCommodity, kg, rate, total_amount: amount }, changedByName: user?.name || "Unknown" });
+    setCustomerName(""); setCreditorCommodity(""); setCreditorKg(""); setCreditorRate(""); setShowAdd(false);
+    toast.success("Creditor record added");
   };
 
   const handleConfirmDeduction = () => {
@@ -154,7 +251,6 @@ const DebtManagementPage = () => {
   };
 
   const saveDebt = async (amt: number, desc?: string) => {
-    // status: "unpaid" = advance payment, "money_out" = debt
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase.from("debts").insert({
       customer_name: customerName.trim(),
@@ -187,6 +283,28 @@ const DebtManagementPage = () => {
     if (error) { toast.error("Failed to update"); return; }
     await logAuditEvent({ tableName: "debts", recordId: editDebt.id, action: "update", oldData, newData: { customer_name: editName, description: editDesc, total_amount: amt }, changedByName: user?.name || "Unknown" });
     setEditDebt(null);
+    toast.success("Updated");
+  };
+
+  const handleEditCreditor = async () => {
+    if (!editCreditor) return;
+    const kg = parseFloat(editCreditorKg) || 0;
+    const rate = parseFloat(editCreditorRate) || 0;
+    const amt = parseFloat(editCreditorAmount) || kg * rate;
+    const newBalance = amt - editCreditor.paid_amount;
+    const { error } = await supabase.from("creditors").update({
+      customer_name: editCreditorName,
+      commodity: editCreditorCommodity,
+      kg,
+      rate,
+      total_amount: amt,
+      balance: newBalance,
+      status: newBalance <= 0 ? "paid" : "unpaid",
+      updated_at: new Date().toISOString(),
+    }).eq("id", editCreditor.id);
+    if (error) { toast.error("Failed to update"); return; }
+    await logAuditEvent({ tableName: "creditors", recordId: editCreditor.id, action: "update", oldData: { customer_name: editCreditor.customer_name }, newData: { customer_name: editCreditorName, kg, rate, total_amount: amt }, changedByName: user?.name || "Unknown" });
+    setEditCreditor(null);
     toast.success("Updated");
   };
 
@@ -226,6 +344,41 @@ const DebtManagementPage = () => {
     setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
   };
 
+  const handleCreditorPayment = async () => {
+    if (!payCreditor || !creditorPayAmount) { toast.error("Enter payment amount"); return; }
+    const amt = parseFloat(creditorPayAmount);
+    if (amt <= 0) { toast.error("Invalid amount"); return; }
+    if (amt > payCreditor.balance) { toast.error("Amount exceeds balance"); return; }
+
+    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+    const { error } = await supabase.from("creditor_payments").insert({
+      creditor_id: payCreditor.id,
+      amount: amt,
+      payment_method: creditorPayMethod,
+      paid_by: user?.id,
+      paid_by_name: user?.name || "Unknown",
+      notes: creditorPayNotes,
+      company_id,
+    });
+    if (error) { toast.error("Payment failed"); return; }
+
+    const newPaid = payCreditor.paid_amount + amt;
+    const newBalance = payCreditor.total_amount - newPaid;
+    await supabase.from("creditors").update({
+      paid_amount: newPaid,
+      balance: newBalance,
+      status: newBalance <= 0 ? "paid" : "unpaid",
+      updated_at: new Date().toISOString(),
+    }).eq("id", payCreditor.id);
+
+    await logAuditEvent({ tableName: "creditors", recordId: payCreditor.id, action: "payment", newData: { payment_amount: amt, method: creditorPayMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
+    setCreditorPayAmount(""); setCreditorPayNotes(""); setCreditorPayMethod("cash");
+    toast.success("Payment recorded");
+    fetchCreditorPayments(payCreditor.id);
+    fetchCreditors();
+    setPayCreditor({ ...payCreditor, paid_amount: newPaid, balance: newBalance });
+  };
+
   const handleDelete = async (id: string) => {
     const debt = debts.find(d => d.id === id);
     if (!confirm("Delete this record?")) return;
@@ -235,18 +388,33 @@ const DebtManagementPage = () => {
     toast.success("Deleted");
   };
 
+  const handleDeleteCreditor = async (id: string) => {
+    const creditor = creditors.find(c => c.id === id);
+    if (!confirm("Delete this creditor record?")) return;
+    const { error } = await supabase.from("creditors").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete"); return; }
+    if (creditor) await logAuditEvent({ tableName: "creditors", recordId: id, action: "delete", oldData: { customer_name: creditor.customer_name, commodity: creditor.commodity, total_amount: creditor.total_amount }, changedByName: user?.name || "Unknown" });
+    toast.success("Deleted");
+  };
+
   const filtered = debts.filter(d =>
     d.customer_name.toLowerCase().includes(search.toLowerCase())
   );
+  const filteredCreditors = creditors.filter(c =>
+    c.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+    c.commodity.toLowerCase().includes(search.toLowerCase())
+  );
 
-  // Separate categories
   const advanceDebts = filtered.filter(d => d.status === "unpaid");
   const debtDebts = filtered.filter(d => d.status === "money_out");
   const paidDebts = filtered.filter(d => d.status === "paid");
+  const unpaidCreditors = filteredCreditors.filter(c => c.status !== "paid");
+  const paidCreditors = filteredCreditors.filter(c => c.status === "paid");
 
-  const totalOutstanding = debts.reduce((s, d) => s + d.balance, 0);
+  const totalOutstanding = debts.reduce((s, d) => s + d.balance, 0) + creditors.reduce((s, c) => s + c.balance, 0);
   const totalAdvance = debts.filter(d => d.status === "unpaid").reduce((s, d) => s + d.balance, 0);
   const totalDebt = debts.filter(d => d.status === "money_out").reduce((s, d) => s + d.balance, 0);
+  const totalCreditors = creditors.filter(c => c.status !== "paid").reduce((s, c) => s + c.balance, 0);
 
   const parseDeductionAmount = (description: string): number => {
     const match = description.match(/Deductions:[^|]*\|/);
@@ -329,6 +497,77 @@ const DebtManagementPage = () => {
     </div>
   );
 
+  const renderCreditorRow = (c: Creditor) => (
+    <TableRow key={c.id}>
+      <TableCell className="font-medium">{c.customer_name}</TableCell>
+      <TableCell>{c.commodity}</TableCell>
+      <TableCell className="text-right font-mono">{c.kg.toLocaleString()} kg</TableCell>
+      <TableCell className="text-right font-mono">{symbol}{c.rate.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">{c.recorded_by_name}</TableCell>
+      <TableCell>
+        <div className="flex items-center justify-end gap-1">
+          {c.status !== "paid" && canPay && (
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+          )}
+          {canEditDebt && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+              setEditCreditor(c);
+              setEditCreditorName(c.customer_name);
+              setEditCreditorCommodity(c.commodity);
+              setEditCreditorKg(String(c.kg));
+              setEditCreditorRate(String(c.rate));
+              setEditCreditorAmount(String(c.total_amount));
+            }}><Edit className="w-3.5 h-3.5" /></Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+
+  const renderCreditorCard = (c: Creditor) => (
+    <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
+      <div className="flex justify-between items-start">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm truncate">{c.customer_name}</p>
+          <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate}</p>
+        </div>
+        {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
+      {(canPay || canEditDebt || canDelete) && (
+        <div className="flex gap-1">
+          {c.status !== "paid" && canPay && (
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+          )}
+          {canEditDebt && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+              setEditCreditor(c);
+              setEditCreditorName(c.customer_name);
+              setEditCreditorCommodity(c.commodity);
+              setEditCreditorKg(String(c.kg));
+              setEditCreditorRate(String(c.rate));
+              setEditCreditorAmount(String(c.total_amount));
+            }}><Edit className="w-3.5 h-3.5" /></Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   const desktopTableHeaders = (
     <TableHeader>
       <TableRow>
@@ -345,8 +584,23 @@ const DebtManagementPage = () => {
     </TableHeader>
   );
 
+  const creditorTableHeaders = (
+    <TableHeader>
+      <TableRow>
+        <TableHead>Customer</TableHead>
+        <TableHead>Commodity</TableHead>
+        <TableHead className="text-right">Kg</TableHead>
+        <TableHead className="text-right">Rate</TableHead>
+        <TableHead className="text-right">Amount</TableHead>
+        <TableHead className="text-right">Paid</TableHead>
+        <TableHead className="text-right">Balance</TableHead>
+        <TableHead>Recorded By</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+
   const handleExportCSV = async () => {
-    // Fetch all payments
     const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
     const rows: string[][] = [
       ["Type", "Customer", "Description", "Total Amount", "Paid", "Balance", "Status", "Created At", "Payment Amount", "Payment Method", "Paid By", "Paid To", "Payment Notes", "Payment Date"]
@@ -354,16 +608,23 @@ const DebtManagementPage = () => {
     for (const d of debts) {
       const dPayments = (allPayments || []).filter((p: any) => p.debt_id === d.id);
       if (dPayments.length === 0) {
-        rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), "", "", "", "", "", ""]);
+        rows.push([d.status === "unpaid" ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), "", "", "", "", "", ""]);
       } else {
         for (const p of dPayments) {
-          rows.push([d.description.startsWith("advance") || d.status.includes("advance") ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), String(p.amount), p.payment_method, p.paid_by_name, p.paid_to_name, p.notes || "", format(new Date(p.created_at), "yyyy-MM-dd HH:mm")]);
+          rows.push([d.status === "unpaid" ? "Advance" : "Debt", d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status, format(new Date(d.created_at), "yyyy-MM-dd HH:mm"), String(p.amount), p.payment_method, p.paid_by_name, p.paid_to_name, p.notes || "", format(new Date(p.created_at), "yyyy-MM-dd HH:mm")]);
         }
       }
+    }
+    // Add creditors
+    for (const c of creditors) {
+      rows.push(["Creditor", c.customer_name, `${c.commodity} - ${c.kg}kg @ ${c.rate}`, String(c.total_amount), String(c.paid_amount), String(c.balance), c.status, format(new Date(c.created_at), "yyyy-MM-dd HH:mm"), "", "", c.recorded_by_name, "", "", ""]);
     }
     downloadCSV(rows, `debt-management-${format(new Date(), "yyyy-MM-dd")}.csv`);
     toast.success("Debt report exported!");
   };
+
+  // Auto-calculate creditor amount
+  const creditorAutoAmount = (parseFloat(creditorKg) || 0) * (parseFloat(creditorRate) || 0);
 
   return (
     <div className="space-y-4 max-w-6xl">
@@ -386,41 +647,68 @@ const DebtManagementPage = () => {
             <div className="p-4 bg-accent rounded-lg border border-border space-y-3">
               <div className="flex gap-2">
                 <Button type="button" variant={debtType === "advance" ? "default" : "outline"} className="flex-1 gap-2" onClick={() => setDebtType("advance")}>
-                  <ArrowDownCircle className="w-4 h-4" /> Advance Payment
+                  <ArrowDownCircle className="w-4 h-4" /> Advance
                 </Button>
                 <Button type="button" variant={debtType === "debt" ? "default" : "outline"} className="flex-1 gap-2" onClick={() => setDebtType("debt")}>
                   <ArrowUpCircle className="w-4 h-4" /> Debt
                 </Button>
+                <Button type="button" variant={debtType === "creditor" ? "default" : "outline"} className="flex-1 gap-2" onClick={() => setDebtType("creditor")}>
+                  <Users className="w-4 h-4" /> Creditor
+                </Button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
-                <div className="space-y-1"><Label className="text-xs">Description</Label><Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Details" /></div>
-                <div className="space-y-1"><Label className="text-xs">{debtType === "debt" ? "Gross " : ""}Amount ({symbol}) *</Label><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" /></div>
-                <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save</Button></div>
-              </div>
+
+              {debtType === "creditor" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                  <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Commodity *</Label>
+                    <Select value={creditorCommodity} onValueChange={setCreditorCommodity}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {commodities.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Kg *</Label><Input type="number" value={creditorKg} onChange={e => setCreditorKg(e.target.value)} placeholder="0" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Rate ({symbol})</Label><Input type="number" value={creditorRate} onChange={e => setCreditorRate(e.target.value)} placeholder="0" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Amount ({symbol})</Label><Input type="number" value={creditorAutoAmount || ""} disabled className="bg-muted" /></div>
+                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save</Button></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
+                  <div className="space-y-1"><Label className="text-xs">Description</Label><Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Details" /></div>
+                  <div className="space-y-1"><Label className="text-xs">{debtType === "debt" ? "Gross " : ""}Amount ({symbol}) *</Label><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" /></div>
+                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save</Button></div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
               <p className="text-xs text-muted-foreground">Total Outstanding</p>
               <p className="text-lg font-bold font-mono text-destructive">{symbol}{totalOutstanding.toLocaleString()}</p>
             </div>
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Advance Payment</p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Advance</p>
               <p className="text-lg font-bold font-mono">{symbol}{totalAdvance.toLocaleString()}</p>
             </div>
             <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
               <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3" /> Debt</p>
               <p className="text-lg font-bold font-mono">{symbol}{totalDebt.toLocaleString()}</p>
             </div>
+            <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Creditors</p>
+              <p className="text-lg font-bold font-mono">{symbol}{totalCreditors.toLocaleString()}</p>
+            </div>
           </div>
 
-          {/* Advance Payment Section */}
+          {/* Advance Section */}
           {advanceDebts.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance Payments ({advanceDebts.length})</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance ({advanceDebts.length})</h3>
               <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{advanceDebts.map(renderDebtRow)}</TableBody></Table></div>
               <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{advanceDebts.map(renderDebtCard)}</div>
             </div>
@@ -435,16 +723,35 @@ const DebtManagementPage = () => {
             </div>
           )}
 
-          {/* Paid Section */}
-          {paidDebts.length > 0 && (
+          {/* Creditors Section */}
+          {unpaidCreditors.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-2 text-green-600">✓ Paid ({paidDebts.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{paidDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidDebts.map(renderDebtCard)}</div>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> Creditors ({unpaidCreditors.length})</h3>
+              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{unpaidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
+              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{unpaidCreditors.map(renderCreditorCard)}</div>
             </div>
           )}
 
-          {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No records found</p>}
+          {/* Paid Section */}
+          {(paidDebts.length > 0 || paidCreditors.length > 0) && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-green-600">✓ Paid ({paidDebts.length + paidCreditors.length})</h3>
+              {paidDebts.length > 0 && (
+                <>
+                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{paidDebts.map(renderDebtRow)}</TableBody></Table></div>
+                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidDebts.map(renderDebtCard)}</div>
+                </>
+              )}
+              {paidCreditors.length > 0 && (
+                <>
+                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{paidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
+                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidCreditors.map(renderCreditorCard)}</div>
+                </>
+              )}
+            </div>
+          )}
+
+          {filtered.length === 0 && filteredCreditors.length === 0 && <p className="text-center text-muted-foreground py-8">No records found</p>}
         </CardContent>
       </Card>
 
@@ -493,7 +800,7 @@ const DebtManagementPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* Edit Debt Dialog */}
       <Dialog open={!!editDebt} onOpenChange={() => setEditDebt(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -509,7 +816,33 @@ const DebtManagementPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Dialog */}
+      {/* Edit Creditor Dialog */}
+      <Dialog open={!!editCreditor} onOpenChange={() => setEditCreditor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Creditor</DialogTitle>
+            <DialogDescription>Update creditor details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Customer</Label><Input value={editCreditorName} onChange={e => setEditCreditorName(e.target.value)} /></div>
+            <div className="space-y-1">
+              <Label>Commodity</Label>
+              <Select value={editCreditorCommodity} onValueChange={setEditCreditorCommodity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {commodities.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Kg</Label><Input type="number" value={editCreditorKg} onChange={e => setEditCreditorKg(e.target.value)} /></div>
+            <div className="space-y-1"><Label>Rate ({symbol})</Label><Input type="number" value={editCreditorRate} onChange={e => setEditCreditorRate(e.target.value)} /></div>
+            <div className="space-y-1"><Label>Total Amount ({symbol})</Label><Input type="number" value={editCreditorAmount} onChange={e => setEditCreditorAmount(e.target.value)} /></div>
+            <Button onClick={handleEditCreditor} className="w-full">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Debt Payment Dialog */}
       <Dialog open={!!payDebt} onOpenChange={() => setPayDebt(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -539,7 +872,6 @@ const DebtManagementPage = () => {
             <Button onClick={handlePayment} className="w-full">Record Payment</Button>
           </div>
 
-          {/* Payment History */}
           {payments.length > 0 && (
             <div className="mt-4 space-y-2">
               <h4 className="text-sm font-semibold">Payment History</h4>
@@ -557,6 +889,57 @@ const DebtManagementPage = () => {
                       <span>By: <strong>{p.paid_by_name || "—"}</strong></span>
                       {p.paid_to_name && <span> → To: <strong>{p.paid_to_name}</strong></span>}
                     </div>
+                    {p.notes && <p className="text-xs italic">{p.notes}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Creditor Payment Dialog */}
+      <Dialog open={!!payCreditor} onOpenChange={() => setPayCreditor(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Record Payment — {payCreditor?.customer_name}</DialogTitle>
+            <DialogDescription>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-sm text-muted-foreground">Balance</span>
+                <span className="font-semibold">{symbol}{payCreditor?.balance.toLocaleString()}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">{payCreditor?.commodity} — {payCreditor?.kg} kg</div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Amount ({symbol}) *</Label><Input type="number" value={creditorPayAmount} onChange={e => setCreditorPayAmount(e.target.value)} placeholder="0" /></div>
+            <div className="space-y-1">
+              <Label>Payment Method *</Label>
+              <Select value={creditorPayMethod} onValueChange={setCreditorPayMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  <SelectItem value="bank">Bank</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Notes</Label><Input value={creditorPayNotes} onChange={e => setCreditorPayNotes(e.target.value)} placeholder="Optional" /></div>
+            <Button onClick={handleCreditorPayment} className="w-full">Record Payment</Button>
+          </div>
+
+          {creditorPayments.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-semibold">Payment History</h4>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {creditorPayments.map(p => (
+                  <div key={p.id} className="p-2.5 bg-accent rounded-lg text-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-semibold">{symbol}{p.amount.toLocaleString()}</span>
+                      <Badge variant="outline" className="text-xs capitalize">{p.payment_method}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{format(new Date(p.created_at), "MMM dd, yyyy HH:mm")}</div>
+                    <div className="text-xs text-muted-foreground">By: <strong>{p.paid_by_name || "—"}</strong></div>
                     {p.notes && <p className="text-xs italic">{p.notes}</p>}
                   </div>
                 ))}

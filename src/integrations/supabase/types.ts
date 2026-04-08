@@ -334,6 +334,116 @@ export type Database = {
         }
         Relationships: []
       }
+      creditor_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          creditor_id: string
+          id: string
+          notes: string | null
+          paid_by: string | null
+          paid_by_name: string
+          payment_method: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          created_at?: string
+          creditor_id: string
+          id?: string
+          notes?: string | null
+          paid_by?: string | null
+          paid_by_name?: string
+          payment_method?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          creditor_id?: string
+          id?: string
+          notes?: string | null
+          paid_by?: string | null
+          paid_by_name?: string
+          payment_method?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creditor_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creditor_payments_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "creditors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creditors: {
+        Row: {
+          balance: number
+          commodity: string
+          company_id: string
+          created_at: string
+          customer_name: string
+          id: string
+          kg: number
+          paid_amount: number
+          rate: number
+          recorded_by: string | null
+          recorded_by_name: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          commodity: string
+          company_id: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          kg?: number
+          paid_amount?: number
+          rate?: number
+          recorded_by?: string | null
+          recorded_by_name?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          commodity?: string
+          company_id?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          kg?: number
+          paid_amount?: number
+          rate?: number
+          recorded_by?: string | null
+          recorded_by_name?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creditors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_roles: {
         Row: {
           company_id: string

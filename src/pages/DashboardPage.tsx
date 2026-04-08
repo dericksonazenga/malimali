@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings, CreditCard, ArrowDownCircle, ArrowUpCircle, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useInventory } from "@/contexts/InventoryContext";
@@ -35,36 +35,48 @@ const DashboardPage = () => {
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
 
+  // Debt summary state
+  const [debtSummary, setDebtSummary] = useState({ totalOutstanding: 0, advance: 0, debt: 0, creditors: 0 });
+
   useEffect(() => {
     const fetchExpenses = async () => {
       const todayStr = new Date().toISOString().split("T")[0];
-
       const { data: eodData } = await supabase
         .from("end_of_day_log")
         .select("triggered_at")
         .eq("date", todayStr)
         .order("triggered_at", { ascending: false })
         .limit(1);
-
       const lastEod = eodData?.[0]?.triggered_at;
-
       let query = supabase.from("expenses").select("amount").eq("date", todayStr);
-      if (lastEod) {
-        query = query.gt("created_at", lastEod);
-      }
-
+      if (lastEod) query = query.gt("created_at", lastEod);
       const { data } = await query;
       if (data) {
         setExpenseTotal(data.reduce((s: number, e: any) => s + Number(e.amount), 0));
         setExpenseCount(data.length);
       }
     };
+
+    const fetchDebtSummary = async () => {
+      const [{ data: debts }, { data: creds }] = await Promise.all([
+        supabase.from("debts").select("balance, status"),
+        supabase.from("creditors").select("balance, status"),
+      ]);
+      const advance = (debts || []).filter((d: any) => d.status === "unpaid").reduce((s: number, d: any) => s + Number(d.balance), 0);
+      const debt = (debts || []).filter((d: any) => d.status === "money_out").reduce((s: number, d: any) => s + Number(d.balance), 0);
+      const creditorTotal = (creds || []).filter((c: any) => c.status !== "paid").reduce((s: number, c: any) => s + Number(c.balance), 0);
+      setDebtSummary({ totalOutstanding: advance + debt + creditorTotal, advance, debt, creditors: creditorTotal });
+    };
+
     fetchExpenses();
+    fetchDebtSummary();
 
     const channel = supabase
       .channel(`dashboard-rt-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
       .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, () => fetchExpenses())
+      .on("postgres_changes", { event: "*", schema: "public", table: "debts" }, () => fetchDebtSummary())
+      .on("postgres_changes", { event: "*", schema: "public", table: "creditors" }, () => fetchDebtSummary())
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -78,6 +90,8 @@ const DashboardPage = () => {
   const stockOut = salesEntries.reduce((s, e) => s + e.weight, 0);
   const persistentTotal = Object.values(persistentStock).reduce((s, v) => s + v, 0);
   const currentStock = persistentTotal + stockIn - stockOut;
+
+  const canViewDebts = hasPermission("view_debts") || user?.role === "admin";
 
   return (
     <div className="space-y-4 lg:space-y-6 max-w-6xl">
@@ -93,6 +107,45 @@ const DashboardPage = () => {
         <StatCard title={labels.sales} value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
         <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
       </div>
+
+      {/* Debt Summary Tickets */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg"><CreditCard className="w-5 h-5 text-primary" /> Debt Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div
+              className={cn("p-3 rounded-lg bg-destructive/10 border border-destructive/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-destructive/30")}
+              onClick={canViewDebts ? () => navigate("/debts") : undefined}
+            >
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> Total Outstanding</p>
+              <p className="text-lg font-bold font-mono text-destructive">{symbol}{debtSummary.totalOutstanding.toLocaleString()}</p>
+            </div>
+            <div
+              className={cn("p-3 rounded-lg bg-red-500/10 border border-red-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-red-500/30")}
+              onClick={canViewDebts ? () => navigate("/debts") : undefined}
+            >
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Advance</p>
+              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.advance.toLocaleString()}</p>
+            </div>
+            <div
+              className={cn("p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-orange-500/30")}
+              onClick={canViewDebts ? () => navigate("/debts") : undefined}
+            >
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3" /> Debt</p>
+              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.debt.toLocaleString()}</p>
+            </div>
+            <div
+              className={cn("p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-purple-500/30")}
+              onClick={canViewDebts ? () => navigate("/debts") : undefined}
+            >
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Creditors</p>
+              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.creditors.toLocaleString()}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={cn("transition-all", hasPermission("manage_inventory") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("manage_inventory") ? () => navigate("/inventory") : undefined}>

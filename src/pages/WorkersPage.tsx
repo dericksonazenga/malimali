@@ -110,7 +110,7 @@ const WorkersPage = () => {
     const newData = { name: editValues.name, role: editValues.role };
     await supabase.from("recruited_workers").update({ name: editValues.name, role: editValues.role }).eq("id", w.id);
     await supabase.from("workers").update({ name: editValues.name, role: editValues.role }).ilike("name", w.name);
-    const profileUpdate: Record<string, string> = {};
+    const profileUpdate: { display_name?: string; role?: string } = {};
     if (w.name.toLowerCase() !== editValues.name.toLowerCase()) profileUpdate.display_name = editValues.name;
     if (w.role !== editValues.role) profileUpdate.role = editValues.role;
     if (Object.keys(profileUpdate).length > 0) {
