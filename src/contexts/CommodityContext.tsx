@@ -85,7 +85,7 @@ export const CommodityProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchCommodities]);
 
   const updateCommodity = useCallback(async (id: string, updates: Partial<Commodity>) => {
-    const dbUpdates: Record<string, any> = {};
+    const dbUpdates: { name?: string; agent_rate?: number; vip_rate?: number; sales_rate?: number } = {};
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.agentRate !== undefined) dbUpdates.agent_rate = updates.agentRate;
     if (updates.vipRate !== undefined) dbUpdates.vip_rate = updates.vipRate;
