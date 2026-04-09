@@ -40,12 +40,14 @@ const navItems: NavItem[] = [
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
-  const { user, logout, hasPermission, isSystemAdmin } = useAuth();
+  const { user, logout, hasPermission, isSystemAdmin, companyId } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
 
   // Fetch user avatar
   useEffect(() => {
@@ -69,6 +71,32 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Fetch company branding
+  useEffect(() => {
+    if (!companyId) return;
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("name, logo_url")
+        .eq("id", companyId)
+        .single();
+      if (data) {
+        setCompanyName(data.name);
+        setCompanyLogo(data.logo_url);
+      }
+    };
+    fetchBranding();
+
+    const ch = supabase
+      .channel(`sidebar-branding-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "companies", filter: `id=eq.${companyId}` }, (payload: any) => {
+        if (payload.new?.name) setCompanyName(payload.new.name);
+        setCompanyLogo(payload.new?.logo_url ?? null);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [companyId]);
 
   const filteredNav = navItems.filter(
     (item) => {
@@ -100,11 +128,15 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-5 gap-3")}>
-          <Recycle className="w-6 h-6 text-primary shrink-0" />
+        <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-4 gap-2.5")}>
+          {companyLogo ? (
+            <img src={companyLogo} alt="" className="w-7 h-7 rounded-md object-contain shrink-0" />
+          ) : (
+            <Recycle className="w-6 h-6 text-primary shrink-0" />
+          )}
           {!sidebarCollapsed && (
-            <span className="text-base font-bold text-sidebar-foreground">
-              Scrap<span className="text-primary">Flow</span>
+            <span className="text-sm font-bold text-sidebar-foreground truncate">
+              {companyName || "ScrapFlow"}
             </span>
           )}
           <Button

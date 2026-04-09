@@ -11,6 +11,7 @@ import { Settings, Globe, User, X, Tags, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import ChangePasswordCard from "@/components/ChangePasswordCard";
 import RolesManager from "@/components/RolesManager";
+import CompanyBrandingSettings from "@/components/CompanyBrandingSettings";
 
 const SettingsPage = () => {
   const { currency, symbol, globalCurrency, globalSymbol, setCurrencyCode, setGlobalCurrency, isPersonalOverride, clearPersonalOverride } = useCurrency();
@@ -49,6 +50,7 @@ const SettingsPage = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {isAdmin && <CompanyBrandingSettings />}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
