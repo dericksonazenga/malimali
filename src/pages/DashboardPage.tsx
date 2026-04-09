@@ -26,7 +26,7 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
 );
 
 const DashboardPage = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, companyId } = useAuth();
   const { commodities } = useCommodities();
   const { symbol } = useCurrency();
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
@@ -34,9 +34,37 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
+  const [companyName, setCompanyName] = useState("");
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
 
   // Debt summary state
   const [debtSummary, setDebtSummary] = useState({ totalOutstanding: 0, advance: 0, debt: 0, creditors: 0 });
+
+  // Fetch company branding
+  useEffect(() => {
+    if (!companyId) return;
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("name, logo_url")
+        .eq("id", companyId)
+        .single();
+      if (data) {
+        setCompanyName(data.name);
+        setCompanyLogo(data.logo_url);
+      }
+    };
+    fetchBranding();
+
+    const ch = supabase
+      .channel(`company-branding-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "companies", filter: `id=eq.${companyId}` }, (payload: any) => {
+        if (payload.new?.name) setCompanyName(payload.new.name);
+        setCompanyLogo(payload.new?.logo_url ?? null);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [companyId]);
 
   useEffect(() => {
     const fetchExpenses = async () => {
