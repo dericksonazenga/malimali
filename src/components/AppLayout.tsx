@@ -40,12 +40,14 @@ const navItems: NavItem[] = [
 ];
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
-  const { user, logout, hasPermission, isSystemAdmin } = useAuth();
+  const { user, logout, hasPermission, isSystemAdmin, companyId } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
 
   // Fetch user avatar
   useEffect(() => {
