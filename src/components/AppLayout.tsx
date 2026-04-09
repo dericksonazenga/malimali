@@ -194,11 +194,11 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-card border-b border-border flex items-center px-3 lg:px-6 gap-2 sticky top-0 z-30 shrink-0">
+        <header className="h-12 sm:h-14 bg-card border-b border-border flex items-center px-2 sm:px-3 lg:px-6 gap-1.5 sm:gap-2 sticky top-0 z-30 shrink-0">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden shrink-0"
+            className="lg:hidden shrink-0 h-8 w-8"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
@@ -207,20 +207,20 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 shrink-0"
+              className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
               onClick={() => navigate(-1)}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
           )}
-          <h2 className="text-base font-semibold truncate">
+          <h2 className="text-sm sm:text-base font-semibold truncate">
             {filteredNav.find((n) => n.path === location.pathname)?.label || "Dashboard"}
           </h2>
           <div className="ml-auto shrink-0">
             <EndOfDayButton />
           </div>
         </header>
-        <main className="flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto animate-fade-in">{children}</main>
+        <main className="flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
     </div>
   );

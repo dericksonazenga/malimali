@@ -11,15 +11,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
-  <Card className={cn("animate-fade-in transition-all", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
-    <CardContent className="p-5">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs sm:text-sm text-muted-foreground">{title}</p>
-          <p className={`text-lg sm:text-2xl font-bold font-mono mt-1 ${color}`}>{value}</p>
-          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{subtitle}</p>}
+  <Card className={cn("animate-fade-in transition-all active:scale-[0.98]", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
+    <CardContent className="p-3 sm:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] sm:text-sm text-muted-foreground leading-tight truncate">{title}</p>
+          <p className={`text-base sm:text-2xl font-bold font-mono mt-0.5 sm:mt-1 truncate ${color}`}>{value}</p>
+          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
-        <div className="p-2.5 rounded-lg bg-accent">{icon}</div>
+        <div className="p-2 sm:p-2.5 rounded-lg bg-accent shrink-0">{icon}</div>
       </div>
     </CardContent>
   </Card>
@@ -94,13 +94,13 @@ const DashboardPage = () => {
   const canViewDebts = hasPermission("view_debts") || user?.role === "admin";
 
   return (
-    <div className="space-y-4 lg:space-y-6 max-w-6xl">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold">Welcome to MaliMali Dashboard</h1>
-        <p className="text-muted-foreground">Here's your business overview</p>
+        <h1 className="text-lg sm:text-2xl font-bold">Welcome to MaliMali</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Here's your business overview</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
         <StatCard title={`${labels.agent} Purchases`} value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
         <StatCard title={`${labels.vip} Purchases`} value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
         <StatCard title="Total Purchases" value={`${symbol}${(agentTotal + vipTotal).toLocaleString()}`} subtitle={`${agentEntries.length + vipEntries.length} entries`} icon={<TrendingDown className="w-5 h-5 text-orange-500" />} color="text-foreground" />
@@ -110,79 +110,79 @@ const DashboardPage = () => {
 
       {/* Debt Summary Tickets */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg"><CreditCard className="w-5 h-5 text-primary" /> Debt Overview</CardTitle>
+        <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardTitle className="flex items-center gap-2 text-sm sm:text-lg"><CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Debt Overview</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <div
-              className={cn("p-3 rounded-lg bg-destructive/10 border border-destructive/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-destructive/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-destructive/10 border border-destructive/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-destructive/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> Total Outstanding</p>
-              <p className="text-lg font-bold font-mono text-destructive">{symbol}{debtSummary.totalOutstanding.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3 shrink-0" /> Total Outstanding</p>
+              <p className="text-sm sm:text-lg font-bold font-mono text-destructive truncate">{symbol}{debtSummary.totalOutstanding.toLocaleString()}</p>
             </div>
             <div
-              className={cn("p-3 rounded-lg bg-red-500/10 border border-red-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-red-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-red-500/10 border border-red-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-red-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Advance</p>
-              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.advance.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 shrink-0" /> Advance</p>
+              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.advance.toLocaleString()}</p>
             </div>
             <div
-              className={cn("p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-orange-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-orange-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3" /> Debt</p>
-              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.debt.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 shrink-0" /> Debt</p>
+              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.debt.toLocaleString()}</p>
             </div>
             <div
-              className={cn("p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-all", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-purple-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-purple-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Creditors</p>
-              <p className="text-lg font-bold font-mono">{symbol}{debtSummary.creditors.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3 shrink-0" /> Creditors</p>
+              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.creditors.toLocaleString()}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className={cn("transition-all", hasPermission("manage_inventory") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("manage_inventory") ? () => navigate("/inventory") : undefined}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Inventory Overview</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+        <Card className={cn("transition-all active:scale-[0.99]", hasPermission("manage_inventory") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("manage_inventory") ? () => navigate("/inventory") : undefined}>
+          <CardHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base"><Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Inventory Overview</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-4 rounded-lg bg-accent">
-                <TrendingUp className="w-5 h-5 mx-auto text-success mb-1" />
-                <p className="text-xs text-muted-foreground">Stock In</p>
-                <p className="text-lg font-bold font-mono">{stockIn.toLocaleString()} kg</p>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="text-center p-2.5 sm:p-4 rounded-lg bg-accent">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-success mb-0.5 sm:mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Stock In</p>
+                <p className="text-sm sm:text-lg font-bold font-mono">{stockIn.toLocaleString()} kg</p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-accent">
-                <TrendingDown className="w-5 h-5 mx-auto text-destructive mb-1" />
-                <p className="text-xs text-muted-foreground">Stock Out</p>
-                <p className="text-lg font-bold font-mono">{stockOut.toLocaleString()} kg</p>
+              <div className="text-center p-2.5 sm:p-4 rounded-lg bg-accent">
+                <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-destructive mb-0.5 sm:mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Stock Out</p>
+                <p className="text-sm sm:text-lg font-bold font-mono">{stockOut.toLocaleString()} kg</p>
               </div>
-              <div className="text-center p-4 rounded-lg bg-primary/10">
-                <Package className="w-5 h-5 mx-auto text-primary mb-1" />
-                <p className="text-xs text-muted-foreground">Current</p>
-                <p className="text-lg font-bold font-mono text-primary">{currentStock.toLocaleString()} kg</p>
+              <div className="text-center p-2.5 sm:p-4 rounded-lg bg-primary/10">
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 mx-auto text-primary mb-0.5 sm:mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Current</p>
+                <p className="text-sm sm:text-lg font-bold font-mono text-primary">{currentStock.toLocaleString()} kg</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className={cn("transition-all", hasPermission("update_rates") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("update_rates") ? () => navigate("/rates") : undefined}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-primary" /> Current Rates</CardTitle>
+        <Card className={cn("transition-all active:scale-[0.99]", hasPermission("update_rates") && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={hasPermission("update_rates") ? () => navigate("/rates") : undefined}>
+          <CardHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base"><Settings className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="space-y-2 sm:space-y-3">
               {commodities.slice(0, 5).map((c) => (
-                <div key={c.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <span className="font-medium">{c.name}</span>
-                   <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:text-sm font-mono justify-end">
+                <div key={c.id} className="flex items-center justify-between py-1.5 sm:py-2 border-b border-border last:border-0">
+                  <span className="font-medium text-xs sm:text-sm">{c.name}</span>
+                   <div className="flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-0.5 text-[10px] sm:text-sm font-mono justify-end">
                      <span className="text-muted-foreground whitespace-nowrap">{labels.agent[0]}: {symbol}{c.agentRate}</span>
                      <span className="text-primary whitespace-nowrap">{labels.vip[0]}: {symbol}{c.vipRate}</span>
                      <span className="text-success whitespace-nowrap">{labels.sales[0]}: {symbol}{c.salesRate}</span>
