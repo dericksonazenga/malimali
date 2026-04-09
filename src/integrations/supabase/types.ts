@@ -318,18 +318,21 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          logo_url: string | null
           name: string
         }
         Insert: {
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           name: string
         }
         Update: {
           created_at?: string
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           name?: string
         }
         Relationships: []
