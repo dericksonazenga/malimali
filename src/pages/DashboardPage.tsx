@@ -123,9 +123,14 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-lg sm:text-2xl font-bold">Welcome to MaliMali</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground">Here's your business overview</p>
+      <div className="flex items-center gap-3">
+        {companyLogo && (
+          <img src={companyLogo} alt={companyName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain bg-accent border border-border p-1 shrink-0" />
+        )}
+        <div>
+          <h1 className="text-lg sm:text-2xl font-bold">Welcome to {companyName || "Dashboard"}</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Here's your business overview</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
