@@ -45,9 +45,10 @@ const EndOfDayButton = () => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="gap-2 bg-green-600 text-white hover:bg-green-700">
-          <Moon className="w-4 h-4" />
-          End of Day
+        <Button className="gap-1.5 sm:gap-2 bg-green-600 text-white hover:bg-green-700 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-4">
+          <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <span className="hidden xs:inline">End of Day</span>
+          <span className="xs:hidden">EOD</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
