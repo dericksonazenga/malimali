@@ -72,6 +72,32 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Fetch company branding
+  useEffect(() => {
+    if (!companyId) return;
+    const fetchBranding = async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("name, logo_url")
+        .eq("id", companyId)
+        .single();
+      if (data) {
+        setCompanyName(data.name);
+        setCompanyLogo(data.logo_url);
+      }
+    };
+    fetchBranding();
+
+    const ch = supabase
+      .channel(`sidebar-branding-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "companies", filter: `id=eq.${companyId}` }, (payload: any) => {
+        if (payload.new?.name) setCompanyName(payload.new.name);
+        setCompanyLogo(payload.new?.logo_url ?? null);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [companyId]);
+
   const filteredNav = navItems.filter(
     (item) => {
       if (item.permission === "__admin_only__") return user?.role === "admin";
