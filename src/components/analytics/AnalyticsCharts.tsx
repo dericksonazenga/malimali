@@ -229,19 +229,23 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart margin={{ top: 20, right: 60, bottom: 20, left: 60 }}>
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart margin={{ top: 30, right: 100, bottom: 30, left: 100 }}>
                 <Pie
                   data={stockPieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={75}
+                  outerRadius={80}
                   innerRadius={0}
                   paddingAngle={1}
+                  minAngle={6}
+                  startAngle={90}
+                  endAngle={-270}
+                  isAnimationActive={false}
                   label={({ name, value, percent }) =>
-                    `${name} (${value.toLocaleString()}kg · ${(percent * 100).toFixed(0)}%)`
+                    `${name} · ${value.toLocaleString()}kg (${(percent * 100).toFixed(0)}%)`
                   }
                   labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
                   fontSize={11}
