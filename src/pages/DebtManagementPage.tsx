@@ -411,7 +411,7 @@ const DebtManagementPage = () => {
   const unpaidCreditors = filteredCreditors.filter(c => c.status !== "paid");
   const paidCreditors = filteredCreditors.filter(c => c.status === "paid");
 
-  const totalOutstanding = debts.reduce((s, d) => s + d.balance, 0) + creditors.reduce((s, c) => s + c.balance, 0);
+  const totalOutstanding = debts.reduce((s, d) => s + d.balance, 0);
   const totalAdvance = debts.filter(d => d.status === "unpaid").reduce((s, d) => s + d.balance, 0);
   const totalDebt = debts.filter(d => d.status === "money_out").reduce((s, d) => s + d.balance, 0);
   const totalCreditors = creditors.filter(c => c.status !== "paid").reduce((s, c) => s + c.balance, 0);
