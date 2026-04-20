@@ -35,6 +35,7 @@ interface Props {
 const AnalyticsCharts = ({
   symbol, salesTotal, agentTotal, vipTotal, expenseTotal, salaryPaid,
   grossProfit, netProfit, commodityBreakdown, stockData, expenses, dailyProfitTrend,
+  agentEntries = [], vipEntries = [], salesEntries = [],
 }: Props) => {
   const { labels } = useCategoryLabels();
   // Revenue bar chart data
