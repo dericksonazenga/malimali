@@ -393,7 +393,34 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Agent Entries */}
+        {/* Creditors Summary */}
+        <AnalyticsSection
+          title={`Creditors (${creditors.length})`}
+          icon={<HandCoins className="w-4 h-4 text-amber-500" />}
+          csvRows={creditorCSV()}
+          csvFilename={`${filePrefix}_Creditors.csv`}
+        >
+          <div className="space-y-0.5">
+            <StatRow label="Total Owed" value={creditorTotal} />
+            <StatRow label="Paid" value={creditorPaid} />
+            <StatRow label="Outstanding Balance" value={creditorBalance} bold />
+          </div>
+          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+            {creditors.length === 0 && <p className="text-sm text-muted-foreground">No creditors</p>}
+            {creditors.map((c: any) => (
+              <div key={c.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">
+                  {c.customer_name} · {c.commodity} {Number(c.kg) > 0 ? `(${fmt(Number(c.kg))}kg)` : ""}
+                </span>
+                <div className="flex gap-2 font-mono text-xs shrink-0">
+                  <span className="text-amber-500">{symbol}{fmt(Number(c.balance))}</span>
+                  <Badge variant={c.status === "paid" ? "default" : "secondary"} className="text-[10px] h-4">{c.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
+
         <AnalyticsSection
           title={`${labels.agent} Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
