@@ -76,7 +76,8 @@ const AnalyticsCharts = ({
     .map(([key, value]) => {
       const original = stockData.find((s: any) => (s.commodity || "").trim().toLowerCase() === key);
       return { name: original?.commodity?.trim() || key, value };
-    });
+    })
+    .sort((a, b) => b.value - a.value);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
