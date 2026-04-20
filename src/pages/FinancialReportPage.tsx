@@ -353,6 +353,9 @@ const FinancialReportPage = () => {
         stockData={stockData}
         expenses={expenses}
         dailyProfitTrend={dailyProfitTrend}
+        agentEntries={agentEntries}
+        vipEntries={vipEntries}
+        salesEntries={salesEntries}
       />
 
       {/* Detailed Sections */}
