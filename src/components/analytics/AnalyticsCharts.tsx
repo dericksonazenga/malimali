@@ -228,37 +228,28 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <div className="flex flex-col items-center gap-3">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={stockPieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={85}
-                    innerRadius={0}
-                    paddingAngle={1}
-                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
-                    fontSize={10}
-                  >
-                    {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 px-2">
-                {stockPieData.map((item, i) => (
-                  <div key={item.name} className="flex items-center gap-1.5 text-xs">
-                    <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span>{item.name}</span>
-                    <span className="text-muted-foreground font-mono">({item.value.toLocaleString()}kg)</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart margin={{ top: 20, right: 60, bottom: 20, left: 60 }}>
+                <Pie
+                  data={stockPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={75}
+                  innerRadius={0}
+                  paddingAngle={1}
+                  label={({ name, value, percent }) =>
+                    `${name} (${value.toLocaleString()}kg · ${(percent * 100).toFixed(0)}%)`
+                  }
+                  labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+                  fontSize={11}
+                >
+                  {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
+              </PieChart>
+            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
