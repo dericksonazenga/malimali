@@ -93,7 +93,7 @@ const DashboardPage = () => {
       const advance = (debts || []).filter((d: any) => d.status === "unpaid").reduce((s: number, d: any) => s + Number(d.balance), 0);
       const debt = (debts || []).filter((d: any) => d.status === "money_out").reduce((s: number, d: any) => s + Number(d.balance), 0);
       const creditorTotal = (creds || []).filter((c: any) => c.status !== "paid").reduce((s: number, c: any) => s + Number(c.balance), 0);
-      setDebtSummary({ totalOutstanding: advance + debt + creditorTotal, advance, debt, creditors: creditorTotal });
+      setDebtSummary({ totalOutstanding: advance + debt, advance, debt, creditors: creditorTotal });
     };
 
     fetchExpenses();
