@@ -93,7 +93,8 @@ const AnalyticsCharts = ({
     );
   };
 
-  const WeightTooltip = ({ active, payload }: any) => {
+  const WeightTooltip = (props: any) => {
+    const { active, payload } = props;
     if (!active || !payload?.length) return null;
     return (
       <div className="rounded-md border border-border bg-popover p-2 text-xs shadow-md">
@@ -229,30 +230,31 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={340}>
-              <PieChart margin={{ top: 30, right: 100, bottom: 30, left: 100 }}>
+            <ResponsiveContainer width="100%" height={Math.max(340, 260 + stockPieData.length * 12)}>
+              <PieChart margin={{ top: 40, right: 120, bottom: 40, left: 120 }}>
                 <Pie
                   data={stockPieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={75}
                   innerRadius={0}
                   paddingAngle={1}
-                  minAngle={6}
+                  minAngle={4}
                   startAngle={90}
                   endAngle={-270}
                   isAnimationActive={false}
-                  label={({ name, value, percent }) =>
-                    `${name} · ${value.toLocaleString()}kg (${(percent * 100).toFixed(0)}%)`
-                  }
+                  label={(entry: any) => {
+                    const pct = (entry.percent * 100).toFixed(0);
+                    return `${entry.name} · ${Number(entry.value).toLocaleString()}kg (${pct}%)`;
+                  }}
                   labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-                  fontSize={11}
+                  fontSize={10}
                 >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => `${v.toLocaleString()}kg`} />
+                <Tooltip content={<WeightTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           )}
