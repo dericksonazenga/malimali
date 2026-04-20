@@ -67,20 +67,40 @@ const AnalyticsCharts = ({
     name, bought: v.bought, sold: v.sold,
   }));
 
-  // Stock pie — merge duplicate commodities by name
-  const stockAgg: Record<string, number> = {};
+  // Stock pie — merge persistent stock + today's pending deltas (matches Inventory page)
+  const stockAgg: Record<string, { display: string; value: number }> = {};
+  const ensureStock = (raw: string) => {
+    const key = (raw || "").trim().toLowerCase();
+    if (!key) return null;
+    if (!stockAgg[key]) stockAgg[key] = { display: raw.trim(), value: 0 };
+    return key;
+  };
   stockData.forEach((s: any) => {
-    const key = (s.commodity || "").trim().toLowerCase();
-    const display = s.commodity?.trim() || "Unknown";
-    if (!stockAgg[key]) stockAgg[key] = 0;
-    stockAgg[key] += Number(s.weight);
+    const k = ensureStock(s.commodity);
+    if (k) stockAgg[k].value += Number(s.weight);
   });
-  const stockPieData = Object.entries(stockAgg)
-    .filter(([, v]) => v > 0)
-    .map(([key, value]) => {
-      const original = stockData.find((s: any) => (s.commodity || "").trim().toLowerCase() === key);
-      return { name: original?.commodity?.trim() || key, value };
-    })
+  const today = new Date().toISOString().split("T")[0];
+  agentEntries.forEach((e: any) => {
+    if ((e.date || e.created_at?.split("T")[0]) === today) {
+      const k = ensureStock(e.commodity);
+      if (k) stockAgg[k].value += Number(e.actual_weight || 0);
+    }
+  });
+  vipEntries.forEach((e: any) => {
+    if ((e.date || e.created_at?.split("T")[0]) === today) {
+      const k = ensureStock(e.commodity);
+      if (k) stockAgg[k].value += Number(e.actual_weight || 0);
+    }
+  });
+  salesEntries.forEach((e: any) => {
+    if (!e.is_exchange && (e.date || e.created_at?.split("T")[0]) === today) {
+      const k = ensureStock(e.commodity);
+      if (k) stockAgg[k].value -= Number(e.weight || 0);
+    }
+  });
+  const stockPieData = Object.values(stockAgg)
+    .filter(s => s.value > 0)
+    .map(s => ({ name: s.display, value: s.value }))
     .sort((a, b) => b.value - a.value);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
