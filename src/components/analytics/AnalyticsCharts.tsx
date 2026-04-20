@@ -93,7 +93,8 @@ const AnalyticsCharts = ({
     );
   };
 
-  const WeightTooltip = ({ active, payload }: any) => {
+  const WeightTooltip = (props: any) => {
+    const { active, payload } = props;
     if (!active || !payload?.length) return null;
     return (
       <div className="rounded-md border border-border bg-popover p-2 text-xs shadow-md">
