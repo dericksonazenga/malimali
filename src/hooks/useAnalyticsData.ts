@@ -84,6 +84,8 @@ export interface AnalyticsData {
   stockData: any[];
   debts: any[];
   debtPayments: any[];
+  creditors: any[];
+  creditorPayments: any[];
   agentTotal: number;
   vipTotal: number;
   salesTotal: number;
@@ -97,6 +99,9 @@ export interface AnalyticsData {
   debtTotal: number;
   debtPaid: number;
   debtBalance: number;
+  creditorTotal: number;
+  creditorPaid: number;
+  creditorBalance: number;
   commodityBreakdown: Record<string, { bought: number; sold: number; net: number }>;
   dailyProfitTrend: DailyProfit[];
   commodityProfitBreakdown: CommodityProfit[];
@@ -118,7 +123,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       return q;
     };
 
-    const [agents, vips, sales, exps, workers, stock, debtsRes, debtPayRes] = await Promise.all([
+    const [agents, vips, sales, exps, workers, stock, debtsRes, debtPayRes, creditorsRes, creditorPayRes] = await Promise.all([
       applyRange(supabase.from("agent_entries").select("*")),
       applyRange(supabase.from("vip_entries").select("*")),
       applyRange(supabase.from("sales_entries").select("*")),
@@ -127,6 +132,8 @@ export function useAnalyticsData(range: DateRangeValue) {
       supabase.from("persistent_stock").select("*"),
       supabase.from("debts").select("*"),
       supabase.from("debt_payments").select("*"),
+      supabase.from("creditors").select("*"),
+      supabase.from("creditor_payments").select("*"),
     ]);
 
     // Stale response guard
@@ -140,6 +147,8 @@ export function useAnalyticsData(range: DateRangeValue) {
     const stockRows = stock.data || [];
     const debtRows = debtsRes.data || [];
     const debtPayRows = debtPayRes.data || [];
+    const creditorRows = creditorsRes.data || [];
+    const creditorPayRows = creditorPayRes.data || [];
 
     const agentTotal = agentRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
     const vipTotal = vipRows.reduce((s: number, e: any) => s + Number(e.amount), 0);
@@ -152,6 +161,10 @@ export function useAnalyticsData(range: DateRangeValue) {
     const debtTotal = debtRows.reduce((s: number, d: any) => s + Number(d.total_amount), 0);
     const debtPaid = debtRows.reduce((s: number, d: any) => s + Number(d.paid_amount), 0);
     const debtBalance = debtRows.reduce((s: number, d: any) => s + Number(d.balance), 0);
+
+    const creditorTotal = creditorRows.reduce((s: number, c: any) => s + Number(c.total_amount), 0);
+    const creditorPaid = creditorRows.reduce((s: number, c: any) => s + Number(c.paid_amount), 0);
+    const creditorBalance = creditorRows.reduce((s: number, c: any) => s + Number(c.balance), 0);
 
     const totalPurchases = agentTotal + vipTotal;
 
@@ -222,9 +235,11 @@ export function useAnalyticsData(range: DateRangeValue) {
       agentEntries: agentRows, vipEntries: vipRows, salesEntries: salesRows,
       expenses: expRows, workers: workerRows, stockData: stockRows,
       debts: debtRows, debtPayments: debtPayRows,
+      creditors: creditorRows, creditorPayments: creditorPayRows,
       agentTotal, vipTotal, salesTotal, expenseTotal,
       salaryTotal, salaryPaid, salaryBalance,
       debtTotal, debtPaid, debtBalance,
+      creditorTotal, creditorPaid, creditorBalance,
       totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
       dailyProfitTrend, commodityProfitBreakdown,
     });
@@ -238,18 +253,13 @@ export function useAnalyticsData(range: DateRangeValue) {
     const tables = [
       "agent_entries", "vip_entries", "sales_entries", "expenses",
       "workers", "persistent_stock", "debts", "debt_payments",
+      "creditors", "creditor_payments",
     ];
-    const channel = supabase
-      .channel(`analytics-rt-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[0] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[1] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[2] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[3] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[4] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[5] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[6] }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: tables[7] }, () => fetchData())
-      .subscribe();
+    let ch = supabase.channel(`analytics-rt-${crypto.randomUUID()}`);
+    tables.forEach(t => {
+      ch = ch.on("postgres_changes", { event: "*", schema: "public", table: t }, () => fetchData());
+    });
+    const channel = ch.subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);

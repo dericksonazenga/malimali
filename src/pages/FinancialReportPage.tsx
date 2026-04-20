@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
-  BarChart3, Package, Users, Receipt, Loader2, PiggyBank, CreditCard
+  BarChart3, Package, Users, Receipt, Loader2, PiggyBank, CreditCard, HandCoins
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
@@ -62,10 +62,11 @@ const FinancialReportPage = () => {
 
   const {
     agentEntries, vipEntries, salesEntries, expenses, workers, stockData,
-    debts, debtPayments,
+    debts, debtPayments, creditors, creditorPayments,
     agentTotal, vipTotal, salesTotal, expenseTotal,
     salaryTotal, salaryPaid, salaryBalance,
     debtTotal, debtPaid, debtBalance,
+    creditorTotal, creditorPaid, creditorBalance,
     totalPurchases, grossProfit, netProfit, commodityBreakdown, dailyProfitTrend,
     commodityProfitBreakdown,
   } = data;
@@ -232,6 +233,14 @@ const FinancialReportPage = () => {
     styleSheet(debtWs, 1, debtSheetData.length - 1, 6);
     XLSX.utils.book_append_sheet(wb, debtWs, "Debts");
 
+    // Creditors sheet
+    const credSheetRows = creditors.map((c: any) => [c.customer_name, c.commodity, c.kg, c.rate, c.total_amount, c.paid_amount, c.balance, c.status, c.recorded_by_name]);
+    const credSheetData = [["Customer", "Commodity", "Kg", "Rate", "Total", "Paid", "Balance", "Status", "Recorded By"], ...credSheetRows, [], ["TOTAL", "", "", "", creditorTotal, creditorPaid, creditorBalance, "", ""]];
+    const credWs = XLSX.utils.aoa_to_sheet(credSheetData);
+    autoFitColumns(credWs, credSheetData);
+    styleSheet(credWs, 1, credSheetData.length - 1, 9);
+    XLSX.utils.book_append_sheet(wb, credWs, "Creditors");
+
     // Savings sheet
     const savingsRows = savingsAccounts.map(a => [a.customer_name, a.balance]);
     const savingsData = [["Customer", "Balance"], ...savingsRows, [], ["Total Deposits", totalDeposits], ["Total Withdrawals", totalWithdrawals], ["Net Savings Held", netSavingsHeld]];
@@ -257,6 +266,7 @@ const FinancialReportPage = () => {
   const stockCSV = () => [["Commodity", "Current Weight (kg)"], ...stockData.map((s: any) => [s.commodity, String(s.weight)])];
   const payrollCSV = () => [["Worker", "Role", "Salary", "Paid", "Balance"], ...workers.map((w: any) => [w.name, w.role, String(w.salary), String(w.paid), String(w.balance)])];
   const debtCSV = () => [["Customer", "Description", "Total", "Paid", "Balance", "Status"], ...debts.map((d: any) => [d.customer_name, d.description, String(d.total_amount), String(d.paid_amount), String(d.balance), d.status])];
+  const creditorCSV = () => [["Customer", "Commodity", "Kg", "Rate", "Total", "Paid", "Balance", "Status", "Recorded By"], ...creditors.map((c: any) => [c.customer_name, c.commodity, String(c.kg), String(c.rate), String(c.total_amount), String(c.paid_amount), String(c.balance), c.status, c.recorded_by_name])];
   const savingsCSV = () => [["Customer", "Balance"], ...savingsAccounts.map(a => [a.customer_name, String(a.balance)]), [], ["Total Deposits", String(totalDeposits)], ["Total Withdrawals", String(totalWithdrawals)], ["Net Savings Held", String(netSavingsHeld)]];
   const revenueCSV = () => [["Category", "Amount"], [`${labels.sales} Revenue`, String(salesTotal)], [`${labels.agent} Purchases`, String(-agentTotal)], [`${labels.vip} Purchases`, String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
@@ -313,12 +323,13 @@ const FinancialReportPage = () => {
       <DateRangeSelector value={range} onChange={setRange} />
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         {[
           { label: `${labels.sales} Revenue`, value: salesTotal, icon: <TrendingUp className="w-4 h-4 text-success" />, color: "text-success" },
           { label: "Total Purchases", value: totalPurchases, icon: <TrendingDown className="w-4 h-4 text-info" />, color: "text-info" },
           { label: "Total Expenses", value: expenseTotal, icon: <DollarSign className="w-4 h-4 text-destructive" />, color: "text-destructive" },
           { label: "Debt Balance", value: debtBalance, icon: <CreditCard className="w-4 h-4 text-orange-500" />, color: debtBalance > 0 ? "text-orange-500" : "text-success" },
+          { label: "Creditors Balance", value: creditorBalance, icon: <HandCoins className="w-4 h-4 text-amber-500" />, color: creditorBalance > 0 ? "text-amber-500" : "text-success" },
           { label: "Net Profit", value: netProfit, icon: <BarChart3 className="w-4 h-4 text-primary" />, color: netProfit >= 0 ? "text-success" : "text-destructive" },
         ].map(kpi => (
           <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
@@ -390,7 +401,34 @@ const FinancialReportPage = () => {
           </div>
         </AnalyticsSection>
 
-        {/* Agent Entries */}
+        {/* Creditors Summary */}
+        <AnalyticsSection
+          title={`Creditors (${creditors.length})`}
+          icon={<HandCoins className="w-4 h-4 text-amber-500" />}
+          csvRows={creditorCSV()}
+          csvFilename={`${filePrefix}_Creditors.csv`}
+        >
+          <div className="space-y-0.5">
+            <StatRow label="Total Owed" value={creditorTotal} />
+            <StatRow label="Paid" value={creditorPaid} />
+            <StatRow label="Outstanding Balance" value={creditorBalance} bold />
+          </div>
+          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+            {creditors.length === 0 && <p className="text-sm text-muted-foreground">No creditors</p>}
+            {creditors.map((c: any) => (
+              <div key={c.id} className="flex justify-between text-sm py-1 border-b border-border/50">
+                <span className="truncate mr-2">
+                  {c.customer_name} · {c.commodity} {Number(c.kg) > 0 ? `(${fmt(Number(c.kg))}kg)` : ""}
+                </span>
+                <div className="flex gap-2 font-mono text-xs shrink-0">
+                  <span className="text-amber-500">{symbol}{fmt(Number(c.balance))}</span>
+                  <Badge variant={c.status === "paid" ? "default" : "secondary"} className="text-[10px] h-4">{c.status}</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AnalyticsSection>
+
         <AnalyticsSection
           title={`${labels.agent} Entries (${agentEntries.length})`}
           icon={<Users className="w-4 h-4 text-info" />}
