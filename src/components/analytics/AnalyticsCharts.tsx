@@ -27,6 +27,9 @@ interface Props {
   stockData: any[];
   expenses: any[];
   dailyProfitTrend: DailyProfit[];
+  agentEntries?: any[];
+  vipEntries?: any[];
+  salesEntries?: any[];
 }
 
 const AnalyticsCharts = ({
