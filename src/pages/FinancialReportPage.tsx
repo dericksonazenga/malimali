@@ -233,6 +233,14 @@ const FinancialReportPage = () => {
     styleSheet(debtWs, 1, debtSheetData.length - 1, 6);
     XLSX.utils.book_append_sheet(wb, debtWs, "Debts");
 
+    // Creditors sheet
+    const credSheetRows = creditors.map((c: any) => [c.customer_name, c.commodity, c.kg, c.rate, c.total_amount, c.paid_amount, c.balance, c.status, c.recorded_by_name]);
+    const credSheetData = [["Customer", "Commodity", "Kg", "Rate", "Total", "Paid", "Balance", "Status", "Recorded By"], ...credSheetRows, [], ["TOTAL", "", "", "", creditorTotal, creditorPaid, creditorBalance, "", ""]];
+    const credWs = XLSX.utils.aoa_to_sheet(credSheetData);
+    autoFitColumns(credWs, credSheetData);
+    styleSheet(credWs, 1, credSheetData.length - 1, 9);
+    XLSX.utils.book_append_sheet(wb, credWs, "Creditors");
+
     // Savings sheet
     const savingsRows = savingsAccounts.map(a => [a.customer_name, a.balance]);
     const savingsData = [["Customer", "Balance"], ...savingsRows, [], ["Total Deposits", totalDeposits], ["Total Withdrawals", totalWithdrawals], ["Net Savings Held", netSavingsHeld]];
