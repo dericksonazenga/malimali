@@ -261,27 +261,66 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(340, 260 + stockPieData.length * 12)}>
-              <PieChart margin={{ top: 40, right: 120, bottom: 40, left: 120 }}>
+            <ResponsiveContainer width="100%" height={Math.max(360, 280 + stockPieData.length * 18)}>
+              <PieChart margin={{ top: 50, right: 140, bottom: 50, left: 140 }}>
                 <Pie
                   data={stockPieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={75}
+                  outerRadius={70}
                   innerRadius={0}
                   paddingAngle={1}
                   minAngle={4}
                   startAngle={90}
                   endAngle={-270}
                   isAnimationActive={false}
-                  label={(entry: any) => {
-                    const pct = (entry.percent * 100).toFixed(0);
-                    return `${entry.name} · ${Number(entry.value).toLocaleString()}kg (${pct}%)`;
+                  labelLine={false}
+                  label={(props: any) => {
+                    const RAD = Math.PI / 180;
+                    const { cx, cy, midAngle, outerRadius, name, value, percent, index } = props;
+                    // Vary leader length so labels don't overlap — stagger by index
+                    const total = stockPieData.length;
+                    // Smaller slices (later in sorted order) get progressively longer leaders
+                    const baseExt = 18;
+                    const stagger = (index % 3) * 14; // 0, 14, 28 px stagger
+                    const sizeBoost = Math.min(40, (total - index) > total / 2 ? 0 : (index - total / 2) * 6);
+                    const ext = baseExt + stagger + sizeBoost;
+
+                    const sin = Math.sin(-midAngle * RAD);
+                    const cos = Math.cos(-midAngle * RAD);
+                    const sx = cx + outerRadius * cos;
+                    const sy = cy + outerRadius * sin;
+                    const mx = cx + (outerRadius + ext) * cos;
+                    const my = cy + (outerRadius + ext) * sin;
+                    const ex = mx + (cos >= 0 ? 1 : -1) * 18;
+                    const ey = my;
+                    const textAnchor = cos >= 0 ? "start" : "end";
+                    const pct = (percent * 100).toFixed(0);
+
+                    return (
+                      <g>
+                        <path
+                          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+                          stroke="hsl(var(--muted-foreground))"
+                          strokeWidth={1}
+                          fill="none"
+                        />
+                        <circle cx={ex} cy={ey} r={2} fill="hsl(var(--muted-foreground))" />
+                        <text
+                          x={ex + (cos >= 0 ? 4 : -4)}
+                          y={ey}
+                          textAnchor={textAnchor}
+                          dominantBaseline="central"
+                          fontSize={10}
+                          fill="hsl(var(--foreground))"
+                        >
+                          {`${name} · ${Number(value).toLocaleString()}kg (${pct}%)`}
+                        </text>
+                      </g>
+                    );
                   }}
-                  labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-                  fontSize={10}
                 >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
