@@ -62,10 +62,10 @@ const AnalyticsCharts = ({
   });
   const expensePieData = Object.values(expenseByCat).map(v => ({ name: v.display, value: v.total }));
 
-  // Commodity flow bar
-  const commodityBarData = Object.entries(commodityBreakdown).map(([name, v]) => ({
-    name, bought: v.bought, sold: v.sold,
-  }));
+  // Commodity flow bar — sorted by total availability (bought + sold) descending
+  const commodityBarData = Object.entries(commodityBreakdown)
+    .map(([name, v]) => ({ name, bought: v.bought, sold: v.sold, total: v.bought + v.sold }))
+    .sort((a, b) => b.total - a.total);
 
   // Stock pie — merge persistent stock + today's pending deltas (matches Inventory page)
   const stockAgg: Record<string, { display: string; value: number }> = {};
@@ -231,9 +231,9 @@ const AnalyticsCharts = ({
           {commodityBarData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No data</p>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={commodityBarData} barSize={20}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={commodityBarData} barSize={20} margin={{ top: 10, right: 10, bottom: 50, left: 0 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-90} textAnchor="end" height={60} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip content={<WeightTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
