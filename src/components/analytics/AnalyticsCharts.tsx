@@ -299,8 +299,8 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(340, 260 + stockPieData.length * 12)}>
-              <PieChart margin={{ top: 40, right: 120, bottom: 40, left: 120 }}>
+            <ResponsiveContainer width="100%" height={Math.max(380, 280 + stockPieData.length * 16)}>
+              <PieChart margin={{ top: 50, right: 140, bottom: 50, left: 140 }}>
                 <Pie
                   data={stockPieData}
                   dataKey="value"
@@ -314,12 +314,8 @@ const AnalyticsCharts = ({
                   startAngle={90}
                   endAngle={-270}
                   isAnimationActive={false}
-                  label={(entry: any) => {
-                    const pct = (entry.percent * 100).toFixed(0);
-                    return `${entry.name} · ${Number(entry.value).toLocaleString()}kg (${pct}%)`;
-                  }}
-                  labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-                  fontSize={10}
+                  label={renderStockLabel}
+                  labelLine={false}
                 >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
