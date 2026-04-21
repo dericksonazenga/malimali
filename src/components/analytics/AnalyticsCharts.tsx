@@ -102,6 +102,51 @@ const AnalyticsCharts = ({
     .filter(s => s.value > 0)
     .map(s => ({ name: s.display, value: s.value }))
     .sort((a, b) => b.value - a.value);
+  const stockTotal = stockPieData.reduce((sum, s) => sum + s.value, 0);
+
+  // Custom label renderer: staggers small-segment labels at varying lengths to prevent overlap
+  const renderStockLabel = (props: any) => {
+    const { cx, cy, midAngle, outerRadius, index, name, value } = props;
+    const RADIAN = Math.PI / 180;
+    const pct = stockTotal > 0 ? (value / stockTotal) * 100 : 0;
+    const isSmall = pct < 5;
+    // Stagger small slices: alternate extension lengths to spread labels out
+    const baseExt = 22;
+    const stagger = isSmall ? (index % 3) * 18 : 0;
+    const extension = baseExt + stagger;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + outerRadius * cos;
+    const sy = cy + outerRadius * sin;
+    const mx = cx + (outerRadius + extension * 0.4) * cos;
+    const my = cy + (outerRadius + extension * 0.4) * sin;
+    const ex = cx + (outerRadius + extension) * cos;
+    const ey = cy + (outerRadius + extension) * sin;
+    const textAnchor = cos >= 0 ? "start" : "end";
+    const tx = ex + (cos >= 0 ? 6 : -6);
+    const label = `${name} · ${Number(value).toLocaleString()}kg (${pct.toFixed(0)}%)`;
+    return (
+      <g>
+        <path
+          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+          stroke="hsl(var(--muted-foreground))"
+          strokeWidth={1}
+          fill="none"
+        />
+        <circle cx={ex} cy={ey} r={2} fill="hsl(var(--muted-foreground))" />
+        <text
+          x={tx}
+          y={ey}
+          textAnchor={textAnchor}
+          dominantBaseline="central"
+          fontSize={10}
+          fill="hsl(var(--foreground))"
+        >
+          {label}
+        </text>
+      </g>
+    );
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -254,8 +299,8 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(340, 260 + stockPieData.length * 12)}>
-              <PieChart margin={{ top: 40, right: 120, bottom: 40, left: 120 }}>
+            <ResponsiveContainer width="100%" height={Math.max(380, 280 + stockPieData.length * 16)}>
+              <PieChart margin={{ top: 50, right: 140, bottom: 50, left: 140 }}>
                 <Pie
                   data={stockPieData}
                   dataKey="value"
@@ -269,12 +314,8 @@ const AnalyticsCharts = ({
                   startAngle={90}
                   endAngle={-270}
                   isAnimationActive={false}
-                  label={(entry: any) => {
-                    const pct = (entry.percent * 100).toFixed(0);
-                    return `${entry.name} · ${Number(entry.value).toLocaleString()}kg (${pct}%)`;
-                  }}
-                  labelLine={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
-                  fontSize={10}
+                  label={renderStockLabel}
+                  labelLine={false}
                 >
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
