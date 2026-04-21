@@ -62,10 +62,10 @@ const AnalyticsCharts = ({
   });
   const expensePieData = Object.values(expenseByCat).map(v => ({ name: v.display, value: v.total }));
 
-  // Commodity flow bar
-  const commodityBarData = Object.entries(commodityBreakdown).map(([name, v]) => ({
-    name, bought: v.bought, sold: v.sold,
-  }));
+  // Commodity flow bar — sorted by total availability (bought + sold) descending
+  const commodityBarData = Object.entries(commodityBreakdown)
+    .map(([name, v]) => ({ name, bought: v.bought, sold: v.sold, total: v.bought + v.sold }))
+    .sort((a, b) => b.total - a.total);
 
   // Stock pie — merge persistent stock + today's pending deltas (matches Inventory page)
   const stockAgg: Record<string, { display: string; value: number }> = {};
