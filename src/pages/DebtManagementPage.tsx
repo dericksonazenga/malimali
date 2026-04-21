@@ -929,8 +929,7 @@ const DebtManagementPage = () => {
           {advanceDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance ({advanceDebts.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{advanceDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{advanceDebts.map(renderDebtCard)}</div>
+              {renderDebtGroupedSection("advance", advanceDebts)}
             </div>
           )}
 
@@ -938,8 +937,7 @@ const DebtManagementPage = () => {
           {debtDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{debtDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{debtDebts.map(renderDebtCard)}</div>
+              {renderDebtGroupedSection("debt", debtDebts)}
             </div>
           )}
 
@@ -947,8 +945,7 @@ const DebtManagementPage = () => {
           {unpaidCreditors.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> Creditors ({unpaidCreditors.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{unpaidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{unpaidCreditors.map(renderCreditorCard)}</div>
+              {renderCreditorGroupedSection("creditor", unpaidCreditors)}
             </div>
           )}
 
@@ -956,18 +953,8 @@ const DebtManagementPage = () => {
           {(paidDebts.length > 0 || paidCreditors.length > 0) && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-green-600">✓ Paid ({paidDebts.length + paidCreditors.length})</h3>
-              {paidDebts.length > 0 && (
-                <>
-                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{paidDebts.map(renderDebtRow)}</TableBody></Table></div>
-                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidDebts.map(renderDebtCard)}</div>
-                </>
-              )}
-              {paidCreditors.length > 0 && (
-                <>
-                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{paidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
-                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidCreditors.map(renderCreditorCard)}</div>
-                </>
-              )}
+              {paidDebts.length > 0 && renderDebtGroupedSection("paid-debt", paidDebts)}
+              {paidCreditors.length > 0 && renderCreditorGroupedSection("paid-creditor", paidCreditors)}
             </div>
           )}
 
