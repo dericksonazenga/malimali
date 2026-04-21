@@ -820,6 +820,9 @@ const DebtManagementPage = () => {
     );
   };
 
+  const handleExportCSV = async () => {
+    const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
+    const rows: string[][] = [
       ["Type", "Customer", "Description", "Total Amount", "Paid", "Balance", "Status", "Created At", "Payment Amount", "Payment Method", "Paid By", "Paid To", "Payment Notes", "Payment Date"]
     ];
     for (const d of debts) {
