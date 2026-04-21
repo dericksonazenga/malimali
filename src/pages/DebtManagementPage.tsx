@@ -756,24 +756,26 @@ const DebtManagementPage = () => {
                     {isMulti && (
                       <TableRow
                         key={`${groupKey}-header`}
-                        className="bg-muted/50 hover:bg-muted cursor-pointer"
+                        className="bg-primary/5 hover:bg-primary/10 cursor-pointer border-t-2 border-primary/20"
                         onClick={() => toggleGroup(groupKey)}
                       >
                         <TableCell className="font-semibold">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            {g.name}
-                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1">{g.items.length}</Badge>
+                            <span>{g.name}</span>
+                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">× {g.items.length} times</Badge>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">— combined —</TableCell>
-                        <TableCell className="text-right font-mono">{totals.kg.toLocaleString()} kg</TableCell>
-                        <TableCell className="text-right font-mono">-</TableCell>
-                        <TableCell className="text-right font-mono font-semibold">{symbol}{totals.total.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-green-600">{symbol}{totals.paid.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{totals.balance.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground italic">Combined ({g.items.length} entries)</TableCell>
+                        <TableCell className="text-right font-mono font-semibold">{totals.kg.toLocaleString()} kg</TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-base">{symbol}{totals.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-green-600 font-semibold">{symbol}{totals.paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-destructive font-bold text-base">{symbol}{totals.balance.toLocaleString()}</TableCell>
                         <TableCell />
-                        <TableCell />
+                        <TableCell className="text-right">
+                          <span className="text-[10px] text-muted-foreground">{expanded ? "Hide" : "Show"} breakdown</span>
+                        </TableCell>
                       </TableRow>
                     )}
                     {expanded && g.items.map(renderCreditorRow)}
