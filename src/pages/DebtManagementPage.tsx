@@ -131,6 +131,10 @@ const DebtManagementPage = () => {
   const [creditorPayMethod, setCreditorPayMethod] = useState("cash");
   const [creditorPayments, setCreditorPayments] = useState<CreditorPayment[]>([]);
 
+  // Collapsed customer groups (per section). Default: collapsed when group has >1 entry.
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) => setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
       .from("debts")
