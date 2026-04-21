@@ -652,24 +652,26 @@ const DebtManagementPage = () => {
                     {isMulti && (
                       <TableRow
                         key={`${groupKey}-header`}
-                        className="bg-muted/50 hover:bg-muted cursor-pointer"
+                        className="bg-primary/5 hover:bg-primary/10 cursor-pointer border-t-2 border-primary/20"
                         onClick={() => toggleGroup(groupKey)}
                       >
                         <TableCell className="font-semibold">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            {g.name}
-                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1">{g.items.length}</Badge>
+                            <span>{g.name}</span>
+                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">× {g.items.length} times</Badge>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">— combined —</TableCell>
-                        <TableCell className="text-right font-mono">-</TableCell>
-                        <TableCell className="text-right font-mono">-</TableCell>
-                        <TableCell className="text-right font-mono font-semibold">{symbol}{totals.total.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-green-600">{symbol}{totals.paid.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{totals.balance.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground italic">Combined total ({g.items.length} entries)</TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-base">{symbol}{totals.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-green-600 font-semibold">{symbol}{totals.paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-destructive font-bold text-base">{symbol}{totals.balance.toLocaleString()}</TableCell>
                         <TableCell />
-                        <TableCell />
+                        <TableCell className="text-right">
+                          <span className="text-[10px] text-muted-foreground">{expanded ? "Hide" : "Show"} breakdown</span>
+                        </TableCell>
                       </TableRow>
                     )}
                     {expanded && g.items.map(renderDebtRow)}
@@ -699,16 +701,21 @@ const DebtManagementPage = () => {
                   <button
                     type="button"
                     onClick={() => toggleGroup(groupKey)}
-                    className="w-full flex items-center justify-between bg-muted/60 hover:bg-muted rounded-lg p-2.5 text-left"
+                    className="w-full flex items-center justify-between bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg p-3 text-left"
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
-                      <span className="font-semibold text-sm truncate">{g.name}</span>
-                      <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">{g.items.length}</Badge>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-sm truncate">{g.name}</span>
+                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-bold shrink-0">× {g.items.length}</Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Total: {symbol}{totals.total.toLocaleString()} · Paid: {symbol}{totals.paid.toLocaleString()}</p>
+                      </div>
                     </div>
                     <div className="text-right shrink-0 ml-2">
                       <p className="text-[10px] text-muted-foreground">Balance</p>
-                      <p className="font-mono font-semibold text-destructive text-sm">{symbol}{totals.balance.toLocaleString()}</p>
+                      <p className="font-mono font-bold text-destructive text-base">{symbol}{totals.balance.toLocaleString()}</p>
                     </div>
                   </button>
                 )}
@@ -749,24 +756,26 @@ const DebtManagementPage = () => {
                     {isMulti && (
                       <TableRow
                         key={`${groupKey}-header`}
-                        className="bg-muted/50 hover:bg-muted cursor-pointer"
+                        className="bg-primary/5 hover:bg-primary/10 cursor-pointer border-t-2 border-primary/20"
                         onClick={() => toggleGroup(groupKey)}
                       >
                         <TableCell className="font-semibold">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            {g.name}
-                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1">{g.items.length}</Badge>
+                            <span>{g.name}</span>
+                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">× {g.items.length} times</Badge>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">— combined —</TableCell>
-                        <TableCell className="text-right font-mono">{totals.kg.toLocaleString()} kg</TableCell>
-                        <TableCell className="text-right font-mono">-</TableCell>
-                        <TableCell className="text-right font-mono font-semibold">{symbol}{totals.total.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-green-600">{symbol}{totals.paid.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{totals.balance.toLocaleString()}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground italic">Combined ({g.items.length} entries)</TableCell>
+                        <TableCell className="text-right font-mono font-semibold">{totals.kg.toLocaleString()} kg</TableCell>
+                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
+                        <TableCell className="text-right font-mono font-bold text-base">{symbol}{totals.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-green-600 font-semibold">{symbol}{totals.paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-destructive font-bold text-base">{symbol}{totals.balance.toLocaleString()}</TableCell>
                         <TableCell />
-                        <TableCell />
+                        <TableCell className="text-right">
+                          <span className="text-[10px] text-muted-foreground">{expanded ? "Hide" : "Show"} breakdown</span>
+                        </TableCell>
                       </TableRow>
                     )}
                     {expanded && g.items.map(renderCreditorRow)}
@@ -797,17 +806,21 @@ const DebtManagementPage = () => {
                   <button
                     type="button"
                     onClick={() => toggleGroup(groupKey)}
-                    className="w-full flex items-center justify-between bg-muted/60 hover:bg-muted rounded-lg p-2.5 text-left"
+                    className="w-full flex items-center justify-between bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg p-3 text-left"
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
-                      <span className="font-semibold text-sm truncate">{g.name}</span>
-                      <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">{g.items.length}</Badge>
-                      <span className="text-[10px] text-muted-foreground shrink-0">· {totals.kg}kg</span>
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-sm truncate">{g.name}</span>
+                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-bold shrink-0">× {g.items.length}</Badge>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Total: {symbol}{totals.total.toLocaleString()} · {totals.kg}kg · Paid: {symbol}{totals.paid.toLocaleString()}</p>
+                      </div>
                     </div>
                     <div className="text-right shrink-0 ml-2">
                       <p className="text-[10px] text-muted-foreground">Balance</p>
-                      <p className="font-mono font-semibold text-destructive text-sm">{symbol}{totals.balance.toLocaleString()}</p>
+                      <p className="font-mono font-bold text-destructive text-base">{symbol}{totals.balance.toLocaleString()}</p>
                     </div>
                   </button>
                 )}
