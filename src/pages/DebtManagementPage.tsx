@@ -437,6 +437,27 @@ const DebtManagementPage = () => {
     return <Badge variant="destructive" className="text-xs"><ArrowDownCircle className="w-3 h-3 mr-1" />Advance</Badge>;
   };
 
+  // Group debts by lowercased customer name, preserving display name from first entry
+  const groupDebtsByName = (items: Debt[]) => {
+    const groups: Record<string, { name: string; items: Debt[] }> = {};
+    items.forEach(d => {
+      const key = d.customer_name.trim().toLowerCase();
+      if (!groups[key]) groups[key] = { name: d.customer_name.trim(), items: [] };
+      groups[key].items.push(d);
+    });
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const groupCreditorsByName = (items: Creditor[]) => {
+    const groups: Record<string, { name: string; items: Creditor[] }> = {};
+    items.forEach(c => {
+      const key = c.customer_name.trim().toLowerCase();
+      if (!groups[key]) groups[key] = { name: c.customer_name.trim(), items: [] };
+      groups[key].items.push(c);
+    });
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
   const renderDebtRow = (d: Debt) => {
     const isDebt = d.status === "money_out";
     const deductionAmount = isDebt ? parseDeductionAmount(d.description) : 0;
