@@ -102,6 +102,51 @@ const AnalyticsCharts = ({
     .filter(s => s.value > 0)
     .map(s => ({ name: s.display, value: s.value }))
     .sort((a, b) => b.value - a.value);
+  const stockTotal = stockPieData.reduce((sum, s) => sum + s.value, 0);
+
+  // Custom label renderer: staggers small-segment labels at varying lengths to prevent overlap
+  const renderStockLabel = (props: any) => {
+    const { cx, cy, midAngle, outerRadius, index, name, value } = props;
+    const RADIAN = Math.PI / 180;
+    const pct = stockTotal > 0 ? (value / stockTotal) * 100 : 0;
+    const isSmall = pct < 5;
+    // Stagger small slices: alternate extension lengths to spread labels out
+    const baseExt = 22;
+    const stagger = isSmall ? (index % 3) * 18 : 0;
+    const extension = baseExt + stagger;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + outerRadius * cos;
+    const sy = cy + outerRadius * sin;
+    const mx = cx + (outerRadius + extension * 0.4) * cos;
+    const my = cy + (outerRadius + extension * 0.4) * sin;
+    const ex = cx + (outerRadius + extension) * cos;
+    const ey = cy + (outerRadius + extension) * sin;
+    const textAnchor = cos >= 0 ? "start" : "end";
+    const tx = ex + (cos >= 0 ? 6 : -6);
+    const label = `${name} · ${Number(value).toLocaleString()}kg (${pct.toFixed(0)}%)`;
+    return (
+      <g>
+        <path
+          d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+          stroke="hsl(var(--muted-foreground))"
+          strokeWidth={1}
+          fill="none"
+        />
+        <circle cx={ex} cy={ey} r={2} fill="hsl(var(--muted-foreground))" />
+        <text
+          x={tx}
+          y={ey}
+          textAnchor={textAnchor}
+          dominantBaseline="central"
+          fontSize={10}
+          fill="hsl(var(--foreground))"
+        >
+          {label}
+        </text>
+      </g>
+    );
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
