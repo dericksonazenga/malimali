@@ -745,7 +745,7 @@ const DebtManagementPage = () => {
                   { kg: 0, total: 0, paid: 0, balance: 0 },
                 );
                 return (
-                  <>
+                  <Fragment key={groupKey}>
                     {isMulti && (
                       <TableRow
                         key={`${groupKey}-header`}
@@ -770,7 +770,7 @@ const DebtManagementPage = () => {
                       </TableRow>
                     )}
                     {expanded && g.items.map(renderCreditorRow)}
-                  </>
+                  </Fragment>
                 );
               })}
             </TableBody>
