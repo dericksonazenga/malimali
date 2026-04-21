@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -130,6 +130,10 @@ const DebtManagementPage = () => {
   const [creditorPayNotes, setCreditorPayNotes] = useState("");
   const [creditorPayMethod, setCreditorPayMethod] = useState("cash");
   const [creditorPayments, setCreditorPayments] = useState<CreditorPayment[]>([]);
+
+  // Collapsed customer groups (per section). Default: collapsed when group has >1 entry.
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) => setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
 
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
@@ -433,6 +437,27 @@ const DebtManagementPage = () => {
     return <Badge variant="destructive" className="text-xs"><ArrowDownCircle className="w-3 h-3 mr-1" />Advance</Badge>;
   };
 
+  // Group debts by lowercased customer name, preserving display name from first entry
+  const groupDebtsByName = (items: Debt[]) => {
+    const groups: Record<string, { name: string; items: Debt[] }> = {};
+    items.forEach(d => {
+      const key = d.customer_name.trim().toLowerCase();
+      if (!groups[key]) groups[key] = { name: d.customer_name.trim(), items: [] };
+      groups[key].items.push(d);
+    });
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
+  const groupCreditorsByName = (items: Creditor[]) => {
+    const groups: Record<string, { name: string; items: Creditor[] }> = {};
+    items.forEach(c => {
+      const key = c.customer_name.trim().toLowerCase();
+      if (!groups[key]) groups[key] = { name: c.customer_name.trim(), items: [] };
+      groups[key].items.push(c);
+    });
+    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
+  };
+
   const renderDebtRow = (d: Debt) => {
     const isDebt = d.status === "money_out";
     const deductionAmount = isDebt ? parseDeductionAmount(d.description) : 0;
@@ -600,6 +625,201 @@ const DebtManagementPage = () => {
     </TableHeader>
   );
 
+  // Grouped section renderer for debts (advance / debt / paid)
+  const renderDebtGroupedSection = (sectionKey: string, items: Debt[]) => {
+    const groups = groupDebtsByName(items);
+    return (
+      <>
+        <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+          <Table>
+            {desktopTableHeaders}
+            <TableBody>
+              {groups.map(g => {
+                const groupKey = `${sectionKey}-${g.name.toLowerCase()}`;
+                const isMulti = g.items.length > 1;
+                const expanded = expandedGroups[groupKey] ?? !isMulti;
+                const totals = g.items.reduce(
+                  (acc, d) => {
+                    acc.total += d.total_amount;
+                    acc.paid += d.paid_amount;
+                    acc.balance += d.balance;
+                    return acc;
+                  },
+                  { total: 0, paid: 0, balance: 0 },
+                );
+                return (
+                  <Fragment key={groupKey}>
+                    {isMulti && (
+                      <TableRow
+                        key={`${groupKey}-header`}
+                        className="bg-muted/50 hover:bg-muted cursor-pointer"
+                        onClick={() => toggleGroup(groupKey)}
+                      >
+                        <TableCell className="font-semibold">
+                          <div className="flex items-center gap-1">
+                            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                            {g.name}
+                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1">{g.items.length}</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">— combined —</TableCell>
+                        <TableCell className="text-right font-mono">-</TableCell>
+                        <TableCell className="text-right font-mono">-</TableCell>
+                        <TableCell className="text-right font-mono font-semibold">{symbol}{totals.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-green-600">{symbol}{totals.paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{totals.balance.toLocaleString()}</TableCell>
+                        <TableCell />
+                        <TableCell />
+                      </TableRow>
+                    )}
+                    {expanded && g.items.map(renderDebtRow)}
+                  </Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
+          {groups.map(g => {
+            const groupKey = `m-${sectionKey}-${g.name.toLowerCase()}`;
+            const isMulti = g.items.length > 1;
+            const expanded = expandedGroups[groupKey] ?? !isMulti;
+            const totals = g.items.reduce(
+              (acc, d) => {
+                acc.total += d.total_amount;
+                acc.paid += d.paid_amount;
+                acc.balance += d.balance;
+                return acc;
+              },
+              { total: 0, paid: 0, balance: 0 },
+            );
+            return (
+              <div key={groupKey} className="space-y-2">
+                {isMulti && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(groupKey)}
+                    className="w-full flex items-center justify-between bg-muted/60 hover:bg-muted rounded-lg p-2.5 text-left"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="font-semibold text-sm truncate">{g.name}</span>
+                      <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">{g.items.length}</Badge>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-[10px] text-muted-foreground">Balance</p>
+                      <p className="font-mono font-semibold text-destructive text-sm">{symbol}{totals.balance.toLocaleString()}</p>
+                    </div>
+                  </button>
+                )}
+                {expanded && g.items.map(renderDebtCard)}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
+  // Grouped section renderer for creditors
+  const renderCreditorGroupedSection = (sectionKey: string, items: Creditor[]) => {
+    const groups = groupCreditorsByName(items);
+    return (
+      <>
+        <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+          <Table>
+            {creditorTableHeaders}
+            <TableBody>
+              {groups.map(g => {
+                const groupKey = `${sectionKey}-${g.name.toLowerCase()}`;
+                const isMulti = g.items.length > 1;
+                const expanded = expandedGroups[groupKey] ?? !isMulti;
+                const totals = g.items.reduce(
+                  (acc, c) => {
+                    acc.kg += c.kg;
+                    acc.total += c.total_amount;
+                    acc.paid += c.paid_amount;
+                    acc.balance += c.balance;
+                    return acc;
+                  },
+                  { kg: 0, total: 0, paid: 0, balance: 0 },
+                );
+                return (
+                  <Fragment key={groupKey}>
+                    {isMulti && (
+                      <TableRow
+                        key={`${groupKey}-header`}
+                        className="bg-muted/50 hover:bg-muted cursor-pointer"
+                        onClick={() => toggleGroup(groupKey)}
+                      >
+                        <TableCell className="font-semibold">
+                          <div className="flex items-center gap-1">
+                            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                            {g.name}
+                            <Badge variant="outline" className="ml-2 text-[10px] h-4 px-1">{g.items.length}</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">— combined —</TableCell>
+                        <TableCell className="text-right font-mono">{totals.kg.toLocaleString()} kg</TableCell>
+                        <TableCell className="text-right font-mono">-</TableCell>
+                        <TableCell className="text-right font-mono font-semibold">{symbol}{totals.total.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-green-600">{symbol}{totals.paid.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{totals.balance.toLocaleString()}</TableCell>
+                        <TableCell />
+                        <TableCell />
+                      </TableRow>
+                    )}
+                    {expanded && g.items.map(renderCreditorRow)}
+                  </Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
+          {groups.map(g => {
+            const groupKey = `m-${sectionKey}-${g.name.toLowerCase()}`;
+            const isMulti = g.items.length > 1;
+            const expanded = expandedGroups[groupKey] ?? !isMulti;
+            const totals = g.items.reduce(
+              (acc, c) => {
+                acc.kg += c.kg;
+                acc.total += c.total_amount;
+                acc.paid += c.paid_amount;
+                acc.balance += c.balance;
+                return acc;
+              },
+              { kg: 0, total: 0, paid: 0, balance: 0 },
+            );
+            return (
+              <div key={groupKey} className="space-y-2">
+                {isMulti && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(groupKey)}
+                    className="w-full flex items-center justify-between bg-muted/60 hover:bg-muted rounded-lg p-2.5 text-left"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {expanded ? <ChevronDown className="w-3.5 h-3.5 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="font-semibold text-sm truncate">{g.name}</span>
+                      <Badge variant="outline" className="text-[10px] h-4 px-1 shrink-0">{g.items.length}</Badge>
+                      <span className="text-[10px] text-muted-foreground shrink-0">· {totals.kg}kg</span>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-[10px] text-muted-foreground">Balance</p>
+                      <p className="font-mono font-semibold text-destructive text-sm">{symbol}{totals.balance.toLocaleString()}</p>
+                    </div>
+                  </button>
+                )}
+                {expanded && g.items.map(renderCreditorCard)}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
   const handleExportCSV = async () => {
     const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
     const rows: string[][] = [
@@ -709,8 +929,7 @@ const DebtManagementPage = () => {
           {advanceDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance ({advanceDebts.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{advanceDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{advanceDebts.map(renderDebtCard)}</div>
+              {renderDebtGroupedSection("advance", advanceDebts)}
             </div>
           )}
 
@@ -718,8 +937,7 @@ const DebtManagementPage = () => {
           {debtDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{debtDebts.map(renderDebtRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{debtDebts.map(renderDebtCard)}</div>
+              {renderDebtGroupedSection("debt", debtDebts)}
             </div>
           )}
 
@@ -727,8 +945,7 @@ const DebtManagementPage = () => {
           {unpaidCreditors.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> Creditors ({unpaidCreditors.length})</h3>
-              <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{unpaidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
-              <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{unpaidCreditors.map(renderCreditorCard)}</div>
+              {renderCreditorGroupedSection("creditor", unpaidCreditors)}
             </div>
           )}
 
@@ -736,18 +953,8 @@ const DebtManagementPage = () => {
           {(paidDebts.length > 0 || paidCreditors.length > 0) && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-green-600">✓ Paid ({paidDebts.length + paidCreditors.length})</h3>
-              {paidDebts.length > 0 && (
-                <>
-                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{desktopTableHeaders}<TableBody>{paidDebts.map(renderDebtRow)}</TableBody></Table></div>
-                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidDebts.map(renderDebtCard)}</div>
-                </>
-              )}
-              {paidCreditors.length > 0 && (
-                <>
-                  <div className="hidden lg:block max-h-[480px] overflow-y-auto"><Table>{creditorTableHeaders}<TableBody>{paidCreditors.map(renderCreditorRow)}</TableBody></Table></div>
-                  <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">{paidCreditors.map(renderCreditorCard)}</div>
-                </>
-              )}
+              {paidDebts.length > 0 && renderDebtGroupedSection("paid-debt", paidDebts)}
+              {paidCreditors.length > 0 && renderCreditorGroupedSection("paid-creditor", paidCreditors)}
             </div>
           )}
 
