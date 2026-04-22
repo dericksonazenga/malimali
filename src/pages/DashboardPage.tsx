@@ -10,20 +10,37 @@ import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
-  <Card className={cn("animate-fade-in transition-all active:scale-[0.98]", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
-    <CardContent className="p-3 sm:p-5">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] sm:text-sm text-muted-foreground leading-tight truncate">{title}</p>
-          <p className={`text-sm sm:text-xl lg:text-2xl font-bold font-mono tabular-nums mt-0.5 sm:mt-1 leading-tight break-all ${color}`}>{value}</p>
-          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+const formatCompact = (n: number) => {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return (n / 1_000_000_000).toFixed(abs >= 10_000_000_000 ? 1 : 2).replace(/\.?0+$/, "") + "B";
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "") + "M";
+  if (abs >= 100_000) return (n / 1_000).toFixed(0) + "K";
+  return n.toLocaleString();
+};
+
+const StatCard = ({ title, symbol, amount, subtitle, icon, color, onClick }: { title: string; symbol: string; amount: number; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => {
+  const compact = formatCompact(amount);
+  const full = `${symbol}${amount.toLocaleString()}`;
+  return (
+    <Card className={cn("animate-fade-in transition-all active:scale-[0.98]", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
+      <CardContent className="p-3 sm:p-5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] sm:text-sm text-muted-foreground leading-tight truncate">{title}</p>
+            <p
+              className={`font-bold font-mono tabular-nums mt-0.5 sm:mt-1 leading-tight whitespace-nowrap truncate text-base sm:text-xl lg:text-2xl ${color}`}
+              title={full}
+            >
+              {symbol}{compact}
+            </p>
+            {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>}
+          </div>
+          <div className="p-2 sm:p-2.5 rounded-lg bg-accent shrink-0">{icon}</div>
         </div>
-        <div className="p-2 sm:p-2.5 rounded-lg bg-accent shrink-0">{icon}</div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 const DashboardPage = () => {
   const { user, hasPermission, companyId } = useAuth();
@@ -134,11 +151,11 @@ const DashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-        <StatCard title={`${labels.agent} Purchases`} value={`${symbol}${agentTotal.toLocaleString()}`} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
-        <StatCard title={`${labels.vip} Purchases`} value={`${symbol}${vipTotal.toLocaleString()}`} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
-        <StatCard title="Total Purchases" value={`${symbol}${(agentTotal + vipTotal).toLocaleString()}`} subtitle={`${agentEntries.length + vipEntries.length} entries`} icon={<TrendingDown className="w-5 h-5 text-orange-500" />} color="text-foreground" />
-        <StatCard title={labels.sales} value={`${symbol}${salesTotalAmount.toLocaleString()}`} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
-        <StatCard title="Expenses" value={`${symbol}${expenseTotal.toLocaleString()}`} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
+        <StatCard title={`${labels.agent} Purchases`} symbol={symbol} amount={agentTotal} subtitle={`${agentEntries.length} entries`} icon={<FileText className="w-5 h-5 text-info" />} color="text-info" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=agent") : undefined} />
+        <StatCard title={`${labels.vip} Purchases`} symbol={symbol} amount={vipTotal} subtitle={`${vipEntries.length} entries`} icon={<Star className="w-5 h-5 text-primary" />} color="text-primary" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=vip") : undefined} />
+        <StatCard title="Total Purchases" symbol={symbol} amount={agentTotal + vipTotal} subtitle={`${agentEntries.length + vipEntries.length} entries`} icon={<TrendingDown className="w-5 h-5 text-orange-500" />} color="text-foreground" />
+        <StatCard title={labels.sales} symbol={symbol} amount={salesTotalAmount} subtitle={`${salesEntries.length} entries`} icon={<ShoppingCart className="w-5 h-5 text-success" />} color="text-success" onClick={hasPermission("view_data_entry") ? () => navigate("/data-entry?tab=sales") : undefined} />
+        <StatCard title="Expenses" symbol={symbol} amount={expenseTotal} subtitle={`${expenseCount} records`} icon={<Wallet className="w-5 h-5 text-destructive" />} color="text-destructive" onClick={hasPermission("manage_expenses") ? () => navigate("/expenses") : undefined} />
       </div>
 
       {/* Debt Summary Tickets */}
