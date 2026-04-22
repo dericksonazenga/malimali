@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users, Clock, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -69,6 +69,16 @@ interface Deduction {
   id: string;
   label: string;
   amount: number;
+}
+
+interface HistoryEvent {
+  id: string;
+  date: string;
+  type: "addition" | "payment" | "create" | "edit";
+  amount: number;
+  by: string;
+  note?: string;
+  method?: string;
 }
 
 const DebtManagementPage = () => {
@@ -131,9 +141,10 @@ const DebtManagementPage = () => {
   const [creditorPayMethod, setCreditorPayMethod] = useState("cash");
   const [creditorPayments, setCreditorPayments] = useState<CreditorPayment[]>([]);
 
-  // Collapsed customer groups (per section). Default: collapsed when group has >1 entry.
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const toggleGroup = (key: string) => setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  // History dialog (consolidated additions + payments)
+  const [historyTarget, setHistoryTarget] = useState<{ kind: "debt" | "creditor"; id: string; name: string } | null>(null);
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
@@ -222,27 +233,68 @@ const DebtManagementPage = () => {
     }
   };
 
+  // Find existing creditor by name + commodity (case-insensitive)
+  const findExistingCreditor = (name: string, commodity: string) => {
+    const key = name.trim().toLowerCase();
+    return creditors.find(c => c.customer_name.trim().toLowerCase() === key && c.commodity === commodity && c.status !== "paid");
+  };
+
+  // Find existing debt for this customer + type (advance / money_out), unpaid only
+  const findExistingDebt = (name: string, statusType: "unpaid" | "money_out") => {
+    const key = name.trim().toLowerCase();
+    return debts.find(d => d.customer_name.trim().toLowerCase() === key && d.status === statusType);
+  };
+
   const handleAddCreditor = async () => {
     if (!customerName.trim() || !creditorCommodity || !creditorKg) { toast.error("Fill required fields"); return; }
     const kg = parseFloat(creditorKg) || 0;
     const rate = parseFloat(creditorRate) || 0;
     const amount = kg * rate;
+    const name = customerName.trim();
+    const existing = findExistingCreditor(name, creditorCommodity);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-    const { data, error } = await supabase.from("creditors").insert({
-      customer_name: customerName.trim(),
-      commodity: creditorCommodity,
-      kg,
-      rate,
-      total_amount: amount,
-      balance: amount,
-      recorded_by: user?.id,
-      recorded_by_name: user?.name || "Unknown",
-      company_id,
-    }).select("id").single();
-    if (error) { toast.error("Failed to add creditor"); return; }
-    await logAuditEvent({ tableName: "creditors", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), commodity: creditorCommodity, kg, rate, total_amount: amount }, changedByName: user?.name || "Unknown" });
+
+    if (existing) {
+      // Accumulate kg/amount on existing record. Re-weight rate as average.
+      const newKg = existing.kg + kg;
+      const newTotal = existing.total_amount + amount;
+      const newBalance = existing.balance + amount;
+      const newRate = newKg > 0 ? newTotal / newKg : rate;
+      const { error } = await supabase.from("creditors").update({
+        kg: newKg,
+        rate: newRate,
+        total_amount: newTotal,
+        balance: newBalance,
+        status: newBalance <= 0 ? "paid" : "unpaid",
+        updated_at: new Date().toISOString(),
+      }).eq("id", existing.id);
+      if (error) { toast.error("Failed to update creditor"); return; }
+      await logAuditEvent({
+        tableName: "creditors",
+        recordId: existing.id,
+        action: "update",
+        oldData: { kg: existing.kg, total_amount: existing.total_amount, balance: existing.balance },
+        newData: { addition_kg: kg, addition_amount: amount, rate, kg: newKg, total_amount: newTotal, balance: newBalance, note: "Added to existing record" },
+        changedByName: user?.name || "Unknown",
+      });
+      toast.success(`Added ${kg}kg to ${name}'s record`);
+    } else {
+      const { data, error } = await supabase.from("creditors").insert({
+        customer_name: name,
+        commodity: creditorCommodity,
+        kg,
+        rate,
+        total_amount: amount,
+        balance: amount,
+        recorded_by: user?.id,
+        recorded_by_name: user?.name || "Unknown",
+        company_id,
+      }).select("id").single();
+      if (error) { toast.error("Failed to add creditor"); return; }
+      await logAuditEvent({ tableName: "creditors", recordId: data.id, action: "create", newData: { customer_name: name, commodity: creditorCommodity, kg, rate, total_amount: amount }, changedByName: user?.name || "Unknown" });
+      toast.success("Creditor record added");
+    }
     setCustomerName(""); setCreditorCommodity(""); setCreditorKg(""); setCreditorRate(""); setShowAdd(false);
-    toast.success("Creditor record added");
   };
 
   const handleConfirmDeduction = () => {
@@ -255,20 +307,50 @@ const DebtManagementPage = () => {
   };
 
   const saveDebt = async (amt: number, desc?: string) => {
+    const name = customerName.trim();
+    const statusType: "unpaid" | "money_out" = debtType === "debt" ? "money_out" : "unpaid";
+    const existing = findExistingDebt(name, statusType);
+    const finalDesc = desc ?? description;
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-    const { data, error } = await supabase.from("debts").insert({
-      customer_name: customerName.trim(),
-      description: desc ?? description,
-      total_amount: amt,
-      balance: amt,
-      created_by: user?.id,
-      status: debtType === "debt" ? "money_out" : "unpaid",
-      company_id,
-    }).select("id").single();
-    if (error) { toast.error("Failed to add"); return; }
-    await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: customerName.trim(), total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
+
+    if (existing) {
+      const newTotal = existing.total_amount + amt;
+      const newBalance = existing.balance + amt;
+      const mergedDesc = finalDesc
+        ? (existing.description ? `${existing.description} | + ${finalDesc}` : finalDesc)
+        : existing.description;
+      const { error } = await supabase.from("debts").update({
+        total_amount: newTotal,
+        balance: newBalance,
+        description: mergedDesc,
+        status: newBalance <= 0 ? "paid" : statusType,
+        updated_at: new Date().toISOString(),
+      }).eq("id", existing.id);
+      if (error) { toast.error("Failed to update"); return; }
+      await logAuditEvent({
+        tableName: "debts",
+        recordId: existing.id,
+        action: "update",
+        oldData: { total_amount: existing.total_amount, balance: existing.balance },
+        newData: { addition_amount: amt, total_amount: newTotal, balance: newBalance, description: finalDesc, note: "Added to existing record" },
+        changedByName: user?.name || "Unknown",
+      });
+      toast.success(`Added ${symbol}${amt.toLocaleString()} to ${name}'s ${statusType === "money_out" ? "debt" : "advance"}`);
+    } else {
+      const { data, error } = await supabase.from("debts").insert({
+        customer_name: name,
+        description: finalDesc,
+        total_amount: amt,
+        balance: amt,
+        created_by: user?.id,
+        status: statusType,
+        company_id,
+      }).select("id").single();
+      if (error) { toast.error("Failed to add"); return; }
+      await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: name, total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
+      toast.success("Record added");
+    }
     setCustomerName(""); setDescription(""); setTotalAmount(""); setShowAdd(false); setDebtType("advance");
-    toast.success("Record added");
   };
 
   const handleEdit = async () => {
@@ -385,7 +467,7 @@ const DebtManagementPage = () => {
 
   const handleDelete = async (id: string) => {
     const debt = debts.find(d => d.id === id);
-    if (!confirm("Delete this record?")) return;
+    if (!confirm("Delete this record? This will remove all history.")) return;
     const { error } = await supabase.from("debts").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
     if (debt) await logAuditEvent({ tableName: "debts", recordId: id, action: "delete", oldData: { customer_name: debt.customer_name, total_amount: debt.total_amount, balance: debt.balance }, changedByName: user?.name || "Unknown" });
@@ -394,11 +476,74 @@ const DebtManagementPage = () => {
 
   const handleDeleteCreditor = async (id: string) => {
     const creditor = creditors.find(c => c.id === id);
-    if (!confirm("Delete this creditor record?")) return;
+    if (!confirm("Delete this creditor record? This will remove all history.")) return;
     const { error } = await supabase.from("creditors").delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
     if (creditor) await logAuditEvent({ tableName: "creditors", recordId: id, action: "delete", oldData: { customer_name: creditor.customer_name, commodity: creditor.commodity, total_amount: creditor.total_amount }, changedByName: user?.name || "Unknown" });
     toast.success("Deleted");
+  };
+
+  // Open History dialog: merges audit_log additions/creates/edits with payments
+  const openHistory = async (kind: "debt" | "creditor", id: string, name: string) => {
+    setHistoryTarget({ kind, id, name });
+    setHistoryEvents([]);
+    setLoadingHistory(true);
+    const tableName = kind === "debt" ? "debts" : "creditors";
+    const paymentsTable = kind === "debt" ? "debt_payments" : "creditor_payments";
+    const fkColumn = kind === "debt" ? "debt_id" : "creditor_id";
+
+    const [auditRes, paymentsRes] = await Promise.all([
+      supabase.from("audit_log").select("*").eq("table_name", tableName).eq("record_id", id).order("created_at", { ascending: false }),
+      supabase.from(paymentsTable as any).select("*").eq(fkColumn, id).order("created_at", { ascending: false }),
+    ]);
+
+    const events: HistoryEvent[] = [];
+    (auditRes.data || []).forEach((row: any) => {
+      const nd = row.new_data || {};
+      const od = row.old_data || {};
+      if (row.action === "create") {
+        events.push({
+          id: row.id,
+          date: row.created_at,
+          type: "create",
+          amount: Number(nd.total_amount || nd.kg || 0),
+          by: row.changed_by_name || "—",
+          note: kind === "creditor" && nd.kg ? `Initial: ${nd.kg}kg @ ${symbol}${nd.rate || 0}` : "Initial entry",
+        });
+      } else if (row.action === "update" && nd.addition_amount) {
+        events.push({
+          id: row.id,
+          date: row.created_at,
+          type: "addition",
+          amount: Number(nd.addition_amount),
+          by: row.changed_by_name || "—",
+          note: kind === "creditor" && nd.addition_kg ? `+${nd.addition_kg}kg added` : (nd.description ? `Note: ${nd.description}` : "Added to balance"),
+        });
+      } else if (row.action === "update" && !nd.payment_amount) {
+        events.push({
+          id: row.id,
+          date: row.created_at,
+          type: "edit",
+          amount: Number(nd.total_amount || 0),
+          by: row.changed_by_name || "—",
+          note: "Record edited",
+        });
+      }
+    });
+    (paymentsRes.data || []).forEach((p: any) => {
+      events.push({
+        id: p.id,
+        date: p.created_at,
+        type: "payment",
+        amount: Number(p.amount),
+        by: p.paid_by_name || "—",
+        note: p.notes || "",
+        method: p.payment_method,
+      });
+    });
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setHistoryEvents(events);
+    setLoadingHistory(false);
   };
 
   const filtered = debts.filter(d =>
@@ -437,27 +582,6 @@ const DebtManagementPage = () => {
     return <Badge variant="destructive" className="text-xs"><ArrowDownCircle className="w-3 h-3 mr-1" />Advance</Badge>;
   };
 
-  // Group debts by lowercased customer name, preserving display name from first entry
-  const groupDebtsByName = (items: Debt[]) => {
-    const groups: Record<string, { name: string; items: Debt[] }> = {};
-    items.forEach(d => {
-      const key = d.customer_name.trim().toLowerCase();
-      if (!groups[key]) groups[key] = { name: d.customer_name.trim(), items: [] };
-      groups[key].items.push(d);
-    });
-    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
-  };
-
-  const groupCreditorsByName = (items: Creditor[]) => {
-    const groups: Record<string, { name: string; items: Creditor[] }> = {};
-    items.forEach(c => {
-      const key = c.customer_name.trim().toLowerCase();
-      if (!groups[key]) groups[key] = { name: c.customer_name.trim(), items: [] };
-      groups[key].items.push(c);
-    });
-    return Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
-  };
-
   const renderDebtRow = (d: Debt) => {
     const isDebt = d.status === "money_out";
     const deductionAmount = isDebt ? parseDeductionAmount(d.description) : 0;
@@ -477,6 +601,9 @@ const DebtManagementPage = () => {
         <TableCell>{getStatusBadge(d.status)}</TableCell>
         <TableCell>
           <div className="flex items-center justify-end gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
+              <Clock className="w-3.5 h-3.5" />
+            </Button>
             {d.status !== "paid" && canPay && (
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
             )}
@@ -506,19 +633,20 @@ const DebtManagementPage = () => {
         <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
         <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
       </div>
-      {(canPay || canEditDebt || canDelete) && (
-        <div className="flex gap-1">
-          {d.status !== "paid" && canPay && (
-            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
-          )}
-          {canEditDebt && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-          )}
-        </div>
-      )}
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
+          <Clock className="w-3.5 h-3.5" />
+        </Button>
+        {d.status !== "paid" && canPay && (
+          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
+        )}
+        {canEditDebt && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+        )}
+      </div>
     </div>
   );
 
@@ -534,6 +662,9 @@ const DebtManagementPage = () => {
       <TableCell className="text-xs text-muted-foreground">{c.recorded_by_name}</TableCell>
       <TableCell>
         <div className="flex items-center justify-end gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
+            <Clock className="w-3.5 h-3.5" />
+          </Button>
           {c.status !== "paid" && canPay && (
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
           )}
@@ -560,7 +691,7 @@ const DebtManagementPage = () => {
       <div className="flex justify-between items-start">
         <div className="min-w-0 flex-1">
           <p className="font-medium text-sm truncate">{c.customer_name}</p>
-          <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate}</p>
+          <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate.toFixed(2)}</p>
         </div>
         {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
       </div>
@@ -570,26 +701,27 @@ const DebtManagementPage = () => {
         <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
       </div>
       <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
-      {(canPay || canEditDebt || canDelete) && (
-        <div className="flex gap-1">
-          {c.status !== "paid" && canPay && (
-            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
-          )}
-          {canEditDebt && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-              setEditCreditor(c);
-              setEditCreditorName(c.customer_name);
-              setEditCreditorCommodity(c.commodity);
-              setEditCreditorKg(String(c.kg));
-              setEditCreditorRate(String(c.rate));
-              setEditCreditorAmount(String(c.total_amount));
-            }}><Edit className="w-3.5 h-3.5" /></Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-          )}
-        </div>
-      )}
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
+          <Clock className="w-3.5 h-3.5" />
+        </Button>
+        {c.status !== "paid" && canPay && (
+          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+        )}
+        {canEditDebt && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+            setEditCreditor(c);
+            setEditCreditorName(c.customer_name);
+            setEditCreditorCommodity(c.commodity);
+            setEditCreditorKg(String(c.kg));
+            setEditCreditorRate(String(c.rate));
+            setEditCreditorAmount(String(c.total_amount));
+          }}><Edit className="w-3.5 h-3.5" /></Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+        )}
+      </div>
     </div>
   );
 
@@ -625,213 +757,37 @@ const DebtManagementPage = () => {
     </TableHeader>
   );
 
-  // Grouped section renderer for debts (advance / debt / paid)
-  const renderDebtGroupedSection = (sectionKey: string, items: Debt[]) => {
-    const groups = groupDebtsByName(items);
-    return (
-      <>
-        <div className="hidden lg:block max-h-[480px] overflow-y-auto">
-          <Table>
-            {desktopTableHeaders}
-            <TableBody>
-              {groups.map(g => {
-                const groupKey = `${sectionKey}-${g.name.toLowerCase()}`;
-                const isMulti = g.items.length > 1;
-                const expanded = expandedGroups[groupKey] ?? !isMulti;
-                const totals = g.items.reduce(
-                  (acc, d) => {
-                    acc.total += d.total_amount;
-                    acc.paid += d.paid_amount;
-                    acc.balance += d.balance;
-                    return acc;
-                  },
-                  { total: 0, paid: 0, balance: 0 },
-                );
-                return (
-                  <Fragment key={groupKey}>
-                    {isMulti && (
-                      <TableRow
-                        key={`${groupKey}-header`}
-                        className="bg-primary/5 hover:bg-primary/10 cursor-pointer border-t-2 border-primary/20"
-                        onClick={() => toggleGroup(groupKey)}
-                      >
-                        <TableCell className="font-semibold">
-                          <div className="flex items-center gap-1.5">
-                            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            <span>{g.name}</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">× {g.items.length} times</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground italic">Combined total ({g.items.length} entries)</TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
-                        <TableCell className="text-right font-mono font-bold text-base">{symbol}{totals.total.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-green-600 font-semibold">{symbol}{totals.paid.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive font-bold text-base">{symbol}{totals.balance.toLocaleString()}</TableCell>
-                        <TableCell />
-                        <TableCell className="text-right">
-                          <span className="text-[10px] text-muted-foreground">{expanded ? "Hide" : "Show"} breakdown</span>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {expanded && g.items.map(renderDebtRow)}
-                  </Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
-          {groups.map(g => {
-            const groupKey = `m-${sectionKey}-${g.name.toLowerCase()}`;
-            const isMulti = g.items.length > 1;
-            const expanded = expandedGroups[groupKey] ?? !isMulti;
-            const totals = g.items.reduce(
-              (acc, d) => {
-                acc.total += d.total_amount;
-                acc.paid += d.paid_amount;
-                acc.balance += d.balance;
-                return acc;
-              },
-              { total: 0, paid: 0, balance: 0 },
-            );
-            return (
-              <div key={groupKey} className="space-y-2">
-                {isMulti && (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(groupKey)}
-                    className="w-full flex items-center justify-between bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg p-3 text-left"
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-sm truncate">{g.name}</span>
-                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-bold shrink-0">× {g.items.length}</Badge>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">Total: {symbol}{totals.total.toLocaleString()} · Paid: {symbol}{totals.paid.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <p className="text-[10px] text-muted-foreground">Balance</p>
-                      <p className="font-mono font-bold text-destructive text-base">{symbol}{totals.balance.toLocaleString()}</p>
-                    </div>
-                  </button>
-                )}
-                {expanded && g.items.map(renderDebtCard)}
-              </div>
-            );
-          })}
-        </div>
-      </>
-    );
-  };
+  const renderDebtSection = (items: Debt[]) => (
+    <>
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+        <Table>
+          {desktopTableHeaders}
+          <TableBody>
+            {items.map(renderDebtRow)}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
+        {items.map(renderDebtCard)}
+      </div>
+    </>
+  );
 
-  // Grouped section renderer for creditors
-  const renderCreditorGroupedSection = (sectionKey: string, items: Creditor[]) => {
-    const groups = groupCreditorsByName(items);
-    return (
-      <>
-        <div className="hidden lg:block max-h-[480px] overflow-y-auto">
-          <Table>
-            {creditorTableHeaders}
-            <TableBody>
-              {groups.map(g => {
-                const groupKey = `${sectionKey}-${g.name.toLowerCase()}`;
-                const isMulti = g.items.length > 1;
-                const expanded = expandedGroups[groupKey] ?? !isMulti;
-                const totals = g.items.reduce(
-                  (acc, c) => {
-                    acc.kg += c.kg;
-                    acc.total += c.total_amount;
-                    acc.paid += c.paid_amount;
-                    acc.balance += c.balance;
-                    return acc;
-                  },
-                  { kg: 0, total: 0, paid: 0, balance: 0 },
-                );
-                return (
-                  <Fragment key={groupKey}>
-                    {isMulti && (
-                      <TableRow
-                        key={`${groupKey}-header`}
-                        className="bg-primary/5 hover:bg-primary/10 cursor-pointer border-t-2 border-primary/20"
-                        onClick={() => toggleGroup(groupKey)}
-                      >
-                        <TableCell className="font-semibold">
-                          <div className="flex items-center gap-1.5">
-                            {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            <span>{g.name}</span>
-                            <Badge variant="secondary" className="ml-1 text-[10px] h-5 px-1.5 font-bold">× {g.items.length} times</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground italic">Combined ({g.items.length} entries)</TableCell>
-                        <TableCell className="text-right font-mono font-semibold">{totals.kg.toLocaleString()} kg</TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">—</TableCell>
-                        <TableCell className="text-right font-mono font-bold text-base">{symbol}{totals.total.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-green-600 font-semibold">{symbol}{totals.paid.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-mono text-destructive font-bold text-base">{symbol}{totals.balance.toLocaleString()}</TableCell>
-                        <TableCell />
-                        <TableCell className="text-right">
-                          <span className="text-[10px] text-muted-foreground">{expanded ? "Hide" : "Show"} breakdown</span>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {expanded && g.items.map(renderCreditorRow)}
-                  </Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
-          {groups.map(g => {
-            const groupKey = `m-${sectionKey}-${g.name.toLowerCase()}`;
-            const isMulti = g.items.length > 1;
-            const expanded = expandedGroups[groupKey] ?? !isMulti;
-            const totals = g.items.reduce(
-              (acc, c) => {
-                acc.kg += c.kg;
-                acc.total += c.total_amount;
-                acc.paid += c.paid_amount;
-                acc.balance += c.balance;
-                return acc;
-              },
-              { kg: 0, total: 0, paid: 0, balance: 0 },
-            );
-            return (
-              <div key={groupKey} className="space-y-2">
-                {isMulti && (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(groupKey)}
-                    className="w-full flex items-center justify-between bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg p-3 text-left"
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-sm truncate">{g.name}</span>
-                          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-bold shrink-0">× {g.items.length}</Badge>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">Total: {symbol}{totals.total.toLocaleString()} · {totals.kg}kg · Paid: {symbol}{totals.paid.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <p className="text-[10px] text-muted-foreground">Balance</p>
-                      <p className="font-mono font-bold text-destructive text-base">{symbol}{totals.balance.toLocaleString()}</p>
-                    </div>
-                  </button>
-                )}
-                {expanded && g.items.map(renderCreditorCard)}
-              </div>
-            );
-          })}
-        </div>
-      </>
-    );
-  };
+  const renderCreditorSection = (items: Creditor[]) => (
+    <>
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+        <Table>
+          {creditorTableHeaders}
+          <TableBody>
+            {items.map(renderCreditorRow)}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="lg:hidden space-y-2 max-h-[480px] overflow-y-auto">
+        {items.map(renderCreditorCard)}
+      </div>
+    </>
+  );
 
   const handleExportCSV = async () => {
     const { data: allPayments } = await supabase.from("debt_payments").select("*").order("created_at", { ascending: false });
@@ -848,7 +804,6 @@ const DebtManagementPage = () => {
         }
       }
     }
-    // Add creditors
     for (const c of creditors) {
       rows.push(["Creditor", c.customer_name, `${c.commodity} - ${c.kg}kg @ ${c.rate}`, String(c.total_amount), String(c.paid_amount), String(c.balance), c.status, format(new Date(c.created_at), "yyyy-MM-dd HH:mm"), "", "", c.recorded_by_name, "", "", ""]);
     }
@@ -856,8 +811,15 @@ const DebtManagementPage = () => {
     toast.success("Debt report exported!");
   };
 
-  // Auto-calculate creditor amount
   const creditorAutoAmount = (parseFloat(creditorKg) || 0) * (parseFloat(creditorRate) || 0);
+
+  // Detect if currently typed customer matches an existing record (for hint)
+  const existingHintDebt = customerName.trim() && debtType !== "creditor"
+    ? findExistingDebt(customerName.trim(), debtType === "debt" ? "money_out" : "unpaid")
+    : null;
+  const existingHintCreditor = customerName.trim() && debtType === "creditor" && creditorCommodity
+    ? findExistingCreditor(customerName.trim(), creditorCommodity)
+    : null;
 
   return (
     <div className="space-y-4 max-w-6xl">
@@ -892,7 +854,13 @@ const DebtManagementPage = () => {
 
               {debtType === "creditor" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-                  <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Customer *</Label>
+                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" list="creditor-customers" />
+                    <datalist id="creditor-customers">
+                      {Array.from(new Set(creditors.map(c => c.customer_name))).map(n => <option key={n} value={n} />)}
+                    </datalist>
+                  </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Commodity *</Label>
                     <Select value={creditorCommodity} onValueChange={setCreditorCommodity}>
@@ -905,14 +873,32 @@ const DebtManagementPage = () => {
                   <div className="space-y-1"><Label className="text-xs">Kg *</Label><Input type="number" value={creditorKg} onChange={e => setCreditorKg(e.target.value)} placeholder="0" /></div>
                   <div className="space-y-1"><Label className="text-xs">Rate ({symbol})</Label><Input type="number" value={creditorRate} onChange={e => setCreditorRate(e.target.value)} placeholder="0" /></div>
                   <div className="space-y-1"><Label className="text-xs">Amount ({symbol})</Label><Input type="number" value={creditorAutoAmount || ""} disabled className="bg-muted" /></div>
-                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save</Button></div>
+                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">{existingHintCreditor ? "Add to Existing" : "Save"}</Button></div>
+                  {existingHintCreditor && (
+                    <p className="col-span-full text-xs text-primary flex items-center gap-1">
+                      <ArrowDownToLine className="w-3 h-3" />
+                      Existing record found — current balance: {symbol}{existingHintCreditor.balance.toLocaleString()} ({existingHintCreditor.kg}kg). New entry will be added on top.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="space-y-1"><Label className="text-xs">Customer *</Label><Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" /></div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Customer *</Label>
+                    <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Name" list="debt-customers" />
+                    <datalist id="debt-customers">
+                      {Array.from(new Set(debts.map(d => d.customer_name))).map(n => <option key={n} value={n} />)}
+                    </datalist>
+                  </div>
                   <div className="space-y-1"><Label className="text-xs">Description</Label><Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Details" /></div>
                   <div className="space-y-1"><Label className="text-xs">{debtType === "debt" ? "Gross " : ""}Amount ({symbol}) *</Label><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0" /></div>
-                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">Save</Button></div>
+                  <div className="flex items-end"><Button onClick={handleAddClick} className="w-full">{existingHintDebt ? "Add to Existing" : "Save"}</Button></div>
+                  {existingHintDebt && (
+                    <p className="col-span-full text-xs text-primary flex items-center gap-1">
+                      <ArrowDownToLine className="w-3 h-3" />
+                      Existing {debtType} for {existingHintDebt.customer_name} — balance: {symbol}{existingHintDebt.balance.toLocaleString()}. New amount will be added on top.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -942,7 +928,7 @@ const DebtManagementPage = () => {
           {advanceDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowDownCircle className="w-4 h-4 text-destructive" /> Advance ({advanceDebts.length})</h3>
-              {renderDebtGroupedSection("advance", advanceDebts)}
+              {renderDebtSection(advanceDebts)}
             </div>
           )}
 
@@ -950,7 +936,7 @@ const DebtManagementPage = () => {
           {debtDebts.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
-              {renderDebtGroupedSection("debt", debtDebts)}
+              {renderDebtSection(debtDebts)}
             </div>
           )}
 
@@ -958,7 +944,7 @@ const DebtManagementPage = () => {
           {unpaidCreditors.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2"><Users className="w-4 h-4 text-purple-500" /> Creditors ({unpaidCreditors.length})</h3>
-              {renderCreditorGroupedSection("creditor", unpaidCreditors)}
+              {renderCreditorSection(unpaidCreditors)}
             </div>
           )}
 
@@ -966,8 +952,8 @@ const DebtManagementPage = () => {
           {(paidDebts.length > 0 || paidCreditors.length > 0) && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-green-600">✓ Paid ({paidDebts.length + paidCreditors.length})</h3>
-              {paidDebts.length > 0 && renderDebtGroupedSection("paid-debt", paidDebts)}
-              {paidCreditors.length > 0 && renderCreditorGroupedSection("paid-creditor", paidCreditors)}
+              {paidDebts.length > 0 && renderDebtSection(paidDebts)}
+              {paidCreditors.length > 0 && renderCreditorSection(paidCreditors)}
             </div>
           )}
 
@@ -1164,6 +1150,51 @@ const DebtManagementPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Consolidated History Dialog (additions + payments) */}
+      <Dialog open={!!historyTarget} onOpenChange={(v) => { if (!v) { setHistoryTarget(null); setHistoryEvents([]); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-4 h-4" /> History — {historyTarget?.name}
+            </DialogTitle>
+            <DialogDescription>All additions and payments for this record, latest first</DialogDescription>
+          </DialogHeader>
+          {loadingHistory ? (
+            <p className="text-center text-muted-foreground py-6">Loading...</p>
+          ) : historyEvents.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">No history yet</p>
+          ) : (
+            <div className="space-y-2">
+              {historyEvents.map(ev => {
+                const isAdd = ev.type === "addition" || ev.type === "create";
+                const isPay = ev.type === "payment";
+                return (
+                  <div key={ev.id} className={`p-3 rounded-lg border ${isAdd ? "bg-orange-500/5 border-orange-500/20" : isPay ? "bg-green-500/5 border-green-500/20" : "bg-muted/30 border-border"}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {isAdd ? <ArrowUpFromLine className="w-3.5 h-3.5 text-orange-500" /> : isPay ? <ArrowDownToLine className="w-3.5 h-3.5 text-green-600" /> : <Edit className="w-3.5 h-3.5 text-muted-foreground" />}
+                        <span className="text-xs font-semibold capitalize">
+                          {ev.type === "create" ? "Initial entry" : ev.type === "addition" ? "Added to balance" : ev.type === "payment" ? "Payment received" : "Edited"}
+                        </span>
+                        {ev.method && <Badge variant="outline" className="text-[10px] capitalize">{ev.method}</Badge>}
+                      </div>
+                      <span className={`font-mono font-bold text-sm ${isPay ? "text-green-600" : "text-foreground"}`}>
+                        {isPay ? "-" : isAdd ? "+" : ""}{symbol}{ev.amount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 text-xs text-muted-foreground">
+                      <span>By: <strong>{ev.by}</strong></span>
+                      <span>{format(new Date(ev.date), "MMM dd, yyyy HH:mm")}</span>
+                    </div>
+                    {ev.note && <p className="text-xs text-muted-foreground italic mt-1">{ev.note}</p>}
+                  </div>
+                );
+              })}
             </div>
           )}
         </DialogContent>
