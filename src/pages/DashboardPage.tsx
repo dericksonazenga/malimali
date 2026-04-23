@@ -14,9 +14,9 @@ const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: str
   <Card className={cn("animate-fade-in transition-all active:scale-[0.98]", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
     <CardContent className="p-3 sm:p-5">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] sm:text-sm text-muted-foreground leading-tight truncate">{title}</p>
-          <p className={`text-base sm:text-2xl font-bold font-mono mt-0.5 sm:mt-1 truncate ${color}`}>{value}</p>
+          <p className={`text-[11px] sm:text-sm font-bold font-mono mt-0.5 sm:mt-1 whitespace-nowrap overflow-x-auto scrollbar-none ${color}`}>{value}</p>
           {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
         <div className="p-2 sm:p-2.5 rounded-lg bg-accent shrink-0">{icon}</div>
