@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { PiggyBank, Plus, ArrowDownToLine, ArrowUpFromLine, Trash2, Edit, History, Search } from "lucide-react";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
 
 interface SavingsAccount {
   id: string;
@@ -299,6 +300,24 @@ const SavingsPage = () => {
             className="pl-9"
           />
         </div>
+        <PDFDownloadButton
+          title="Savings Accounts Report"
+          filename={`savings-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+          headers={["#", "Customer", "Balance", "Last Updated"]}
+          rows={[
+            ...filtered.map((a, i) => [
+              i + 1,
+              a.customer_name,
+              a.balance.toLocaleString(),
+              format(new Date(a.updated_at), "yyyy-MM-dd HH:mm"),
+            ]),
+            ["", "TOTAL", totalSavings.toLocaleString(), ""],
+          ]}
+          summary={[
+            `Total Savings: ${totalSavings.toLocaleString()}`,
+            `Active Accounts: ${accounts.length}`,
+          ]}
+        />
         {canManage && (
           <Dialog open={showDepositDialog} onOpenChange={v => { setShowDepositDialog(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
