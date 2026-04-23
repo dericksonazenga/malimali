@@ -124,23 +124,72 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
+  // Track current EOD cutoff so realtime inserts can be filtered without refetching.
+  const eodCutoffRef = useRef<string | null>(null);
+  const todayRef = useRef<string>(today());
+
+  const refreshEodCutoff = useCallback(async () => {
+    const d = today();
+    todayRef.current = d;
+    const { data: eodData } = await supabase
+      .from("end_of_day_log")
+      .select("triggered_at")
+      .eq("date", d)
+      .order("triggered_at", { ascending: false })
+      .limit(1);
+    eodCutoffRef.current = eodData?.[0]?.triggered_at || null;
+  }, []);
+
+  const matchesView = useCallback((row: any) => {
+    if (!row) return false;
+    if (row.date !== todayRef.current) return false;
+    const cutoff = eodCutoffRef.current;
+    if (cutoff && row.created_at && row.created_at <= cutoff) return false;
+    return true;
+  }, []);
+
   useEffect(() => {
     fetchToday();
     fetchPersistentStock();
 
     const channel = supabase
       .channel(`entries-rt-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "agent_entries" }, () => fetchToday())
-      .on("postgres_changes", { event: "*", schema: "public", table: "vip_entries" }, () => fetchToday())
-      .on("postgres_changes", { event: "*", schema: "public", table: "sales_entries" }, () => fetchToday())
-      .on("postgres_changes", { event: "*", schema: "public", table: "persistent_stock" }, () => fetchPersistentStock())
-      .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, () => fetchToday())
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_entries" }, (payload) => {
+        setAgentEntries((prev) => applyRealtimePayload(prev, payload as any, mapAgent, { filter: matchesView }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "vip_entries" }, (payload) => {
+        setVipEntries((prev) => applyRealtimePayload(prev, payload as any, mapVip, { filter: matchesView }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "sales_entries" }, (payload) => {
+        setSalesEntries((prev) => applyRealtimePayload(prev, payload as any, mapSales, { filter: matchesView }));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "persistent_stock" }, (payload) => {
+        const row: any = (payload as any).new || (payload as any).old;
+        if (!row) return;
+        setPersistentStock((prev) => {
+          const next = { ...prev };
+          if ((payload as any).eventType === "DELETE") {
+            delete next[row.commodity];
+          } else {
+            next[row.commodity] = Number(row.weight) || 0;
+          }
+          return next;
+        });
+      })
+      // EOD or rate-change triggers server-side row mutations across many entries — full refetch is safest here.
+      .on("postgres_changes", { event: "*", schema: "public", table: "end_of_day_log" }, async () => {
+        await refreshEodCutoff();
+        fetchToday();
+      })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "commodities" }, () => fetchToday())
       .subscribe();
+
+    refreshEodCutoff();
 
     // Re-fetch when auth state changes (e.g. user signs in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN") {
+        refreshEodCutoff();
         fetchToday();
         fetchPersistentStock();
       }
@@ -150,7 +199,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       supabase.removeChannel(channel);
       subscription.unsubscribe();
     };
-  }, [fetchToday, fetchPersistentStock]);
+  }, [fetchToday, fetchPersistentStock, refreshEodCutoff, matchesView]);
 
   const addAgentEntry = useCallback(async (entry: AgentEntry) => {
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
