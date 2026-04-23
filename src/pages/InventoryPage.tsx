@@ -10,6 +10,8 @@ import { Package, TrendingUp, TrendingDown, Wrench, Trash2, History } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
+import { format } from "date-fns";
 
 interface AdjustmentLog {
   id: string;
@@ -102,11 +104,25 @@ const InventoryPage = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between flex-wrap gap-2">
             <span className="flex items-center gap-2"><Package className="w-5 h-5 text-primary" /> Stock by Commodity</span>
-            {hasPermission("adjust_stock") && (
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setAdjustOpen(true)}>
-                <Wrench className="w-4 h-4" /> Adjust Stock
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <PDFDownloadButton
+                title="Inventory — Stock by Commodity"
+                filename={`inventory-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+                headers={["Commodity", "Carried Over (kg)", "Today In (kg)", "Today Out (kg)", "Current Stock (kg)"]}
+                rows={[
+                  ...commodityStock
+                    .filter((c) => c.persistent > 0 || c.stockIn > 0 || c.stockOut > 0 || c.current > 0)
+                    .map((c) => [c.name, c.persistent.toLocaleString(), `+${c.stockIn.toLocaleString()}`, `-${c.stockOut.toLocaleString()}`, c.current.toLocaleString()]),
+                  ["TOTAL", commodityStock.reduce((s, c) => s + c.persistent, 0).toLocaleString(), `+${totalDailyIn.toLocaleString()}`, `-${totalDailyOut.toLocaleString()}`, totalCurrent.toLocaleString()],
+                ]}
+                summary={[`Report date: ${format(new Date(), "PPP")}`]}
+              />
+              {hasPermission("adjust_stock") && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => setAdjustOpen(true)}>
+                  <Wrench className="w-4 h-4" /> Adjust Stock
+                </Button>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto max-h-[480px] overflow-y-auto">
@@ -152,8 +168,24 @@ const InventoryPage = () => {
       {/* Stock Adjustment History - responsive card layout on mobile */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="w-5 h-5 text-primary" /> Stock Adjustment History
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+            <span className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" /> Stock Adjustment History
+            </span>
+            <PDFDownloadButton
+              title="Stock Adjustment History"
+              filename={`stock-adjustments-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+              headers={["Date", "Commodity", "Before (kg)", "After (kg)", "Change (kg)", "Reason", "By"]}
+              rows={adjustments.map((a) => [
+                format(new Date(a.created_at), "yyyy-MM-dd HH:mm"),
+                a.commodity,
+                a.previous_weight.toLocaleString(),
+                a.new_weight.toLocaleString(),
+                (a.new_weight - a.previous_weight > 0 ? "+" : "") + (a.new_weight - a.previous_weight).toLocaleString(),
+                a.reason || "",
+                a.adjuster_name || "",
+              ])}
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
