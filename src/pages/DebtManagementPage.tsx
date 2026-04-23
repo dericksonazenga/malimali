@@ -19,6 +19,7 @@ import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 
 interface Debt {
   id: string;
@@ -167,22 +168,55 @@ const DebtManagementPage = () => {
   useEffect(() => {
     fetchDebts();
     fetchCreditors();
+
+    const mapDebt = (d: any): Debt => ({
+      ...d,
+      total_amount: Number(d.total_amount),
+      paid_amount: Number(d.paid_amount),
+      balance: Number(d.balance),
+    });
+    const mapCreditor = (c: any): Creditor => ({
+      ...c,
+      kg: Number(c.kg),
+      rate: Number(c.rate),
+      total_amount: Number(c.total_amount),
+      paid_amount: Number(c.paid_amount),
+      balance: Number(c.balance),
+    });
+    const mapDebtPayment = (p: any): DebtPayment => ({ ...p, amount: Number(p.amount) });
+    const mapCreditorPayment = (p: any): CreditorPayment => ({ ...p, amount: Number(p.amount) });
+
     const channelName = `debts-rt-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
-      .on("postgres_changes", { event: "*", schema: "public", table: "debts" }, () => fetchDebts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "debt_payments" }, () => {
-        fetchDebts();
-        if (payDebt) fetchPayments(payDebt.id);
+      .on("postgres_changes", { event: "*", schema: "public", table: "debts" }, (payload) => {
+        setDebts((prev) => applyRealtimePayload(prev, payload as any, mapDebt));
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "creditors" }, () => fetchCreditors())
-      .on("postgres_changes", { event: "*", schema: "public", table: "creditor_payments" }, () => {
-        fetchCreditors();
-        if (payCreditor) fetchCreditorPayments(payCreditor.id);
+      .on("postgres_changes", { event: "*", schema: "public", table: "debt_payments" }, (payload) => {
+        if (payDebt) {
+          setPayments((prev) =>
+            applyRealtimePayload(prev, payload as any, mapDebtPayment, {
+              filter: (row: any) => row.debt_id === payDebt.id,
+            })
+          );
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "creditors" }, (payload) => {
+        setCreditors((prev) => applyRealtimePayload(prev, payload as any, mapCreditor));
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "creditor_payments" }, (payload) => {
+        if (payCreditor) {
+          setCreditorPayments((prev) =>
+            applyRealtimePayload(prev, payload as any, mapCreditorPayment, {
+              filter: (row: any) => row.creditor_id === payCreditor.id,
+            })
+          );
+        }
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchDebts, fetchCreditors]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchDebts, fetchCreditors, payDebt?.id, payCreditor?.id]);
 
   const fetchPayments = async (debtId: string) => {
     const { data } = await supabase
