@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Debt {
@@ -833,6 +834,37 @@ const DebtManagementPage = () => {
                 <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customer..." className="pl-8 h-9 w-full sm:w-48" />
               </div>
               <Button size="sm" variant="outline" onClick={handleExportCSV} title="Export to CSV"><FileSpreadsheet className="w-4 h-4" /></Button>
+              <PDFDownloadButton
+                title="Debt Management Report"
+                filename={`debts-${format(new Date(), "yyyy-MM-dd")}.pdf`}
+                headers={["Type", "Customer", "Details", "Total", "Paid", "Balance", "Status", "Created"]}
+                rows={[
+                  ...debts.map((d) => [
+                    d.status === "money_out" ? "Debt" : d.status === "unpaid" ? "Advance" : "Advance",
+                    d.customer_name,
+                    d.description || "",
+                    `${symbol}${d.total_amount.toLocaleString()}`,
+                    `${symbol}${d.paid_amount.toLocaleString()}`,
+                    `${symbol}${d.balance.toLocaleString()}`,
+                    d.status,
+                    format(new Date(d.created_at), "yyyy-MM-dd"),
+                  ]),
+                  ...creditors.map((c) => [
+                    "Creditor",
+                    c.customer_name,
+                    `${c.commodity} — ${c.kg}kg @ ${symbol}${c.rate}`,
+                    `${symbol}${c.total_amount.toLocaleString()}`,
+                    `${symbol}${c.paid_amount.toLocaleString()}`,
+                    `${symbol}${c.balance.toLocaleString()}`,
+                    c.status,
+                    format(new Date(c.created_at), "yyyy-MM-dd"),
+                  ]),
+                ]}
+                summary={[
+                  `Total Outstanding: ${symbol}${totalOutstanding.toLocaleString()}`,
+                  `Advance: ${symbol}${totalAdvance.toLocaleString()}  •  Debt: ${symbol}${totalDebt.toLocaleString()}  •  Creditors: ${symbol}${totalCreditors.toLocaleString()}`,
+                ]}
+              />
               {canEdit && <Button size="sm" onClick={() => setShowAdd(!showAdd)}><Plus className="w-4 h-4 mr-1" /> Add</Button>}
             </div>
           </CardTitle>
