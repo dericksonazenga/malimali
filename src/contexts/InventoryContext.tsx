@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentEntry, VipEntry, SalesEntry } from "@/types";
+import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 
 interface InventoryContextType {
   agentEntries: AgentEntry[];
