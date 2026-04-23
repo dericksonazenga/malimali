@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Debt {
