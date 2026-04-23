@@ -16,6 +16,7 @@ import { PiggyBank, Plus, ArrowDownToLine, ArrowUpFromLine, Trash2, Edit, Histor
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
+import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 
 interface SavingsAccount {
   id: string;
@@ -81,15 +82,43 @@ const SavingsPage = () => {
   }, [canView, fetchAccounts]);
 
   useEffect(() => {
+    const mapAccount = (r: any): SavingsAccount => ({
+      id: r.id,
+      customer_name: r.customer_name,
+      balance: Number(r.balance) || 0,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    });
+    const mapTx = (r: any): SavingsTransaction => ({
+      id: r.id,
+      account_id: r.account_id,
+      type: r.type,
+      amount: Number(r.amount) || 0,
+      payment_method: r.payment_method,
+      served_by_name: r.served_by_name,
+      notes: r.notes || "",
+      created_at: r.created_at,
+    });
     const channel = supabase
       .channel(`savings-rt-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "savings_accounts" }, () => fetchAccounts())
-      .on("postgres_changes", { event: "*", schema: "public", table: "savings_transactions" }, () => {
-        if (selectedAccount) fetchTransactions(selectedAccount.id);
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_accounts" }, (payload) => {
+        setAccounts((prev) => {
+          const next = applyRealtimePayload(prev, payload as any, mapAccount);
+          // Keep alphabetical order on inserts/updates
+          return [...next].sort((a, b) => a.customer_name.localeCompare(b.customer_name));
+        });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "savings_transactions" }, (payload) => {
+        if (!selectedAccount) return;
+        setTransactions((prev) =>
+          applyRealtimePayload(prev, payload as any, mapTx, {
+            filter: (row: any) => row.account_id === selectedAccount.id,
+          })
+        );
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchAccounts, fetchTransactions, selectedAccount]);
+  }, [selectedAccount]);
 
   const handleDeposit = async () => {
     if (!customerName.trim() || !amount || Number(amount) <= 0) {

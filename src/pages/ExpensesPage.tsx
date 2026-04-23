@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
@@ -30,34 +31,41 @@ const ExpensesPage = () => {
   const [workerSearch, setWorkerSearch] = useState("");
   const [dbWorkers, setDbWorkers] = useState<Worker[]>([]);
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const mapExpense = useCallback((d: any): Expense => ({
+    id: d.id,
+    category: d.category,
+    amount: Number(d.amount),
+    date: d.date,
+    notes: d.notes || "",
+  }), []);
+
   const fetchExpenses = useCallback(async () => {
-    const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("expenses")
       .select("*")
-      .eq("date", today)
+      .eq("date", todayStr)
       .order("created_at", { ascending: false });
-    if (data) {
-      setExpenses(data.map((d: any) => ({
-        id: d.id,
-        category: d.category,
-        amount: Number(d.amount),
-        date: d.date,
-        notes: d.notes || "",
-      })));
-    }
+    if (data) setExpenses(data.map(mapExpense));
     setLoading(false);
-  }, []);
+  }, [todayStr, mapExpense]);
 
   useEffect(() => {
     fetchExpenses();
-    // Realtime subscription for expenses
+    // Realtime subscription for expenses — patch state in place to avoid blink
     const channel = supabase
       .channel(`expenses-rt-${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, () => fetchExpenses())
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, (payload) => {
+        setExpenses((prev) =>
+          applyRealtimePayload(prev, payload as any, mapExpense, {
+            filter: (row: any) => row.date === todayStr,
+          })
+        );
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchExpenses]);
+  }, [fetchExpenses, mapExpense, todayStr]);
 
   useEffect(() => {
     const fetchWorkers = async () => {
