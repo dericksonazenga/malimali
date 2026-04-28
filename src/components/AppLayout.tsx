@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import EndOfDayButton from "@/components/EndOfDayButton";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface NavItem {
   label: string;
@@ -248,7 +249,8 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           <h2 className="text-sm sm:text-base font-semibold truncate">
             {filteredNav.find((n) => n.path === location.pathname)?.label || "Dashboard"}
           </h2>
-          <div className="ml-auto shrink-0">
+          <div className="ml-auto shrink-0 flex items-center gap-1">
+            <ThemeToggle />
             <EndOfDayButton />
           </div>
         </header>
