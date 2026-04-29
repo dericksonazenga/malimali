@@ -496,7 +496,7 @@ const DebtManagementPage = () => {
     setCreditorPayAmount(""); setCreditorPayNotes(""); setCreditorPayMethod("cash");
     toast.success("Payment recorded");
     fetchCreditorPayments(payCreditor.id);
-    fetchCreditors();
+    // realtime keeps the list in sync — no manual refetch needed
     setPayCreditor({ ...payCreditor, paid_amount: newPaid, balance: newBalance });
   };
 
