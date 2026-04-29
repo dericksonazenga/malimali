@@ -15,14 +15,36 @@ interface PullToRefreshProps {
  * Works inside a scroll container (browser native PTR is disabled globally).
  * Default behavior reloads the page if onRefresh isn't provided.
  */
+function isInsideInnerScroller(target: HTMLElement, container: HTMLElement): boolean {
+  let node: HTMLElement | null = target;
+  while (node && node !== container) {
+    // Skip elements with explicit overflow scroll/auto and real scrollable content,
+    // or any element opting out via [data-no-ptr]
+    if (node.hasAttribute("data-no-ptr")) return true;
+    const style = window.getComputedStyle(node);
+    const oy = style.overflowY;
+    const ox = style.overflowX;
+    const scrollableY = (oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight + 1;
+    const scrollableX = (ox === "auto" || ox === "scroll") && node.scrollWidth > node.clientWidth + 1;
+    if (scrollableY || scrollableX) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
 const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
-  ({ children, className, onRefresh, threshold = 70, maxPull = 120 }, ref) => {
+  ({ children, className, onRefresh, threshold, maxPull = 260 }, ref) => {
     const innerRef = useRef<HTMLElement>(null);
     const scrollRef = (ref as React.MutableRefObject<HTMLElement>) || innerRef;
     const startY = useRef<number | null>(null);
     const pulling = useRef(false);
     const [pullDistance, setPullDistance] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Effective threshold: require swipe from top to ~bottom of viewport
+    const effectiveThreshold = threshold ?? Math.max(220, Math.round(window.innerHeight * 0.6));
+    // Only initiate pull-to-refresh when the touch begins very close to the top edge of the screen
+    const TOP_EDGE_ZONE = 60;
 
     useEffect(() => {
       const el = scrollRef.current;
@@ -35,7 +57,20 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           startY.current = null;
           return;
         }
-        startY.current = e.touches[0].clientY;
+        const touch = e.touches[0];
+        // Only start tracking if the finger is touching near the top of the screen
+        if (touch.clientY > TOP_EDGE_ZONE) {
+          startY.current = null;
+          return;
+        }
+        // Ignore touches that begin inside an inner scrollable element (so users can
+        // freely scroll within tickets/cards/dialogs without triggering refresh)
+        const target = e.target as HTMLElement | null;
+        if (target && isInsideInnerScroller(target, el)) {
+          startY.current = null;
+          return;
+        }
+        startY.current = touch.clientY;
         pulling.current = false;
       };
 
@@ -54,8 +89,8 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        // Resistance curve
-        const resisted = Math.min(maxPull, delta * 0.5);
+        // Stronger resistance so the user has to pull a long way
+        const resisted = Math.min(maxPull, delta * 0.35);
         setPullDistance(resisted);
         if (e.cancelable) e.preventDefault();
       };
@@ -66,13 +101,13 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           startY.current = null;
           return;
         }
-        const shouldRefresh = pullDistance >= threshold;
+        const shouldRefresh = pullDistance >= effectiveThreshold;
         startY.current = null;
         pulling.current = false;
 
         if (shouldRefresh) {
           setRefreshing(true);
-          setPullDistance(threshold);
+          setPullDistance(effectiveThreshold);
           try {
             if (onRefresh) {
               await onRefresh();
@@ -93,6 +128,9 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       // Mouse drag (desktop browsers)
       const handleMouseDown = (e: MouseEvent) => {
         if (refreshing || el.scrollTop > 0) return;
+        if (e.clientY > TOP_EDGE_ZONE) return;
+        const target = e.target as HTMLElement | null;
+        if (target && isInsideInnerScroller(target, el)) return;
         startY.current = e.clientY;
         pulling.current = false;
       };
@@ -110,7 +148,7 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        setPullDistance(Math.min(maxPull, delta * 0.5));
+        setPullDistance(Math.min(maxPull, delta * 0.35));
       };
       const handleMouseUp = () => { handleTouchEnd(); };
 
@@ -131,9 +169,9 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
       };
-    }, [onRefresh, refreshing, threshold, maxPull, pullDistance, scrollRef]);
+    }, [onRefresh, refreshing, effectiveThreshold, maxPull, pullDistance, scrollRef]);
 
-    const progress = Math.min(1, pullDistance / threshold);
+    const progress = Math.min(1, pullDistance / effectiveThreshold);
     const showIndicator = pullDistance > 0 || refreshing;
 
     return (
