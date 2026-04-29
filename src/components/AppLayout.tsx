@@ -1,4 +1,5 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
+import PullToRefresh from "@/components/PullToRefresh";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -49,6 +50,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("");
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
 
   // Fetch user avatar
   useEffect(() => {
@@ -259,10 +261,12 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main className="app-scroll flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">
-          <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
-            {children}
-          </div>
+        <main ref={mainScrollRef} className="app-scroll flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">
+          <PullToRefresh scrollRef={mainScrollRef}>
+            <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
+              {children}
+            </div>
+          </PullToRefresh>
         </main>
       </div>
     </div>
