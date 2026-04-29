@@ -478,6 +478,25 @@ const FinancialReportPage = () => {
     const summaryWs = wb.Sheets["Summary"];
     if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
 
+    // Apply thousands-separator number format to every numeric cell across all sheets
+    // Format "#,##0.##" -> integers show as 1,000 / 1,000,000; decimals up to 2 places when present.
+    const numFmt = "#,##0.##";
+    wb.SheetNames.forEach((sn) => {
+      const sheet = wb.Sheets[sn];
+      if (!sheet || !sheet["!ref"]) return;
+      const range = XLSX.utils.decode_range(sheet["!ref"]);
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = sheet[addr];
+          if (cell && cell.t === "n") {
+            cell.z = numFmt;
+            cell.s = { ...(cell.s || {}), numFmt };
+          }
+        }
+      }
+    });
+
     XLSX.writeFile(wb, `${filePrefix}_FullReport.xlsx`);
     toast.success("Full report downloaded!");
   };
