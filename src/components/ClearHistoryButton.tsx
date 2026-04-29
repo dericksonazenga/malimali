@@ -12,6 +12,8 @@ import { toast } from "sonner";
 interface ClearHistoryButtonProps {
   /** When set, only history rows for this table_name are cleared. Omit to clear ALL audit history. */
   tableName?: string;
+  /** When set, only history rows whose action is in this list are cleared. */
+  actionFilter?: string[];
   /** Visual label fallback when shown as a wider button. */
   label?: string;
   /** Show only the icon (default) — fits next to history headers. */
@@ -20,7 +22,7 @@ interface ClearHistoryButtonProps {
   onCleared?: () => void;
 }
 
-const ClearHistoryButton = ({ tableName, label = "Clear History", iconOnly = true, onCleared }: ClearHistoryButtonProps) => {
+const ClearHistoryButton = ({ tableName, actionFilter, label = "Clear History", iconOnly = true, onCleared }: ClearHistoryButtonProps) => {
   const { user, companyId } = useAuth();
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
