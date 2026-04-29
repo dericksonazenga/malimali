@@ -583,11 +583,11 @@ const DebtManagementPage = () => {
   };
 
   const filtered = debts.filter(d =>
-    d.customer_name.toLowerCase().includes(search.toLowerCase())
+    nameIncludes(d.customer_name, search) || nameIncludes(d.description, search)
   );
   const filteredCreditors = creditors.filter(c =>
-    c.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-    c.commodity.toLowerCase().includes(search.toLowerCase())
+    nameIncludes(c.customer_name, search) ||
+    nameIncludes(c.commodity, search)
   );
 
   const advanceDebts = filtered.filter(d => d.status === "unpaid");
