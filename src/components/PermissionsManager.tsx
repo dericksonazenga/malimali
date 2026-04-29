@@ -2,10 +2,44 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Shield } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Shield, HelpCircle, Info, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomRoles } from "@/hooks/useCustomRoles";
 import { getCompanyId } from "@/utils/getCompanyId";
+
+// Per-permission descriptions explaining exactly what each grant unlocks.
+const PERMISSION_HELP: Record<string, string> = {
+  view_dashboard: "See the main Dashboard page with daily totals and KPIs.",
+  view_data_entry: "Open the Data Entry page in read-only mode (cannot add or edit).",
+  view_debts: "Open the Debts page to see customer debts, advances, and creditors.",
+  view_savings: "Open the Savings page to see customer savings balances.",
+  view_messages: "Open the in-app Messages inbox.",
+  view_my_info: "Open the personal 'My Info' tab with their attendance and salary.",
+  view_settings: "Open the Settings page (read-only — cannot change global settings).",
+  view_financial_report: "Open the Financial Report with profit, cost, and analytics.",
+  data_entry: "Add new Agent, VIP, and Sales entries on the Data Entry page.",
+  edit_records: "Edit existing entries (weight, rate, customer, etc.) after they were saved.",
+  update_rates: "Change today's commodity buying/selling rates on the Rates page.",
+  end_of_day: "Run End of Day — closes the working day and resets daily totals.",
+  manage_debts: "Record a new debt or advance against a customer (add only).",
+  pay_debts: "Record payments against existing debts.",
+  edit_debts: "Modify the amount, customer, or notes of an existing debt.",
+  manage_savings: "Accept a deposit into a customer's savings account.",
+  edit_savings: "Withdraw from or edit a customer's savings balance.",
+  manage_workers: "Add, edit, and remove workers on the Workers page.",
+  manage_expenses: "Record new expenses on the Expenses page.",
+  manage_inventory: "Add or remove commodities and modify the inventory list.",
+  adjust_stock: "Manually adjust stock weight (e.g. corrections, spoilage).",
+  delete_entries: "Delete any Agent, VIP, or Sales entry from Data Entry.",
+  delete_expenses: "Delete previously recorded expenses.",
+  delete_debts: "Delete a debt record entirely.",
+  delete_savings: "Delete a savings transaction or close an account.",
+  delete_rates: "Delete entries from the Rate Change History log.",
+  delete_history: "Delete records from the End-of-Day history archive.",
+};
+
 
 // Grouped by section. Keys MUST match what AuthContext / ProtectedRoute check across the app.
 const PERMISSION_GROUPS: { section: string; perms: { key: string; label: string }[] }[] = [
@@ -184,76 +218,128 @@ const PermissionsManager = () => {
   if (loading || rolesLoading) return <p className="text-muted-foreground text-sm">Loading permissions…</p>;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" /> Role Permissions
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-card">
-            <tr className="border-b">
-              <th className="text-left py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20 min-w-[160px]">Permission</th>
-              {allRoles.map((role) => (
-                <th key={role.role_key} className="text-center py-3 px-2 font-semibold text-muted-foreground whitespace-nowrap">
-                  {role.display_name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {PERMISSION_GROUPS.map((group) => (
-              <React.Fragment key={group.section}>
-                <tr key={`section-${group.section}`} className="bg-muted/40">
-                  <td
-                    colSpan={1 + allRoles.length}
-                    className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
-                  >
-                    {group.section}
-                  </td>
-                </tr>
-                {group.perms.map((perm) => (
-                  <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                    <td className="py-3 pr-4 pl-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
-                    {allRoles.map((role) => (
-                      <td key={role.role_key} className="text-center py-3 px-2">
-                        <Switch
-                          checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
-                          onCheckedChange={() => toggle(role.role_key, perm.key)}
-                          disabled={role.role_key === "admin"}
-                          className="mx-auto"
-                        />
-                      </td>
+    <TooltipProvider delayDuration={150}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" /> Role Permissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="overflow-x-auto space-y-4">
+          {/* Help panel */}
+          <Collapsible>
+            <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+              <HelpCircle className="w-4 h-4" />
+              What does each permission do?
+              <ChevronDown className="w-4 h-4 transition-transform data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Hover (or tap) the <Info className="inline w-3 h-3" /> icon next to any permission for a quick tip.
+                Below is the full reference, grouped by section.
+              </p>
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.section}>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-2">{group.section}</h4>
+                  <ul className="space-y-1.5 text-xs">
+                    {group.perms.map((perm) => (
+                      <li key={perm.key} className="flex gap-2">
+                        <span className="font-semibold text-foreground min-w-[140px]">{perm.label}</span>
+                        <span className="text-muted-foreground">{PERMISSION_HELP[perm.key] ?? "—"}</span>
+                      </li>
                     ))}
-                  </tr>
+                  </ul>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground border-t border-border pt-3">
+                <strong>Admin</strong> always has every permission and cannot be edited.
+                Read-only "Pages" permissions only let users open a page — they still need the matching action permissions to add/edit/delete on it.
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 z-10 bg-card">
+              <tr className="border-b">
+                <th className="text-left py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20 min-w-[180px]">Permission</th>
+                {allRoles.map((role) => (
+                  <th key={role.role_key} className="text-center py-3 px-2 font-semibold text-muted-foreground whitespace-nowrap">
+                    {role.display_name}
+                  </th>
                 ))}
-              </React.Fragment>
-            ))}
-            <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
-              <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
-              {allRoles.map((role) => {
-                const currentPerms = matrix[role.role_key] || new Set();
-                const allSelected = role.role_key === "admin" ? true : ALL_PERMISSIONS.every((p) => currentPerms.has(p.key));
-                return (
-                  <td key={role.role_key} className="text-center py-3 px-2">
-                    <Switch
-                      checked={allSelected}
-                      onCheckedChange={() => toggleAll(role.role_key)}
-                      disabled={role.role_key === "admin"}
-                      className="mx-auto"
-                    />
-                  </td>
-                );
-              })}
-            </tr>
-          </tbody>
-        </table>
-        <p className="text-xs text-muted-foreground mt-4">
-          Changes take effect instantly on all users.
-        </p>
-      </CardContent>
-    </Card>
+              </tr>
+            </thead>
+            <tbody>
+              {PERMISSION_GROUPS.map((group) => (
+                <React.Fragment key={group.section}>
+                  <tr className="bg-muted/40">
+                    <td
+                      colSpan={1 + allRoles.length}
+                      className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
+                    >
+                      {group.section}
+                    </td>
+                  </tr>
+                  {group.perms.map((perm) => (
+                    <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="py-3 pr-4 pl-4 font-medium sticky left-0 bg-card z-10 min-w-[180px]">
+                        <div className="flex items-center gap-2">
+                          <span>{perm.label}</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-muted-foreground hover:text-primary transition-colors"
+                                aria-label={`What does ${perm.label} allow?`}
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs text-xs">
+                              {PERMISSION_HELP[perm.key] ?? "No description."}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </td>
+                      {allRoles.map((role) => (
+                        <td key={role.role_key} className="text-center py-3 px-2">
+                          <Switch
+                            checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
+                            onCheckedChange={() => toggle(role.role_key, perm.key)}
+                            disabled={role.role_key === "admin"}
+                            className="mx-auto"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+              <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
+                <td className="py-3 pr-4 pl-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
+                {allRoles.map((role) => {
+                  const currentPerms = matrix[role.role_key] || new Set();
+                  const allSelected = role.role_key === "admin" ? true : ALL_PERMISSIONS.every((p) => currentPerms.has(p.key));
+                  return (
+                    <td key={role.role_key} className="text-center py-3 px-2">
+                      <Switch
+                        checked={allSelected}
+                        onCheckedChange={() => toggleAll(role.role_key)}
+                        disabled={role.role_key === "admin"}
+                        className="mx-auto"
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-xs text-muted-foreground mt-4">
+            Changes take effect instantly on all users.
+          </p>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 };
 
