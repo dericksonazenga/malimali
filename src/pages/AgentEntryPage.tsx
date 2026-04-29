@@ -41,7 +41,7 @@ const AgentEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
+  const selectedCommodity = mockCommodities.find((c) => namesEqual(c.name, commodity));
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.agentRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = actualWeight * rate;
