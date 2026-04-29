@@ -810,7 +810,7 @@ const DebtManagementPage = () => {
 
   const renderCreditorSection = (items: Creditor[]) => (
     <>
-      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto overflow-x-auto">
         <Table>
           {creditorTableHeaders}
           <TableBody>
