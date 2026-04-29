@@ -100,7 +100,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     try {
       const q = buildQuery(false);
       if (!q) return;
-      const { data, count, error } = await q.limit(50).order(config.dateField || "created_at", { ascending: false });
+      const { data, count, error } = await q.limit(50).order(config.dateField || "created_at", { ascending: sortOrder === "asc" });
       if (error) { toast.error(error.message); return; }
       setPreviewRows(data || []);
       setTotalCount(count || 0);
