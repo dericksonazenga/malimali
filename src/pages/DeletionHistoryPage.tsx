@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { History, Search, Trash2, Filter } from "lucide-react";
 import { format } from "date-fns";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
+import StorageOverviewCard from "@/components/StorageOverviewCard";
 import { toast } from "sonner";
 
 interface DeletionEntry {
@@ -97,6 +98,7 @@ const DeletionHistoryPage = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <StorageOverviewCard refreshMs={10000} compact />
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between flex-wrap gap-3">
