@@ -154,50 +154,124 @@ const FinancialReportPage = () => {
     ];
     XLSX.utils.book_append_sheet(wb, autoFitColumns(XLSX.utils.aoa_to_sheet(summaryData), summaryData), "Summary");
 
-    // Helper to build grouped-by-customer sheet
-    const buildGroupedSheet = (entries: any[], sheetName: string) => {
-      const groups = groupEntriesByCustomer(entries);
-      const aoa: any[][] = [["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Date"]];
-      groups.forEach(g => {
-        g.entries.forEach((e: any) => { aoa.push([e.customer_name, e.commodity, Number(e.actual_weight), Number(e.rate), Number(e.amount), e.date]); });
-        aoa.push([`${g.customerName} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, ""]);
-        aoa.push([]);
+    // Consolidates entries per (customer, commodity) into one row.
+    // Weight cell becomes a live formula like =30+20+10 so clicking shows individual weights.
+    // Amount cell uses formula referencing the weight cell * rate.
+    type ConsolidatedRow = {
+      customer: string;
+      commodity: string;
+      weights: number[];
+      rate: number;        // weighted-avg rate (display only when rates differ)
+      amount: number;      // sum of amounts (fallback)
+      ratesUniform: boolean;
+      dates: string[];
+      extras?: { exchange?: string };
+    };
+
+    const consolidate = (entries: any[], weightKey: string): ConsolidatedRow[] => {
+      const map = new Map<string, ConsolidatedRow>();
+      entries.forEach((e: any) => {
+        const customer = (e.customer_name || "").trim() || "No Name";
+        const commodity = e.commodity || "";
+        const key = `${customer.toLowerCase()}||${commodity.toLowerCase()}`;
+        const w = Number(e[weightKey] || 0);
+        const r = Number(e.rate || 0);
+        const a = Number(e.amount || 0);
+        if (!map.has(key)) {
+          map.set(key, { customer, commodity, weights: [], rate: r, amount: 0, ratesUniform: true, dates: [], extras: { exchange: e.is_exchange ? "Yes" : "No" } });
+        }
+        const row = map.get(key)!;
+        row.weights.push(w);
+        row.amount += a;
+        if (row.weights.length > 1 && Math.abs(row.rate - r) > 0.0001) row.ratesUniform = false;
+        if (e.date && !row.dates.includes(e.date)) row.dates.push(e.date);
       });
-      const grandWeight = entries.reduce((s: number, e: any) => s + Number(e.actual_weight), 0);
-      const grandAmount = entries.reduce((s: number, e: any) => s + Number(e.amount), 0);
-      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, ""]);
+      return Array.from(map.values()).sort((a, b) => b.amount - a.amount);
+    };
+
+    const weightFormula = (weights: number[]) => {
+      if (!weights.length) return 0;
+      // Build expression like =30+20+10-2 (negatives kept inline)
+      const parts = weights.map((w, i) => {
+        if (i === 0) return String(w);
+        return w >= 0 ? `+${w}` : `${w}`;
+      });
+      return { f: parts.join(""), v: weights.reduce((s, x) => s + x, 0) };
+    };
+
+    // Helper to build grouped-by-customer sheet (Agent/VIP)
+    const buildGroupedSheet = (entries: any[], sheetName: string, weightKey = "actual_weight") => {
+      const rows = consolidate(entries, weightKey);
+      const header = ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Entries", "Date"];
+      const aoa: any[][] = [header];
+      rows.forEach(r => {
+        const wf = weightFormula(r.weights);
+        const totalWeight = typeof wf === "number" ? wf : wf.v;
+        // Placeholder; we'll set formula cells after sheet creation
+        aoa.push([r.customer, r.commodity, totalWeight, r.rate, r.amount, r.weights.length, r.dates.join(", ")]);
+      });
+      const grandWeight = rows.reduce((s, r) => s + r.weights.reduce((a, b) => a + b, 0), 0);
+      const grandAmount = rows.reduce((s, r) => s + r.amount, 0);
+      aoa.push([]);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", ""]);
       const ws = XLSX.utils.aoa_to_sheet(aoa);
-      autoFitColumns(ws, aoa);
-      styleSheet(ws, 1, aoa.length - 1, 6);
-      let rowIdx = 1;
-      groups.forEach(g => {
-        rowIdx += g.entries.length;
-        for (let c = 0; c < 6; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; }
-        rowIdx += 2;
+
+      // Replace weight & amount cells with formulas
+      rows.forEach((r, i) => {
+        const rowIdx = i + 1; // header is row 0
+        const wAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 2 });
+        const aAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 4 });
+        const wf = weightFormula(r.weights);
+        if (typeof wf !== "number") {
+          ws[wAddr] = { t: "n", f: wf.f, v: wf.v };
+        }
+        if (r.ratesUniform && r.rate > 0) {
+          ws[aAddr] = { t: "n", f: `${wAddr}*${XLSX.utils.encode_cell({ r: rowIdx, c: 3 })}`, v: r.amount };
+        } else {
+          ws[aAddr] = { t: "n", v: r.amount };
+        }
       });
+
+      autoFitColumns(ws, aoa);
+      styleSheet(ws, 1, aoa.length - 1, header.length);
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
-    buildGroupedSheet(agentEntries, `${labels.agent} Entries`);
-    buildGroupedSheet(vipEntries, `${labels.vip} Entries`);
+    buildGroupedSheet(agentEntries, `${labels.agent} Entries`, "actual_weight");
+    buildGroupedSheet(vipEntries, `${labels.vip} Entries`, "actual_weight");
 
-    // Sales Entries sheet
+    // Sales Entries sheet (consolidated)
     {
-      const salesGroups = groupEntriesByCustomer(salesEntries, "weight");
-      const aoa: any[][] = [["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Exchange", "Date"]];
-      salesGroups.forEach(g => {
-        g.entries.forEach((e: any) => { aoa.push([e.customer_name || "", e.commodity || "", Number(e.weight), e.rate ? Number(e.rate) : "", Number(e.amount || 0), e.is_exchange ? "Yes" : "No", e.date]); });
-        aoa.push([`${g.customerName || "No Name"} TOTAL (${g.count} entries)`, g.commodities.join(", "), g.totalWeight, "", g.totalAmount, "", ""]);
-        aoa.push([]);
+      const rows = consolidate(salesEntries, "weight");
+      const header = ["Customer", "Commodity", "Weight (kg)", "Rate", "Amount", "Entries", "Exchange", "Date"];
+      const aoa: any[][] = [header];
+      rows.forEach(r => {
+        const totalWeight = r.weights.reduce((a, b) => a + b, 0);
+        aoa.push([r.customer, r.commodity, totalWeight, r.rate || "", r.amount, r.weights.length, r.extras?.exchange || "No", r.dates.join(", ")]);
       });
-      const grandWeight = salesEntries.reduce((s: number, e: any) => s + Number(e.weight || 0), 0);
-      const grandAmount = salesEntries.reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
-      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", ""]);
+      const grandWeight = rows.reduce((s, r) => s + r.weights.reduce((a, b) => a + b, 0), 0);
+      const grandAmount = rows.reduce((s, r) => s + r.amount, 0);
+      aoa.push([]);
+      aoa.push(["GRAND TOTAL", "", grandWeight, "", grandAmount, "", "", ""]);
       const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      rows.forEach((r, i) => {
+        const rowIdx = i + 1;
+        const wAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 2 });
+        const aAddr = XLSX.utils.encode_cell({ r: rowIdx, c: 4 });
+        const wf = weightFormula(r.weights);
+        if (typeof wf !== "number") {
+          ws[wAddr] = { t: "n", f: wf.f, v: wf.v };
+        }
+        if (r.ratesUniform && r.rate > 0) {
+          ws[aAddr] = { t: "n", f: `${wAddr}*${XLSX.utils.encode_cell({ r: rowIdx, c: 3 })}`, v: r.amount };
+        } else {
+          ws[aAddr] = { t: "n", v: r.amount };
+        }
+      });
+
       autoFitColumns(ws, aoa);
-      styleSheet(ws, 1, aoa.length - 1, 7);
-      let rowIdx = 1;
-      salesGroups.forEach(g => { rowIdx += g.entries.length; for (let c = 0; c < 7; c++) { const addr = XLSX.utils.encode_cell({ r: rowIdx, c }); if (ws[addr]) ws[addr].s = { font: { bold: true } }; } rowIdx += 2; });
+      styleSheet(ws, 1, aoa.length - 1, header.length);
       XLSX.utils.book_append_sheet(wb, ws, `${labels.sales} Entries`);
     }
 
