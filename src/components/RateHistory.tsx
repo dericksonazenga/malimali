@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, forwardRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -21,7 +21,7 @@ interface RateChange {
   created_at: string;
 }
 
-const RateHistory = forwardRef<HTMLDivElement>((_props, _ref) => {
+const RateHistory = () => {
   const { symbol } = useCurrency();
   const { hasPermission } = useAuth();
   const [history, setHistory] = useState<RateChange[]>([]);
@@ -111,8 +111,6 @@ const RateHistory = forwardRef<HTMLDivElement>((_props, _ref) => {
       </CardContent>
     </Card>
   );
-});
-
-RateHistory.displayName = "RateHistory";
+};
 
 export default RateHistory;
