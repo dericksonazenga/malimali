@@ -58,7 +58,17 @@ const SalesEntryPage = () => {
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
   // For "Special" the physical stock comes from Heavy.
   const stockSourceCommodity = isSpecial ? SPECIAL_SOURCE_COMMODITY : commodity;
-  const availableStock = stockSourceCommodity ? (persistentStock[stockSourceCommodity] || 0) : 0;
+  const availableStock = useMemo(() => {
+    if (!stockSourceCommodity) return 0;
+    // Case-insensitive lookup of persistent stock.
+    const persistentEntry = Object.entries(persistentStock || {}).find(([k]) => namesEqual(k, stockSourceCommodity));
+    const persistent = persistentEntry ? Number(persistentEntry[1] || 0) : 0;
+    // Subtract today's outflows that physically deduct from this source (includes Special → Heavy).
+    const todayOut = entries
+      .filter((e) => !e.isExchange && namesEqual(resolveStockCommodity(e.commodity), stockSourceCommodity))
+      .reduce((s, e) => s + e.weight, 0);
+    return Math.max(0, persistent - todayOut);
+  }, [stockSourceCommodity, persistentStock, entries]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
