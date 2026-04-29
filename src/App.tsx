@@ -31,6 +31,7 @@ const AttendancePage = lazy(() => import("@/pages/AttendancePage"));
 const AttendanceScanPage = lazy(() => import("@/pages/AttendanceScanPage"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
+const LandingPage = lazy(() => import("@/pages/LandingPage"));
 const MyInfoPage = lazy(() => import("@/pages/MyInfoPage"));
 const DebtManagementPage = lazy(() => import("@/pages/DebtManagementPage"));
 const SavingsPage = lazy(() => import("@/pages/SavingsPage"));
@@ -104,6 +105,7 @@ const App = () => (
                 <BrowserRouter>
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
+                      <Route path="/landing" element={<LandingPage />} />
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
                       <Route path="/attendance-scan" element={<AttendanceScanPage />} />
                       <Route path="/*" element={<AuthenticatedApp />} />
