@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { History, Search, Trash2, Filter } from "lucide-react";
 import { format } from "date-fns";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
+import StorageOverviewCard from "@/components/StorageOverviewCard";
 import { toast } from "sonner";
 
 interface DeletionEntry {
