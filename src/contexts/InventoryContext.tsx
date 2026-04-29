@@ -16,6 +16,9 @@ interface InventoryContextType {
   removeAgentEntry: (id: string) => Promise<void>;
   removeVipEntry: (id: string) => Promise<void>;
   removeSalesEntry: (id: string) => Promise<void>;
+  updateAgentEntry: (id: string, patch: Partial<AgentEntry>) => Promise<void>;
+  updateVipEntry: (id: string, patch: Partial<VipEntry>) => Promise<void>;
+  updateSalesEntry: (id: string, patch: Partial<SalesEntry>) => Promise<void>;
   clearAll: () => void;
   refresh: () => Promise<void>;
 }
@@ -297,6 +300,64 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     if (error) console.error("Failed to remove sales entry:", error);
   }, []);
 
+  const getActorName = async (): Promise<string> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return "Unknown";
+    const { data } = await supabase.from("profiles").select("display_name").eq("user_id", user.id).single();
+    return data?.display_name || user.email || "Unknown";
+  };
+
+  const updateAgentEntry = useCallback(async (id: string, patch: Partial<AgentEntry>) => {
+    const existing = agentEntries.find((e) => e.id === id);
+    const dbPatch: any = {};
+    if (patch.customerName !== undefined) dbPatch.customer_name = patch.customerName;
+    if (patch.commodity !== undefined) dbPatch.commodity = patch.commodity;
+    if (patch.actualWeight !== undefined) {
+      dbPatch.actual_weight = patch.actualWeight;
+      dbPatch.gross_weight = patch.actualWeight;
+    }
+    if (patch.rate !== undefined) dbPatch.rate = patch.rate;
+    if (patch.amount !== undefined) dbPatch.amount = patch.amount;
+    const { data, error } = await supabase.from("agent_entries").update(dbPatch).eq("id", id).select().single();
+    if (error) { console.error("Failed to update agent entry:", error); throw error; }
+    if (data) setAgentEntries((prev) => prev.map((e) => (e.id === id ? mapAgent(data) : e)));
+    const { logAuditEvent } = await import("@/utils/auditLog");
+    await logAuditEvent({ tableName: "agent_entries", recordId: id, action: "update", oldData: existing as any, newData: data as any, changedByName: await getActorName() });
+  }, [agentEntries]);
+
+  const updateVipEntry = useCallback(async (id: string, patch: Partial<VipEntry>) => {
+    const existing = vipEntries.find((e) => e.id === id);
+    const dbPatch: any = {};
+    if (patch.customerName !== undefined) dbPatch.customer_name = patch.customerName;
+    if (patch.commodity !== undefined) dbPatch.commodity = patch.commodity;
+    if (patch.actualWeight !== undefined) {
+      dbPatch.actual_weight = patch.actualWeight;
+      dbPatch.gross_weight = patch.actualWeight;
+    }
+    if (patch.rate !== undefined) dbPatch.rate = patch.rate;
+    if (patch.amount !== undefined) dbPatch.amount = patch.amount;
+    const { data, error } = await supabase.from("vip_entries").update(dbPatch).eq("id", id).select().single();
+    if (error) { console.error("Failed to update vip entry:", error); throw error; }
+    if (data) setVipEntries((prev) => prev.map((e) => (e.id === id ? mapVip(data) : e)));
+    const { logAuditEvent } = await import("@/utils/auditLog");
+    await logAuditEvent({ tableName: "vip_entries", recordId: id, action: "update", oldData: existing as any, newData: data as any, changedByName: await getActorName() });
+  }, [vipEntries]);
+
+  const updateSalesEntry = useCallback(async (id: string, patch: Partial<SalesEntry>) => {
+    const existing = salesEntries.find((e) => e.id === id);
+    const dbPatch: any = {};
+    if (patch.customerName !== undefined) dbPatch.customer_name = patch.customerName;
+    if (patch.commodity !== undefined) dbPatch.commodity = patch.commodity;
+    if (patch.weight !== undefined) dbPatch.weight = patch.weight;
+    if (patch.rate !== undefined) dbPatch.rate = patch.rate;
+    if (patch.amount !== undefined) dbPatch.amount = patch.amount;
+    const { data, error } = await supabase.from("sales_entries").update(dbPatch).eq("id", id).select().single();
+    if (error) { console.error("Failed to update sales entry:", error); throw error; }
+    if (data) setSalesEntries((prev) => prev.map((e) => (e.id === id ? mapSales(data) : e)));
+    const { logAuditEvent } = await import("@/utils/auditLog");
+    await logAuditEvent({ tableName: "sales_entries", recordId: id, action: "update", oldData: existing as any, newData: data as any, changedByName: await getActorName() });
+  }, [salesEntries]);
+
   const clearAll = useCallback(async () => {
     // Accumulate today's entries into persistent stock in the DB
     const updates: Record<string, number> = {};
@@ -335,7 +396,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [agentEntries, vipEntries, salesEntries, persistentStock, fetchPersistentStock]);
 
   return (
-    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, clearAll, refresh: fetchToday }}>
+    <InventoryContext.Provider value={{ agentEntries, vipEntries, salesEntries, persistentStock, loading, addAgentEntry, addVipEntry, addSalesEntry, removeAgentEntry, removeVipEntry, removeSalesEntry, updateAgentEntry, updateVipEntry, updateSalesEntry, clearAll, refresh: fetchToday }}>
       {children}
     </InventoryContext.Provider>
   );

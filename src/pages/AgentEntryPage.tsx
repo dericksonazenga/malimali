@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, RefreshCw, Package, Search } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Package, Search, Pencil } from "lucide-react";
+import EditEntryDialog from "@/components/EditEntryDialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,8 +27,9 @@ const AgentEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { agentEntries: entries, addAgentEntry, removeAgentEntry, refresh } = useInventory();
+  const { agentEntries: entries, addAgentEntry, removeAgentEntry, updateAgentEntry, refresh } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingEntry, setEditingEntry] = useState<AgentEntry | null>(null);
   const [customerName, setCustomerName] = usePersistedState("agent_customerName", "");
   const [commodity, setCommodity] = usePersistedState("agent_commodity", "");
   const [weightExpr, setWeightExpr] = usePersistedState("agent_weightExpr", "");
@@ -226,7 +228,7 @@ const AgentEntryPage = () => {
                             <TableHead className="text-right">Weight</TableHead>
                             <TableHead className="text-right">Rate</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
-                            {hasPermission("delete_entries") && <TableHead />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableHead />}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -236,8 +238,15 @@ const AgentEntryPage = () => {
                               <TableCell className="text-right font-mono font-semibold">{entry.actualWeight}</TableCell>
                               <TableCell className="text-right font-mono">{symbol}{entry.rate}</TableCell>
                               <TableCell className="text-right font-mono font-semibold text-primary">{symbol}{entry.amount.toLocaleString()}</TableCell>
-                              {hasPermission("delete_entries") && (
-                                <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeAgentEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                              {(hasPermission("edit_records") || hasPermission("delete_entries")) && (
+                                <TableCell className="flex items-center justify-end gap-1">
+                                  {hasPermission("edit_records") && (
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)} title="Edit"><Pencil className="w-4 h-4" /></Button>
+                                  )}
+                                  {hasPermission("delete_entries") && (
+                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeAgentEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button>
+                                  )}
+                                </TableCell>
                               )}
                             </TableRow>
                           ))}
@@ -246,7 +255,7 @@ const AgentEntryPage = () => {
                             <TableCell className="text-right font-mono">{totalActual}</TableCell>
                             <TableCell />
                             <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>
-                            {hasPermission("delete_entries") && <TableCell />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableCell />}
                           </TableRow>
                         </TableBody>
                       </Table>
@@ -260,6 +269,18 @@ const AgentEntryPage = () => {
       </Card>
 
       <AuditLogViewer tableName="agent_entries" title="Agent Entry History" />
+
+      {editingEntry && (
+        <EditEntryDialog
+          open={!!editingEntry}
+          onOpenChange={(o) => !o && setEditingEntry(null)}
+          kind="agent"
+          entry={{ id: editingEntry.id, customerName: editingEntry.customerName, commodity: editingEntry.commodity, weight: editingEntry.actualWeight, rate: editingEntry.rate }}
+          onSave={async (p) => {
+            await updateAgentEntry(editingEntry.id, { customerName: p.customerName, commodity: p.commodity, actualWeight: p.weight, rate: p.rate, amount: p.amount });
+          }}
+        />
+      )}
     </div>
   );
 };

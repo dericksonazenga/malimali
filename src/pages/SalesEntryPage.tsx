@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package, Search } from "lucide-react";
+import { ShoppingCart, Trash2, ArrowLeftRight, RefreshCw, Package, Search, Pencil } from "lucide-react";
+import EditEntryDialog from "@/components/EditEntryDialog";
 import ImageCaptureButton from "@/components/ImageCaptureButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -27,8 +28,9 @@ const SalesEntryPage = () => {
   const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { salesEntries: entries, addSalesEntry, removeSalesEntry, refresh, persistentStock } = useInventory();
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, updateSalesEntry, refresh, persistentStock } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingEntry, setEditingEntry] = useState<SalesEntry | null>(null);
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = usePersistedState("sales_customerName", "");
   const [commodity, setCommodity] = usePersistedState("sales_commodity", "");
@@ -311,7 +313,7 @@ const SalesEntryPage = () => {
                             <TableHead className="text-right">Rate</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead>Exchange</TableHead>
-                            {hasPermission("delete_entries") && <TableHead />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableHead />}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -322,8 +324,15 @@ const SalesEntryPage = () => {
                               <TableCell className="text-right font-mono">{entry.rate ? `${symbol}${entry.rate}` : "—"}</TableCell>
                               <TableCell className="text-right font-mono font-semibold">{entry.amount ? <span className="text-primary">{symbol}{entry.amount.toLocaleString()}</span> : <span className="text-muted-foreground">Pending</span>}</TableCell>
                               <TableCell>{entry.isExchange ? <span className="text-xs bg-accent px-2 py-1 rounded">{entry.exchangeCommodity} ({entry.exchangeWeight}kg)</span> : "—"}</TableCell>
-                              {hasPermission("delete_entries") && (
-                                <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                              {(hasPermission("edit_records") || hasPermission("delete_entries")) && (
+                                <TableCell className="flex items-center justify-end gap-1">
+                                  {hasPermission("edit_records") && !entry.isExchange && (
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)} title="Edit"><Pencil className="w-4 h-4" /></Button>
+                                  )}
+                                  {hasPermission("delete_entries") && (
+                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeSalesEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button>
+                                  )}
+                                </TableCell>
                               )}
                             </TableRow>
                           ))}
@@ -333,7 +342,7 @@ const SalesEntryPage = () => {
                             <TableCell />
                             <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>
                             <TableCell />
-                            {hasPermission("delete_entries") && <TableCell />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableCell />}
                           </TableRow>
                         </TableBody>
                       </Table>
@@ -347,6 +356,18 @@ const SalesEntryPage = () => {
       </Card>
 
       <AuditLogViewer tableName="sales_entries" title="Sales Entry History" />
+
+      {editingEntry && (
+        <EditEntryDialog
+          open={!!editingEntry}
+          onOpenChange={(o) => !o && setEditingEntry(null)}
+          kind="sales"
+          entry={{ id: editingEntry.id, customerName: editingEntry.customerName || "", commodity: editingEntry.commodity, weight: editingEntry.weight, rate: editingEntry.rate || 0 }}
+          onSave={async (p) => {
+            await updateSalesEntry(editingEntry.id, { customerName: p.customerName, commodity: p.commodity, weight: p.weight, rate: p.rate, amount: p.amount });
+          }}
+        />
+      )}
     </div>
   );
 };
