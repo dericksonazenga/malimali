@@ -253,20 +253,50 @@
     display: none;
   }
 
+  /* Outer page-level scroll container (main content area) */
   .app-scroll {
     -webkit-overflow-scrolling: touch;
     overflow-y: auto;
+    overflow-x: hidden;
     min-height: 0;
     touch-action: pan-y;
     scroll-behavior: smooth;
     overscroll-behavior-y: auto;
     scrollbar-gutter: stable;
+    /* Promote to its own layer for smoother GPU-accelerated scrolling */
+    transform: translateZ(0);
+    will-change: scroll-position;
+    contain: layout paint;
   }
 
+  /* Inner / nested scroll containers (tables, lists, side panels) */
   .touch-scroll-y {
     -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
     touch-action: pan-y;
     scroll-behavior: smooth;
+    /* Prevent inner scroll from chaining to the page */
+    overscroll-behavior: contain;
+    transform: translateZ(0);
+    will-change: scroll-position;
+  }
+
+  .touch-scroll-x {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    transform: translateZ(0);
+    will-change: scroll-position;
+  }
+
+  /* Respect users who prefer reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .app-scroll,
+    .touch-scroll-y,
+    .touch-scroll-x {
+      scroll-behavior: auto;
+    }
   }
 }
 
