@@ -255,11 +255,18 @@
 
   .app-scroll {
     -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
     min-height: 0;
+    touch-action: pan-y;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: auto;
+    scrollbar-gutter: stable;
   }
 
   .touch-scroll-y {
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    scroll-behavior: smooth;
   }
 }
 
