@@ -111,8 +111,6 @@ const RateHistory = () => {
       </CardContent>
     </Card>
   );
-});
-
-RateHistory.displayName = "RateHistory";
+};
 
 export default RateHistory;
