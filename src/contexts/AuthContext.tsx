@@ -138,10 +138,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isMounted) return;
 
       if (!sessionUser) {
-        currentUserIdRef.current = null;
-        setUser(null);
-        setLoading(false);
-        cacheUser(null, null);
+        // No active session at boot. Only fully sign out if the user manually
+        // logged out previously. Otherwise keep the cached user visible so the
+        // app remains usable while Supabase silently restores the session.
+        const manualLogout = localStorage.getItem(MANUAL_LOGOUT_KEY) === "1";
+        if (manualLogout) {
+          currentUserIdRef.current = null;
+          setUser(null);
+          setLoading(false);
+          cacheUser(null, null);
+        } else {
+          setLoading(false);
+        }
         return;
       }
 
@@ -150,15 +158,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isMounted) setLoading(false);
     };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
 
-      if (!session?.user) {
+      // Only honour SIGNED_OUT when the user explicitly logged out. Background
+      // tab suspension, network blips, or expired-token retries can also fire
+      // SIGNED_OUT — we ignore those to keep the session stable until manual
+      // logout.
+      if (event === "SIGNED_OUT") {
+        const manualLogout = localStorage.getItem(MANUAL_LOGOUT_KEY) === "1";
+        if (!manualLogout) return;
         currentUserIdRef.current = null;
         setUser(null);
         setLoading(false);
         cacheUser(null, null);
         void import("@/utils/getCompanyId").then((m) => m.clearCompanyIdCache());
+        return;
+      }
+
+      if (!session?.user) return;
+
+      // TOKEN_REFRESHED is the most common event in long-lived sessions and
+      // should NOT trigger a profile re-fetch — the user/permissions haven't
+      // changed. This avoids unnecessary network work in background tabs.
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+        currentUserIdRef.current = session.user.id;
         return;
       }
 
@@ -183,7 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .channel(channelName)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, async (payload) => {
         if (currentUserIdRef.current && payload.new && (payload.new as any).user_id === currentUserIdRef.current) {
-          sessionStorage.removeItem(SESSION_CACHE_KEY);
+          clearCachedUser();
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -192,7 +216,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, async () => {
         if (currentUserIdRef.current) {
-          sessionStorage.removeItem(SESSION_CACHE_KEY);
+          clearCachedUser();
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -201,7 +225,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "custom_roles" }, async () => {
         if (currentUserIdRef.current) {
-          sessionStorage.removeItem(SESSION_CACHE_KEY);
+          clearCachedUser();
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -210,24 +234,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
-    // Re-fetch permissions when the tab becomes visible — but throttle to avoid
-    // re-querying on every quick tab switch (which made the UI feel laggy).
-    let lastVisibilitySync = Date.now();
-    const onVisibility = async () => {
-      if (document.visibilityState !== "visible" || !currentUserIdRef.current) return;
-      // Only re-sync at most once every 5 minutes on visibility change.
-      if (Date.now() - lastVisibilitySync < 5 * 60 * 1000) return;
-      lastVisibilitySync = Date.now();
-      const session = (await supabase.auth.getSession()).data.session;
-      if (session?.user) fetchProfile(session.user);
-    };
-    document.addEventListener("visibilitychange", onVisibility);
+    // No visibility-based re-fetch. Background tabs should NOT trigger work —
+    // this keeps the app stable when running in the background and prevents
+    // the "auto sign-out" feeling on return.
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
       supabase.removeChannel(channel);
-      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
