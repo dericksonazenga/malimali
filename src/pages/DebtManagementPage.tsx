@@ -613,7 +613,7 @@ const DebtManagementPage = () => {
 
   const getStatusBadge = (status: string) => {
     if (status === "paid") return <Badge variant="default" className="text-xs">Paid</Badge>;
-    if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30"><ArrowUpCircle className="w-3 h-3 mr-1" />Debt</Badge>;
+    if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30"><ArrowUpCircle className="w-3 h-3 mr-1" />Debtor</Badge>;
     return <Badge variant="destructive" className="text-xs"><ArrowDownCircle className="w-3 h-3 mr-1" />Advance</Badge>;
   };
 
@@ -971,22 +971,18 @@ const DebtManagementPage = () => {
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-              <p className="text-xs text-muted-foreground">Total Outstanding</p>
-              <p className="text-lg font-bold font-mono text-destructive">{symbol}{totalOutstanding.toLocaleString()}</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="p-2.5 sm:p-3 rounded-lg bg-red-500/10 border border-red-500/20 min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 shrink-0" /> Advance</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{totalAdvance.toLocaleString()}</p>
             </div>
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3" /> Advance</p>
-              <p className="text-lg font-bold font-mono">{symbol}{totalAdvance.toLocaleString()}</p>
+            <div className="p-2.5 sm:p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 shrink-0" /> Debtors</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{totalDebt.toLocaleString()}</p>
             </div>
-            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3" /> Debt</p>
-              <p className="text-lg font-bold font-mono">{symbol}{totalDebt.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Creditors</p>
-              <p className="text-lg font-bold font-mono">{symbol}{totalCreditors.toLocaleString()}</p>
+            <div className="p-2.5 sm:p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 min-w-0">
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3 shrink-0" /> Creditors</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{totalCreditors.toLocaleString()}</p>
             </div>
           </div>
 
@@ -998,10 +994,10 @@ const DebtManagementPage = () => {
             </div>
           )}
 
-          {/* Debt Section */}
+          {/* Debtors Section */}
           {debtDebts.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debtors ({debtDebts.length})</h3>
               {renderDebtSection(debtDebts)}
             </div>
           )}

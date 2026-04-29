@@ -211,6 +211,14 @@
     height: 1px;
     background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent);
   }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Upgrade default shadcn Card look across the app */
