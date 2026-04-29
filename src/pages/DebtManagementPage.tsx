@@ -461,7 +461,7 @@ const DebtManagementPage = () => {
     setPayAmount(""); setPayNotes(""); setPayMethod("cash"); setPayToName("");
     toast.success("Payment recorded");
     fetchPayments(payDebt.id);
-    fetchDebts();
+    // realtime keeps the list in sync — no manual refetch needed
     setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
   };
 
@@ -496,7 +496,7 @@ const DebtManagementPage = () => {
     setCreditorPayAmount(""); setCreditorPayNotes(""); setCreditorPayMethod("cash");
     toast.success("Payment recorded");
     fetchCreditorPayments(payCreditor.id);
-    fetchCreditors();
+    // realtime keeps the list in sync — no manual refetch needed
     setPayCreditor({ ...payCreditor, paid_amount: newPaid, balance: newBalance });
   };
 
@@ -628,11 +628,11 @@ const DebtManagementPage = () => {
         <TableCell className="text-muted-foreground max-w-[150px] truncate" title={d.description}>
           {isDebt && deductionAmount > 0 ? d.description.split(" | ")[0] || d.description : d.description}
         </TableCell>
-        <TableCell className="text-right font-mono">{isDebt ? symbol + gross.toLocaleString() : "-"}</TableCell>
-        <TableCell className="text-right font-mono text-destructive">{isDebt && deductionAmount > 0 ? "-" + symbol + deductionAmount.toLocaleString() : "-"}</TableCell>
-        <TableCell className="text-right font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</TableCell>
-        <TableCell className="text-right font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
-        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono whitespace-nowrap">{isDebt ? symbol + gross.toLocaleString() : "-"}</TableCell>
+        <TableCell className="text-right font-mono text-destructive whitespace-nowrap">{isDebt && deductionAmount > 0 ? "-" + symbol + deductionAmount.toLocaleString() : "-"}</TableCell>
+        <TableCell className="text-right font-mono font-semibold whitespace-nowrap">{symbol}{d.total_amount.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono text-green-600 whitespace-nowrap">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono text-destructive font-semibold whitespace-nowrap">{symbol}{d.balance.toLocaleString()}</TableCell>
         <TableCell>{getStatusBadge(d.status)}</TableCell>
         <TableCell>
           <div className="flex items-center justify-end gap-1">
@@ -689,11 +689,11 @@ const DebtManagementPage = () => {
     <TableRow key={c.id}>
       <TableCell className="font-medium">{c.customer_name}</TableCell>
       <TableCell>{c.commodity}</TableCell>
-      <TableCell className="text-right font-mono">{c.kg.toLocaleString()} kg</TableCell>
-      <TableCell className="text-right font-mono">{symbol}{c.rate.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono whitespace-nowrap">{c.kg.toLocaleString()} kg</TableCell>
+      <TableCell className="text-right font-mono whitespace-nowrap">{symbol}{c.rate.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono font-semibold whitespace-nowrap">{symbol}{c.total_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-green-600 whitespace-nowrap">{symbol}{c.paid_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-destructive font-semibold whitespace-nowrap">{symbol}{c.balance.toLocaleString()}</TableCell>
       <TableCell className="text-xs text-muted-foreground">{c.recorded_by_name}</TableCell>
       <TableCell>
         <div className="flex items-center justify-end gap-1">
@@ -763,15 +763,15 @@ const DebtManagementPage = () => {
   const desktopTableHeaders = (
     <TableHeader>
       <TableRow>
-        <TableHead>Customer</TableHead>
-        <TableHead>Description</TableHead>
-        <TableHead className="text-right">Gross Amount</TableHead>
-        <TableHead className="text-right">Deducted Fee</TableHead>
-        <TableHead className="text-right">Net Amount</TableHead>
-        <TableHead className="text-right">Paid</TableHead>
-        <TableHead className="text-right">Balance</TableHead>
-        <TableHead>Type</TableHead>
-        <TableHead className="text-right">Actions</TableHead>
+        <TableHead className="whitespace-nowrap">Customer</TableHead>
+        <TableHead className="whitespace-nowrap">Description</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Gross Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Deducted Fee</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Net Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
+        <TableHead className="whitespace-nowrap">Type</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -779,22 +779,22 @@ const DebtManagementPage = () => {
   const creditorTableHeaders = (
     <TableHeader>
       <TableRow>
-        <TableHead>Customer</TableHead>
-        <TableHead>Commodity</TableHead>
-        <TableHead className="text-right">Kg</TableHead>
-        <TableHead className="text-right">Rate</TableHead>
-        <TableHead className="text-right">Amount</TableHead>
-        <TableHead className="text-right">Paid</TableHead>
-        <TableHead className="text-right">Balance</TableHead>
-        <TableHead>Recorded By</TableHead>
-        <TableHead className="text-right">Actions</TableHead>
+        <TableHead className="whitespace-nowrap">Customer</TableHead>
+        <TableHead className="whitespace-nowrap">Commodity</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Kg</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Rate</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
+        <TableHead className="whitespace-nowrap">Recorded By</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );
 
   const renderDebtSection = (items: Debt[]) => (
     <>
-      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto overflow-x-auto">
         <Table>
           {desktopTableHeaders}
           <TableBody>
@@ -810,7 +810,7 @@ const DebtManagementPage = () => {
 
   const renderCreditorSection = (items: Creditor[]) => (
     <>
-      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto overflow-x-auto">
         <Table>
           {creditorTableHeaders}
           <TableBody>
