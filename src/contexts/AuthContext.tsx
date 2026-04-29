@@ -23,6 +23,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses", "delete_debts",
   "delete_rates", "manage_debts", "edit_records", "view_savings", "manage_savings",
   "edit_savings", "delete_savings", "pay_debts", "edit_debts", "delete_history",
+  "end_of_day",
 ];
 
 const USER_ROLES: string[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];
@@ -52,19 +53,18 @@ const getCachedUser = (): { user: User; companyId: string | null } | null => {
   }
 };
 
-const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
+const fetchRolePermissions = async (role: UserRole, companyId: string | null): Promise<Permission[]> => {
   if (role === "admin") return ALL_PERMISSIONS;
-  const { data, error } = await supabase
-    .from("role_permissions")
-    .select("permission")
-    .eq("role", role);
+  let q = supabase.from("role_permissions").select("permission").eq("role", role);
+  if (companyId) q = q.eq("company_id", companyId);
+  const { data, error } = await q;
   if (error || !data || data.length === 0) return [];
   return data.map((r: any) => r.permission as Permission);
 };
 
-const buildUser = async (profile: { user_id: string; display_name: string; role: string }): Promise<User> => {
+const buildUser = async (profile: { user_id: string; display_name: string; role: string; company_id?: string | null }): Promise<User> => {
   const role = (profile.role || "boss") as UserRole;
-  const permissions = await fetchRolePermissions(role);
+  const permissions = await fetchRolePermissions(role, profile.company_id ?? null);
   return {
     id: profile.user_id,
     name: profile.display_name || "User",
@@ -173,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .channel(channelName)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, async (payload) => {
         if (currentUserIdRef.current && payload.new && (payload.new as any).user_id === currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -181,6 +182,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, async () => {
         if (currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
+          const session = (await supabase.auth.getSession()).data.session;
+          if (session?.user) {
+            fetchProfile(session.user);
+          }
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "custom_roles" }, async () => {
+        if (currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -189,10 +200,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
+    // Re-fetch permissions when the tab becomes visible (covers cases where
+    // realtime missed an update because the tab was backgrounded).
+    const onVisibility = async () => {
+      if (document.visibilityState === "visible" && currentUserIdRef.current) {
+        const session = (await supabase.auth.getSession()).data.session;
+        if (session?.user) fetchProfile(session.user);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
