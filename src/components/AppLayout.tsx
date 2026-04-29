@@ -133,7 +133,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       >
         <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-3 gap-2.5")}>
           {companyLogo ? (
-            <img src={companyLogo} alt="" className="w-7 h-7 rounded-md object-contain shrink-0" />
+            <img src={companyLogo} alt="" width={28} height={28} loading="eager" decoding="async" className="w-7 h-7 rounded-md object-contain shrink-0" />
           ) : (
             <Recycle className="w-6 h-6 text-primary shrink-0" />
           )}
