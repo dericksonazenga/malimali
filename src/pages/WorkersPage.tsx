@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Trash2, Pencil, Check, X, Mail, Phone, IdCard } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -11,6 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isSuperAdminProfile } from "@/constants/superAdmin";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import { useCustomRoles } from "@/hooks/useCustomRoles";
+import { isSuperAdmin } from "@/constants/superAdmin";
 
 interface WorkerRow {
   id: string;
@@ -26,6 +29,7 @@ interface WorkerRow {
 const WorkersPage = () => {
   const { user, hasPermission } = useAuth();
   const canEdit = user?.role === "admin" || hasPermission("edit_records");
+  const { allRoles, getRoleLabel } = useCustomRoles();
   const [workers, setWorkers] = useState<WorkerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -180,9 +184,18 @@ const WorkersPage = () => {
                         </TableCell>
                         <TableCell>
                           {editingId === w.id ? (
-                            <Input className="h-8 w-28" value={editValues.role} onChange={(e) => setEditValues(v => ({ ...v, role: e.target.value }))} />
+                            <Select value={editValues.role} onValueChange={(v) => setEditValues(vals => ({ ...vals, role: v }))}>
+                              <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {allRoles
+                                  .filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id))
+                                  .map(r => (
+                                    <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{getRoleLabel(w.role)}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground space-y-0.5">
@@ -241,7 +254,7 @@ const WorkersPage = () => {
                         </div>
                         <div>
                           <p className="font-medium">{w.name}</p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{getRoleLabel(w.role)}</span>
                         </div>
                       </div>
                       <div className="flex gap-1">
