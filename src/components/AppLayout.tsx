@@ -1,5 +1,4 @@
 import { ReactNode, useState, useEffect, useRef } from "react";
-import PullToRefresh from "@/components/PullToRefresh";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -114,7 +113,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const roleBadge = user?.role === "admin" ? "Admin" : user?.role === "accountant" ? "Accountant" : user?.role === "data_manager" ? "Data Manager" : user?.role === "human_resource" ? "Human Resource" : user?.role === "cashier" ? "Cashier" : "Boss";
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -228,7 +227,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="h-12 sm:h-14 bg-card border-b border-border flex items-center px-2 sm:px-3 lg:px-6 gap-1.5 sm:gap-2 sticky top-0 z-30 shrink-0">
           <Button
             variant="ghost"
@@ -261,12 +260,10 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main ref={mainScrollRef} className="app-scroll flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">
-          <PullToRefresh scrollRef={mainScrollRef}>
-            <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
-              {children}
-            </div>
-          </PullToRefresh>
+        <main ref={mainScrollRef} className="app-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-6">
+          <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -163,8 +163,10 @@
     overscroll-behavior-y: none;
   }
 
+  html,
   body,
   #root {
+    height: 100%;
     min-height: 100dvh;
   }
 
@@ -261,6 +263,7 @@
   .app-scroll {
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+    min-height: 0;
   }
 
   .overflow-y-auto {
