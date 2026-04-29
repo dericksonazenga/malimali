@@ -110,11 +110,11 @@ const VipEntryPage = () => {
                     <span>Amt: <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong></span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 md:col-span-2 lg:col-span-3">
+                <div className="flex flex-wrap items-center gap-2 md:col-span-2 lg:col-span-3">
                   <ImageCaptureButton label="Weight Image" onCapture={(f) => console.log("Weight image:", f.name)} />
                   <ImageCaptureButton label="Item Image" onCapture={(f) => console.log("Item image:", f.name)} />
-                  <div className="flex-1" />
-                  <Button type="submit" className="h-12 px-8 text-base font-semibold">Add Entry</Button>
+                  <div className="hidden sm:block flex-1" />
+                  <Button type="submit" className="h-12 px-6 sm:px-8 text-base font-semibold w-full sm:w-auto">Add Entry</Button>
                 </div>
               </form>
             ) : null}
