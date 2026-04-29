@@ -200,13 +200,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
-    // Re-fetch permissions when the tab becomes visible (covers cases where
-    // realtime missed an update because the tab was backgrounded).
+    // Re-fetch permissions when the tab becomes visible — but throttle to avoid
+    // re-querying on every quick tab switch (which made the UI feel laggy).
+    let lastVisibilitySync = Date.now();
     const onVisibility = async () => {
-      if (document.visibilityState === "visible" && currentUserIdRef.current) {
-        const session = (await supabase.auth.getSession()).data.session;
-        if (session?.user) fetchProfile(session.user);
-      }
+      if (document.visibilityState !== "visible" || !currentUserIdRef.current) return;
+      // Only re-sync at most once every 5 minutes on visibility change.
+      if (Date.now() - lastVisibilitySync < 5 * 60 * 1000) return;
+      lastVisibilitySync = Date.now();
+      const session = (await supabase.auth.getSession()).data.session;
+      if (session?.user) fetchProfile(session.user);
     };
     document.addEventListener("visibilitychange", onVisibility);
 
