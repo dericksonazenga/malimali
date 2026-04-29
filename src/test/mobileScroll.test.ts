@@ -74,7 +74,7 @@ describe("mobile/tablet scroll behaviour", () => {
 
 describe("scroll containers inside page sections", () => {
   it("app scroll containers explicitly contain overscroll chaining", () => {
-    const appScrollBlock = findRuleBlock("\\.app-scroll") ?? "";
+    const appScrollBlock = findRuleBlock(".app-scroll") ?? "";
     expect(appScrollBlock).toMatch(/overscroll-behavior-y\s*:\s*contain/);
     expect(appScrollBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
   });
