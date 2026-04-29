@@ -141,8 +141,15 @@ const SalesEntryPage = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Rate ({symbol}/kg)</Label>
-                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+                  <Label>Rate ({symbol}/kg) {isSpecial && <span className="text-xs text-amber-500">— type manually</span>}</Label>
+                  <Input
+                    type="number"
+                    value={rateOverride}
+                    onChange={(e) => setRateOverride(e.target.value)}
+                    placeholder={isSpecial ? "Enter sale price" : `${selectedCommodity?.salesRate || "Auto"}`}
+                    disabled={!isSpecial && !hasPermission("update_rates")}
+                    className="h-12"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Calculated</Label>
@@ -150,6 +157,14 @@ const SalesEntryPage = () => {
                     <span>Wt: <strong>{actualWeight}</strong>kg</span>
                     <span>Amt: {amount !== undefined ? <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong> : <span className="text-muted-foreground">Pending</span>}</span>
                   </div>
+                  {commodity && (
+                    <p className="text-xs text-muted-foreground">
+                      {isSpecial ? `Deducts from ${SPECIAL_SOURCE_COMMODITY} stock: ` : "Available: "}
+                      <strong className={availableStock < actualWeight ? "text-destructive" : "text-foreground"}>
+                        {availableStock.toLocaleString()}kg
+                      </strong>
+                    </p>
+                  )}
                 </div>
 
                 {/* Exchange Section */}
