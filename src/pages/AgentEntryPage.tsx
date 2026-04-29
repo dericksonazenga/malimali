@@ -269,6 +269,18 @@ const AgentEntryPage = () => {
       </Card>
 
       <AuditLogViewer tableName="agent_entries" title="Agent Entry History" />
+
+      {editingEntry && (
+        <EditEntryDialog
+          open={!!editingEntry}
+          onOpenChange={(o) => !o && setEditingEntry(null)}
+          kind="agent"
+          entry={{ id: editingEntry.id, customerName: editingEntry.customerName, commodity: editingEntry.commodity, weight: editingEntry.actualWeight, rate: editingEntry.rate }}
+          onSave={async (p) => {
+            await updateAgentEntry(editingEntry.id, { customerName: p.customerName, commodity: p.commodity, actualWeight: p.weight, rate: p.rate, amount: p.amount });
+          }}
+        />
+      )}
     </div>
   );
 };
