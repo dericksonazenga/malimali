@@ -426,7 +426,7 @@ const SavingsPage = () => {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openHistory(a)} title="History">
                           <History className="w-3.5 h-3.5" />
                         </Button>
-                        {canManage && (
+                        {canActOnAccounts && (
                           <>
                             {canWithdrawSavings && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
