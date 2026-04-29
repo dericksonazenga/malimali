@@ -174,10 +174,24 @@ const SystemAdminPage = () => {
           <ScrollArea className="h-[400px]">
             <div className="space-y-2">
               {companies.map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">Created: {new Date(c.created_at).toLocaleDateString()}</p>
+                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {new Date(c.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                      Next billing: {computeNextBilling(c.created_at).toLocaleDateString()}
+                    </p>
+                    {!c.is_active && c.deactivated_at && (() => {
+                      const elapsedDays = (Date.now() - new Date(c.deactivated_at).getTime()) / 86400_000;
+                      const daysLeft = Math.max(0, Math.ceil(10 - elapsedDays));
+                      return (
+                        <p className="text-xs text-destructive font-medium">
+                          Deactivated {new Date(c.deactivated_at).toLocaleDateString()} • {daysLeft === 0 ? "Grace period ended" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} of data entry left`}
+                        </p>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={c.is_active ? "default" : "secondary"}>
