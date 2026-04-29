@@ -67,7 +67,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
   const [confirmPhrase, setConfirmPhrase] = useState("");
   const [deleting, setDeleting] = useState(false);
 
-  const config = useMemo(() => TABLES.find((t) => t.key === tableKey), [tableKey]);
+  const config = useMemo(() => tables.find((t) => t.key === tableKey), [tableKey, tables]);
 
   const reset = () => {
     setStep(1); setTableKey(""); setFromDate(undefined); setToDate(undefined);
@@ -105,6 +105,9 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
   const handleDelete = async () => {
     if (!config) return;
     if (confirmPhrase !== "DELETE") { toast.error('Type DELETE to confirm'); return; }
+    if (requiredPin) {
+      if (!enteredPin || enteredPin !== requiredPin) { toast.error('Incorrect company PIN'); return; }
+    }
     setDeleting(true);
     try {
       let q: any = supabase.from(config.key as any).delete();
@@ -145,7 +148,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
             <Select value={tableKey} onValueChange={setTableKey}>
               <SelectTrigger><SelectValue placeholder="Choose a table to delete from" /></SelectTrigger>
               <SelectContent>
-                {TABLES.map((t) => <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>)}
+                {tables.map((t) => <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
             <div className="flex justify-end">
@@ -290,7 +293,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
               <Button variant="outline" onClick={() => setStep(3)} disabled={deleting} className="gap-1"><ChevronLeft className="w-4 h-4" /> Back</Button>
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={reset} disabled={deleting}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting || confirmPhrase !== "DELETE"} className="gap-1">
+                <Button variant="destructive" onClick={handleDelete} disabled={deleting || confirmPhrase !== "DELETE" || (!!requiredPin && enteredPin !== requiredPin)} className="gap-1">
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   Permanently Delete
                 </Button>
