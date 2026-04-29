@@ -197,7 +197,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0 overflow-hidden">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <img src={avatarUrl} alt="" width={32} height={32} loading="lazy" decoding="async" className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   user?.name?.charAt(0)
                 )}
