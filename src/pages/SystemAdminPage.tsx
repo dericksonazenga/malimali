@@ -17,6 +17,7 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import DeleteWizard from "@/components/DeleteWizard";
 
 interface Company {
   id: string;
@@ -246,6 +247,8 @@ const SystemAdminPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DeleteWizard />
 
       <ChangePinCard />
     </div>
