@@ -173,6 +173,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .channel(channelName)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, async (payload) => {
         if (currentUserIdRef.current && payload.new && (payload.new as any).user_id === currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -181,6 +182,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "role_permissions" }, async () => {
         if (currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
+          const session = (await supabase.auth.getSession()).data.session;
+          if (session?.user) {
+            fetchProfile(session.user);
+          }
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "custom_roles" }, async () => {
+        if (currentUserIdRef.current) {
+          sessionStorage.removeItem(SESSION_CACHE_KEY);
           const session = (await supabase.auth.getSession()).data.session;
           if (session?.user) {
             fetchProfile(session.user);
@@ -189,10 +200,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
       .subscribe();
 
+    // Re-fetch permissions when the tab becomes visible (covers cases where
+    // realtime missed an update because the tab was backgrounded).
+    const onVisibility = async () => {
+      if (document.visibilityState === "visible" && currentUserIdRef.current) {
+        const session = (await supabase.auth.getSession()).data.session;
+        if (session?.user) fetchProfile(session.user);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
