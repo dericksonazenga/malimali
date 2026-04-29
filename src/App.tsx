@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import SystemAdminPage from "@/pages/SystemAdminPage";
 import SystemAdminGate from "@/components/SystemAdminGate";
-import { EndOfDayProvider } from "@/contexts/EndOfDayContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { InventoryProvider } from "@/contexts/InventoryContext";
 import { CommodityProvider } from "@/contexts/CommodityContext";
@@ -22,11 +21,11 @@ import ExpensesPage from "@/pages/ExpensesPage";
 import WorkersPage from "@/pages/WorkersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import AdminPage from "@/pages/AdminPage";
-import AccountantPage from "@/pages/AccountantPage";
+
 import SalaryPage from "@/pages/SalaryPage";
 import FinancialReportPage from "@/pages/FinancialReportPage";
 import MessagesPage from "@/pages/MessagesPage";
-import DailySummariesPage from "@/pages/DailySummariesPage";
+
 import AttendancePage from "@/pages/AttendancePage";
 import AttendanceScanPage from "@/pages/AttendanceScanPage";
 import NotFound from "@/pages/NotFound";
@@ -53,7 +52,7 @@ const AuthenticatedApp = () => {
       <Routes>
         <Route path="/" element={<ProtectedRoute permission="view_dashboard"><DashboardPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute permission="manage_workers"><AdminPage /></ProtectedRoute>} />
-        <Route path="/accountant" element={<ProtectedRoute permission="view_accountant"><AccountantPage /></ProtectedRoute>} />
+        
         <Route path="/data-entry" element={<DataEntryPage />} />
         <Route path="/rates" element={<ProtectedRoute permission="update_rates"><RatesPage /></ProtectedRoute>} />
         <Route path="/inventory" element={<ProtectedRoute permission="manage_inventory"><InventoryPage /></ProtectedRoute>} />
@@ -62,7 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/salary" element={<ProtectedRoute permission="manage_workers"><SalaryPage /></ProtectedRoute>} />
         <Route path="/financial-report" element={<ProtectedRoute permission="view_financial_report"><FinancialReportPage /></ProtectedRoute>} />
         <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/daily-summaries" element={<ProtectedRoute permission="view_daily_summaries"><DailySummariesPage /></ProtectedRoute>} />
+        
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/debts" element={<DebtManagementPage />} />
         <Route path="/savings" element={<SavingsPage />} />
@@ -86,15 +85,13 @@ const App = () => (
           <CategoryLabelsProvider>
             <CurrencyProvider>
               <InventoryProvider>
-                <EndOfDayProvider>
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/reset-password" element={<ResetPasswordPage />} />
-                      <Route path="/attendance-scan" element={<AttendanceScanPage />} />
-                      <Route path="/*" element={<AuthenticatedApp />} />
-                    </Routes>
-                  </BrowserRouter>
-                </EndOfDayProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/attendance-scan" element={<AttendanceScanPage />} />
+                    <Route path="/*" element={<AuthenticatedApp />} />
+                  </Routes>
+                </BrowserRouter>
               </InventoryProvider>
             </CurrencyProvider>
           </CategoryLabelsProvider>

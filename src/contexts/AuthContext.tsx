@@ -18,12 +18,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const ALL_PERMISSIONS: Permission[] = [
   "view_dashboard", "view_data_entry", "data_entry", "view_debts", "view_messages", "view_my_info", "view_settings",
-  "update_rates", "delete_entries", "view_reports", "view_financial_report", "view_daily_summaries", "view_accountant",
+  "update_rates", "delete_entries", "view_reports", "view_financial_report",
   "manage_workers", "manage_expenses", "manage_inventory", "adjust_stock",
   "delete_agent_vip_entries", "delete_sales_entries", "delete_expenses", "delete_debts",
   "delete_rates", "manage_debts", "edit_records", "view_savings", "manage_savings",
   "edit_savings", "delete_savings", "pay_debts", "edit_debts", "delete_history",
-  "end_of_day",
 ];
 
 const USER_ROLES: string[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];

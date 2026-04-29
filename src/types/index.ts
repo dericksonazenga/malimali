@@ -20,8 +20,6 @@ export type Permission =
   | "delete_entries"
   | "view_reports"
   | "view_financial_report"
-  | "view_daily_summaries"
-  | "view_accountant"
   | "manage_workers"
   | "manage_expenses"
   | "manage_inventory"
