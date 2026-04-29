@@ -763,15 +763,15 @@ const DebtManagementPage = () => {
   const desktopTableHeaders = (
     <TableHeader>
       <TableRow>
-        <TableHead>Customer</TableHead>
-        <TableHead>Description</TableHead>
-        <TableHead className="text-right">Gross Amount</TableHead>
-        <TableHead className="text-right">Deducted Fee</TableHead>
-        <TableHead className="text-right">Net Amount</TableHead>
-        <TableHead className="text-right">Paid</TableHead>
-        <TableHead className="text-right">Balance</TableHead>
-        <TableHead>Type</TableHead>
-        <TableHead className="text-right">Actions</TableHead>
+        <TableHead className="whitespace-nowrap">Customer</TableHead>
+        <TableHead className="whitespace-nowrap">Description</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Gross Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Deducted Fee</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Net Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
+        <TableHead className="whitespace-nowrap">Type</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );
@@ -779,15 +779,15 @@ const DebtManagementPage = () => {
   const creditorTableHeaders = (
     <TableHeader>
       <TableRow>
-        <TableHead>Customer</TableHead>
-        <TableHead>Commodity</TableHead>
-        <TableHead className="text-right">Kg</TableHead>
-        <TableHead className="text-right">Rate</TableHead>
-        <TableHead className="text-right">Amount</TableHead>
-        <TableHead className="text-right">Paid</TableHead>
-        <TableHead className="text-right">Balance</TableHead>
-        <TableHead>Recorded By</TableHead>
-        <TableHead className="text-right">Actions</TableHead>
+        <TableHead className="whitespace-nowrap">Customer</TableHead>
+        <TableHead className="whitespace-nowrap">Commodity</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Kg</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Rate</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
+        <TableHead className="whitespace-nowrap">Recorded By</TableHead>
+        <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
       </TableRow>
     </TableHeader>
   );
