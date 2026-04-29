@@ -82,14 +82,30 @@ const FinancialReportPage = () => {
 
   const autoFitColumns = (ws: XLSX.WorkSheet, data: any[][]) => {
     if (!data.length || !data[0].length) return ws;
-    const colWidths = data[0].map((_, colIdx) => {
+    const numCols = Math.max(...data.map(r => r?.length || 0));
+    const colWidths = Array.from({ length: numCols }, (_, colIdx) => {
       const maxLen = data.reduce((max, row) => {
-        const cellValue = String(row[colIdx] ?? "");
-        return Math.max(max, cellValue.length);
+        const cellValue = String(row?.[colIdx] ?? "");
+        // Account for longest line in multi-line cells
+        const longest = cellValue.split(/\r?\n/).reduce((m, l) => Math.max(m, l.length), 0);
+        return Math.max(max, longest);
       }, 0);
-      return { wch: Math.min(Math.max(maxLen + 2, 8), 30) };
+      // Wider cap (60) so full statements fit; min 10 for headers
+      return { wch: Math.min(Math.max(maxLen + 2, 10), 60) };
     });
     ws["!cols"] = colWidths;
+
+    // Enable wrap-text on every cell so anything beyond the cap still shows fully
+    const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[addr];
+        if (!cell) continue;
+        if (!cell.s) cell.s = {};
+        cell.s.alignment = { ...(cell.s.alignment || {}), wrapText: true, vertical: "top" };
+      }
+    }
     return ws;
   };
 
