@@ -188,7 +188,7 @@ const AgentEntryPage = () => {
           </div>
           {(() => {
             const filtered = searchQuery
-              ? entries.filter(e => e.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || e.commodity.toLowerCase().includes(searchQuery.toLowerCase()))
+              ? entries.filter(e => nameIncludes(e.customerName, searchQuery) || nameIncludes(e.commodity, searchQuery))
               : entries;
             const grouped = filtered.reduce((acc, entry) => {
               const key = entry.customerName.trim().toLowerCase();
