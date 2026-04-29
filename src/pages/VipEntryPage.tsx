@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import { useCommodities } from "@/contexts/CommodityContext";
-import { namesEqual } from "@/utils/nameMatch";
+import { namesEqual, nameIncludes } from "@/utils/nameMatch";
 import { VipEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
@@ -176,7 +176,7 @@ const VipEntryPage = () => {
           </div>
           {(() => {
             const filtered = searchQuery
-              ? entries.filter(e => e.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || e.commodity.toLowerCase().includes(searchQuery.toLowerCase()))
+              ? entries.filter(e => nameIncludes(e.customerName, searchQuery) || nameIncludes(e.commodity, searchQuery))
               : entries;
             const grouped = filtered.reduce((acc, entry) => {
               const key = entry.customerName.trim().toLowerCase();

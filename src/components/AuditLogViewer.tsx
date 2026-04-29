@@ -10,6 +10,7 @@ import { History, ChevronDown, ChevronUp, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface AuditEntry {
   id: string;
@@ -104,12 +105,11 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
 
   const filtered = entries.filter(e => {
     if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    const details = formatChanges(e.old_data, e.new_data, e.action).toLowerCase();
+    const details = formatChanges(e.old_data, e.new_data, e.action);
     return (
-      e.changed_by_name.toLowerCase().includes(q) ||
-      e.action.toLowerCase().includes(q) ||
-      details.includes(q)
+      nameIncludes(e.changed_by_name, search) ||
+      nameIncludes(e.action, search) ||
+      nameIncludes(details, search)
     );
   });
 

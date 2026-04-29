@@ -3,7 +3,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import { SalesEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCommodities } from "@/contexts/CommodityContext";
-import { namesEqual } from "@/utils/nameMatch";
+import { namesEqual, nameIncludes } from "@/utils/nameMatch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -262,7 +262,7 @@ const SalesEntryPage = () => {
           </div>
           {(() => {
             const filtered = searchQuery
-              ? entries.filter(e => (e.customerName || "").toLowerCase().includes(searchQuery.toLowerCase()) || (e.commodity || "").toLowerCase().includes(searchQuery.toLowerCase()))
+              ? entries.filter(e => nameIncludes(e.customerName, searchQuery) || nameIncludes(e.commodity, searchQuery))
               : entries;
             const grouped = filtered.reduce((acc, entry) => {
               const key = (entry.customerName || "Walk-in").trim().toLowerCase();

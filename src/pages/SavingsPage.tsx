@@ -17,6 +17,7 @@ import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface SavingsAccount {
   id: string;
@@ -282,7 +283,7 @@ const SavingsPage = () => {
   };
 
   const filtered = accounts.filter(a =>
-    a.customer_name.toLowerCase().includes(search.toLowerCase())
+    nameIncludes(a.customer_name, search)
   );
 
   const totalSavings = accounts.reduce((s, a) => s + a.balance, 0);
