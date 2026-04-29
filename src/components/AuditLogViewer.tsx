@@ -10,6 +10,7 @@ import { History, ChevronDown, ChevronUp, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface AuditEntry {
   id: string;
