@@ -152,9 +152,9 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
       };
-    }, [onRefresh, refreshing, threshold, maxPull, pullDistance, scrollRef]);
+    }, [onRefresh, refreshing, effectiveThreshold, maxPull, pullDistance, scrollRef]);
 
-    const progress = Math.min(1, pullDistance / threshold);
+    const progress = Math.min(1, pullDistance / effectiveThreshold);
     const showIndicator = pullDistance > 0 || refreshing;
 
     return (
