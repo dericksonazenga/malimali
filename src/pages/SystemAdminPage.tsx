@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2, Trash2 } from "lucide-react";
+import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2, Trash2, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -25,6 +25,9 @@ interface Company {
   is_active: boolean;
   created_at: string;
   deactivated_at: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  contact_address: string | null;
 }
 
 const BILLING_CYCLE_DAYS = 30;
