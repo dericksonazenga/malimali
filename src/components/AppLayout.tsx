@@ -265,6 +265,20 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                  .split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "))}
           </h1>
           <div className="ml-auto shrink-0 flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                const btn = document.activeElement as HTMLElement | null;
+                btn?.blur?.();
+                window.location.reload();
+              }}
+              title="Refresh"
+              aria-label="Refresh page"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
             <ThemeToggle />
           </div>
         </header>
