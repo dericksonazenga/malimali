@@ -246,9 +246,15 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
               <ArrowLeft className="w-4 h-4" />
             </Button>
           )}
-          <h2 className="text-sm sm:text-base font-semibold truncate">
-            {filteredNav.find((n) => n.path === location.pathname)?.label || "Dashboard"}
-          </h2>
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground truncate">
+            {(navItems.find((n) => n.path === location.pathname)?.label) ||
+              (location.pathname === "/system-admin" ? "System Admin" :
+               location.pathname.startsWith("/data-entry") ? "Data Entry" :
+               location.pathname === "/" ? "Dashboard" :
+               // Last-resort: derive a readable title from the path segment
+               (location.pathname.replace(/^\/+/, "").split("/")[0] || "Dashboard")
+                 .split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "))}
+          </h1>
           <div className="ml-auto shrink-0 flex items-center gap-1">
             <ThemeToggle />
           </div>
