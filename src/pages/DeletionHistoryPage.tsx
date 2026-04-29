@@ -46,7 +46,7 @@ const DeletionHistoryPage = () => {
     const { data, error } = await supabase
       .from("audit_log")
       .select("*")
-      .eq("action", "bulk_delete")
+      .in("action", ["bulk_delete", "delete"])
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) { toast.error(error.message); setLoading(false); return; }
