@@ -63,6 +63,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
   const [toDate, setToDate] = useState<Date | undefined>();
   const [customer, setCustomer] = useState("");
   const [commodity, setCommodity] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("any");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [previewRows, setPreviewRows] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
 
   const reset = () => {
     setStep(1); setTableKey(""); setFromDate(undefined); setToDate(undefined);
-    setCustomer(""); setCommodity(""); setPreviewRows([]); setTotalCount(0); setConfirmPhrase(""); setEnteredPin("");
+    setCustomer(""); setCommodity(""); setStatusFilter("any"); setSortOrder("desc");
+    setPreviewRows([]); setTotalCount(0); setConfirmPhrase(""); setEnteredPin("");
   };
 
   const buildQuery = (countOnly: boolean) => {
