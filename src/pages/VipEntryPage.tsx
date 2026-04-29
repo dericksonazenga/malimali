@@ -27,8 +27,9 @@ const VipEntryPage = () => {
   const { hasPermission } = useAuth();
   const { commodities: mockCommodities } = useCommodities();
   const { symbol } = useCurrency();
-  const { vipEntries: entries, addVipEntry, removeVipEntry, refresh } = useInventory();
+  const { vipEntries: entries, addVipEntry, removeVipEntry, updateVipEntry, refresh } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingEntry, setEditingEntry] = useState<VipEntry | null>(null);
   const [customerName, setCustomerName] = usePersistedState("vip_customerName", "");
   const [commodity, setCommodity] = usePersistedState("vip_commodity", "");
   const [weightExpr, setWeightExpr] = usePersistedState("vip_weightExpr", "");
