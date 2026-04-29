@@ -147,34 +147,27 @@ const DashboardPage = () => {
           <CardTitle className="flex items-center gap-2 text-sm sm:text-lg"><CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Debt Overview</CardTitle>
         </CardHeader>
         <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div
-              className={cn("p-2.5 sm:p-3 rounded-lg bg-destructive/10 border border-destructive/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-destructive/30")}
-              onClick={canViewDebts ? () => navigate("/debts") : undefined}
-            >
-              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3 shrink-0" /> Total Outstanding</p>
-              <p className="text-sm sm:text-lg font-bold font-mono text-destructive truncate">{symbol}{debtSummary.totalOutstanding.toLocaleString()}</p>
-            </div>
-            <div
-              className={cn("p-2.5 sm:p-3 rounded-lg bg-red-500/10 border border-red-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-red-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-red-500/10 border border-red-500/20 transition-all active:scale-[0.98] min-w-0", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-red-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
               <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowDownCircle className="w-3 h-3 shrink-0" /> Advance</p>
-              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.advance.toLocaleString()}</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{debtSummary.advance.toLocaleString()}</p>
             </div>
             <div
-              className={cn("p-2.5 sm:p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-orange-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 transition-all active:scale-[0.98] min-w-0", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-orange-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
-              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 shrink-0" /> Debt</p>
-              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.debt.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><ArrowUpCircle className="w-3 h-3 shrink-0" /> Debtors</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{debtSummary.debt.toLocaleString()}</p>
             </div>
             <div
-              className={cn("p-2.5 sm:p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-all active:scale-[0.98]", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-purple-500/30")}
+              className={cn("p-2.5 sm:p-3 rounded-lg bg-purple-500/10 border border-purple-500/20 transition-all active:scale-[0.98] min-w-0", canViewDebts && "cursor-pointer hover:ring-2 hover:ring-purple-500/30")}
               onClick={canViewDebts ? () => navigate("/debts") : undefined}
             >
               <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3 shrink-0" /> Creditors</p>
-              <p className="text-sm sm:text-lg font-bold font-mono truncate">{symbol}{debtSummary.creditors.toLocaleString()}</p>
+              <p className="text-xs sm:text-base font-bold font-mono whitespace-nowrap overflow-x-auto scrollbar-none">{symbol}{debtSummary.creditors.toLocaleString()}</p>
             </div>
           </div>
         </CardContent>
