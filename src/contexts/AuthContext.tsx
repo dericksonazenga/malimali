@@ -230,6 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const hasPermission = (permission: string) => {
     if (!user) return false;
+    if (permission === "__admin_only__") return user.role === "admin";
     return user.permissions.includes(permission as Permission);
   };
 
