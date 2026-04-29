@@ -16,13 +16,18 @@ interface PullToRefreshProps {
  * Default behavior reloads the page if onRefresh isn't provided.
  */
 const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
-  ({ children, className, onRefresh, threshold = 70, maxPull = 120 }, ref) => {
+  ({ children, className, onRefresh, threshold, maxPull = 260 }, ref) => {
     const innerRef = useRef<HTMLElement>(null);
     const scrollRef = (ref as React.MutableRefObject<HTMLElement>) || innerRef;
     const startY = useRef<number | null>(null);
     const pulling = useRef(false);
     const [pullDistance, setPullDistance] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
+
+    // Effective threshold: require swipe from top to ~bottom of viewport
+    const effectiveThreshold = threshold ?? Math.max(220, Math.round(window.innerHeight * 0.6));
+    // Only initiate pull-to-refresh when the touch begins very close to the top edge of the screen
+    const TOP_EDGE_ZONE = 60;
 
     useEffect(() => {
       const el = scrollRef.current;
@@ -35,7 +40,20 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           startY.current = null;
           return;
         }
-        startY.current = e.touches[0].clientY;
+        const touch = e.touches[0];
+        // Only start tracking if the finger is touching near the top of the screen
+        if (touch.clientY > TOP_EDGE_ZONE) {
+          startY.current = null;
+          return;
+        }
+        // Ignore touches that begin inside an inner scrollable element (so users can
+        // freely scroll within tickets/cards/dialogs without triggering refresh)
+        const target = e.target as HTMLElement | null;
+        if (target && isInsideInnerScroller(target, el)) {
+          startY.current = null;
+          return;
+        }
+        startY.current = touch.clientY;
         pulling.current = false;
       };
 
@@ -54,8 +72,8 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        // Resistance curve
-        const resisted = Math.min(maxPull, delta * 0.5);
+        // Stronger resistance so the user has to pull a long way
+        const resisted = Math.min(maxPull, delta * 0.35);
         setPullDistance(resisted);
         if (e.cancelable) e.preventDefault();
       };
