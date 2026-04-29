@@ -34,6 +34,7 @@ export type Permission =
   | "view_savings"
   | "manage_savings"
   | "edit_savings"
+  | "withdraw_savings"
   | "delete_savings"
   | "pay_debts"
   | "edit_debts"
