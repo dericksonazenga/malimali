@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
 import StorageOverviewCard from "@/components/StorageOverviewCard";
 import { toast } from "sonner";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface DeletionEntry {
   id: string;
