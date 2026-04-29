@@ -123,11 +123,15 @@ const SystemAdminPage = () => {
       })
       .eq("id", company.id);
     if (error) {
-      toast.error("Failed to update");
-    } else {
-      toast.success(`${company.name} ${company.is_active ? "deactivated" : "activated"}`);
-      fetchCompanies();
+      toast.error(error.message || "Failed to update");
+      return;
     }
+    if (nextActive) {
+      toast.success(`${company.name} reactivated — full access restored on all devices`);
+    } else {
+      toast.success(`${company.name} deactivated — dashboard limited; data entry blocks in 10 days`);
+    }
+    fetchCompanies();
   };
 
   const handleDeleteCompany = async () => {
@@ -261,15 +265,40 @@ const SystemAdminPage = () => {
                     <Badge variant={c.is_active ? "default" : "secondary"}>
                       {c.is_active ? "Active" : "Inactive"}
                     </Badge>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleActive(c)}
-                      className="gap-1"
-                    >
-                      {c.is_active ? <PowerOff className="w-3 h-3" /> : <Power className="w-3 h-3" />}
-                      {c.is_active ? "Deactivate" : "Activate"}
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1">
+                          {c.is_active ? <PowerOff className="w-3 h-3" /> : <Power className="w-3 h-3" />}
+                          {c.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {c.is_active ? `Deactivate "${c.name}"?` : `Reactivate "${c.name}"?`}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {c.is_active ? (
+                              <>
+                                The company's dashboard will instantly show <strong>only the total purchase ticket count</strong> (no breakdowns, no financials).
+                                Data Entry keeps working for <strong>10 days</strong> with a visible countdown banner, then locks the entire app until reactivated.
+                                Effect propagates to all of their devices within seconds.
+                              </>
+                            ) : (
+                              <>
+                                Full access will be restored instantly on all of {c.name}'s devices: dashboards, data entry, and every other page resume normal operation.
+                              </>
+                            )}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => toggleActive(c)}>
+                            {c.is_active ? "Deactivate" : "Reactivate"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm" className="gap-1">
