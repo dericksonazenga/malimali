@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Upload, Loader2, Save, Trash2 } from "lucide-react";
+import { Building2, Upload, Loader2, Save, Trash2, Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 const CompanyBrandingSettings = () => {
@@ -18,22 +18,65 @@ const CompanyBrandingSettings = () => {
   const [originalName, setOriginalName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Contact details
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactAddress, setContactAddress] = useState("");
+  const [originalContact, setOriginalContact] = useState({ phone: "", email: "", address: "" });
+  const [savingContact, setSavingContact] = useState(false);
+
   useEffect(() => {
     if (!companyId) return;
     const fetch = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("name, logo_url")
+        .select("name, logo_url, contact_phone, contact_email, contact_address")
         .eq("id", companyId)
         .single();
       if (data) {
         setCompanyName(data.name);
         setOriginalName(data.name);
         setLogoUrl(data.logo_url);
+        const phone = (data as any).contact_phone || "";
+        const email = (data as any).contact_email || "";
+        const address = (data as any).contact_address || "";
+        setContactPhone(phone);
+        setContactEmail(email);
+        setContactAddress(address);
+        setOriginalContact({ phone, email, address });
       }
     };
     fetch();
   }, [companyId]);
+
+  const contactDirty =
+    contactPhone.trim() !== originalContact.phone ||
+    contactEmail.trim() !== originalContact.email ||
+    contactAddress.trim() !== originalContact.address;
+
+  const handleSaveContact = async () => {
+    if (!companyId) return;
+    setSavingContact(true);
+    const { error } = await supabase
+      .from("companies")
+      .update({
+        contact_phone: contactPhone.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_address: contactAddress.trim() || null,
+      } as any)
+      .eq("id", companyId);
+    setSavingContact(false);
+    if (error) {
+      toast.error("Failed to update contact details");
+    } else {
+      setOriginalContact({
+        phone: contactPhone.trim(),
+        email: contactEmail.trim(),
+        address: contactAddress.trim(),
+      });
+      toast.success("Contact details updated!");
+    }
+  };
 
   const handleSaveName = async () => {
     if (!companyId || !companyName.trim()) return;
