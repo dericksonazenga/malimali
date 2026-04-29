@@ -794,7 +794,7 @@ const DebtManagementPage = () => {
 
   const renderDebtSection = (items: Debt[]) => (
     <>
-      <div className="hidden lg:block max-h-[480px] overflow-y-auto">
+      <div className="hidden lg:block max-h-[480px] overflow-y-auto overflow-x-auto">
         <Table>
           {desktopTableHeaders}
           <TableBody>
