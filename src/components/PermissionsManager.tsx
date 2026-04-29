@@ -204,7 +204,7 @@ const PermissionsManager = () => {
           </thead>
           <tbody>
             {PERMISSION_GROUPS.map((group) => (
-              <>
+              <React.Fragment key={group.section}>
                 <tr key={`section-${group.section}`} className="bg-muted/40">
                   <td
                     colSpan={1 + allRoles.length}
