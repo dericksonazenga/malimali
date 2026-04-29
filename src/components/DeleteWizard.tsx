@@ -71,7 +71,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
 
   const reset = () => {
     setStep(1); setTableKey(""); setFromDate(undefined); setToDate(undefined);
-    setCustomer(""); setCommodity(""); setPreviewRows([]); setTotalCount(0); setConfirmPhrase("");
+    setCustomer(""); setCommodity(""); setPreviewRows([]); setTotalCount(0); setConfirmPhrase(""); setEnteredPin("");
   };
 
   const buildQuery = (countOnly: boolean) => {
