@@ -163,6 +163,11 @@
     overscroll-behavior-y: none;
   }
 
+  body,
+  #root {
+    min-height: 100dvh;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
@@ -251,6 +256,11 @@
   }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  .app-scroll {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
