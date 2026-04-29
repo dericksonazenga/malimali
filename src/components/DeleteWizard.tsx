@@ -166,7 +166,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     } finally { setDeleting(false); }
   };
 
-  const filtersActive = !!(fromDate || toDate || customer.trim() || commodity.trim());
+  const filtersActive = !!(fromDate || toDate || customer.trim() || commodity.trim() || (config?.hasPaymentStatus && statusFilter !== "any"));
 
   return (
     <Card className="border-destructive/30">
