@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface NavItem {
   label: string;
@@ -260,11 +261,14 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main ref={mainScrollRef} className="app-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-6">
+        <PullToRefresh
+          ref={mainScrollRef}
+          className="app-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-6"
+        >
           <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
             {children}
           </div>
-        </main>
+        </PullToRefresh>
       </div>
     </div>
   );
