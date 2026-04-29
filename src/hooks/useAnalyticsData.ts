@@ -200,7 +200,13 @@ export function useAnalyticsData(range: DateRangeValue) {
     const ensure = (c: string) => { if (!cb[c]) cb[c] = { bought: 0, sold: 0, net: 0 }; };
     agentRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
     vipRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
-    salesRows.forEach((e: any) => { if (e.commodity) { ensure(e.commodity); cb[e.commodity].sold += Number(e.weight); } });
+    salesRows.forEach((e: any) => {
+      if (e.commodity) {
+        const stockCommodity = isSpecialCommodity(e.commodity) ? SPECIAL_SOURCE_COMMODITY : e.commodity;
+        ensure(stockCommodity);
+        cb[stockCommodity].sold += Number(e.weight);
+      }
+    });
     Object.keys(cb).forEach(c => { cb[c].net = cb[c].bought - cb[c].sold; });
 
     // Daily profit trend
