@@ -23,16 +23,30 @@ interface DeletionEntry {
   old_data: any;
 }
 
-const formatFilters = (newData: any) => {
-  if (!newData || typeof newData !== "object") return "—";
-  const f = newData.filters || {};
-  const parts: string[] = [];
-  if (f.from_date) parts.push(`from ${f.from_date}`);
-  if (f.to_date) parts.push(`to ${f.to_date}`);
-  if (f.customer) parts.push(`customer ~ "${f.customer}"`);
-  if (f.commodity) parts.push(`commodity ~ "${f.commodity}"`);
-  return parts.length ? parts.join(", ") : "no filters (all rows)";
+const formatFilters = (e: DeletionEntry) => {
+  if (e.action === "bulk_delete") {
+    const f = e.new_data?.filters || {};
+    const parts: string[] = [];
+    if (f.from_date) parts.push(`from ${f.from_date}`);
+    if (f.to_date) parts.push(`to ${f.to_date}`);
+    if (f.customer) parts.push(`customer ~ "${f.customer}"`);
+    if (f.commodity) parts.push(`commodity ~ "${f.commodity}"`);
+    if (f.status) parts.push(`status: ${f.status}`);
+    if (f.sort) parts.push(`sort: ${f.sort}`);
+    return parts.length ? parts.join(", ") : "no filters (all rows)";
+  }
+  // Single-row delete — describe the record briefly
+  const o = e.old_data || {};
+  const bits: string[] = [];
+  if (o.customer_name) bits.push(`customer: ${o.customer_name}`);
+  if (o.commodity) bits.push(`commodity: ${o.commodity}`);
+  if (o.amount != null) bits.push(`amount: ${o.amount}`);
+  if (o.date) bits.push(`date: ${o.date}`);
+  return bits.length ? `single row — ${bits.join(", ")}` : `single row (id: ${e.record_id.slice(0, 8)})`;
 };
+
+const getRowCount = (e: DeletionEntry) => e.action === "bulk_delete" ? (e.new_data?.row_count ?? 0) : 1;
+const getTarget = (e: DeletionEntry) => e.new_data?.target_table || e.table_name;
 
 const DeletionHistoryPage = () => {
   const { user } = useAuth();
