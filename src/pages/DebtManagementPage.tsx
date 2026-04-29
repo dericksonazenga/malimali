@@ -689,11 +689,11 @@ const DebtManagementPage = () => {
     <TableRow key={c.id}>
       <TableCell className="font-medium">{c.customer_name}</TableCell>
       <TableCell>{c.commodity}</TableCell>
-      <TableCell className="text-right font-mono">{c.kg.toLocaleString()} kg</TableCell>
-      <TableCell className="text-right font-mono">{symbol}{c.rate.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</TableCell>
-      <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono whitespace-nowrap">{c.kg.toLocaleString()} kg</TableCell>
+      <TableCell className="text-right font-mono whitespace-nowrap">{symbol}{c.rate.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono font-semibold whitespace-nowrap">{symbol}{c.total_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-green-600 whitespace-nowrap">{symbol}{c.paid_amount.toLocaleString()}</TableCell>
+      <TableCell className="text-right font-mono text-destructive font-semibold whitespace-nowrap">{symbol}{c.balance.toLocaleString()}</TableCell>
       <TableCell className="text-xs text-muted-foreground">{c.recorded_by_name}</TableCell>
       <TableCell>
         <div className="flex items-center justify-end gap-1">
