@@ -257,6 +257,18 @@ const VipEntryPage = () => {
       </Card>
 
       <AuditLogViewer tableName="vip_entries" title="VIP Entry History" />
+
+      {editingEntry && (
+        <EditEntryDialog
+          open={!!editingEntry}
+          onOpenChange={(o) => !o && setEditingEntry(null)}
+          kind="vip"
+          entry={{ id: editingEntry.id, customerName: editingEntry.customerName, commodity: editingEntry.commodity, weight: editingEntry.actualWeight, rate: editingEntry.rate }}
+          onSave={async (p) => {
+            await updateVipEntry(editingEntry.id, { customerName: p.customerName, commodity: p.commodity, actualWeight: p.weight, rate: p.rate, amount: p.amount });
+          }}
+        />
+      )}
     </div>
   );
 };
