@@ -111,6 +111,9 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       // Mouse drag (desktop browsers)
       const handleMouseDown = (e: MouseEvent) => {
         if (refreshing || el.scrollTop > 0) return;
+        if (e.clientY > TOP_EDGE_ZONE) return;
+        const target = e.target as HTMLElement | null;
+        if (target && isInsideInnerScroller(target, el)) return;
         startY.current = e.clientY;
         pulling.current = false;
       };
@@ -128,7 +131,7 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        setPullDistance(Math.min(maxPull, delta * 0.5));
+        setPullDistance(Math.min(maxPull, delta * 0.35));
       };
       const handleMouseUp = () => { handleTouchEnd(); };
 
