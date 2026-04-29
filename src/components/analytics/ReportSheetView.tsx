@@ -51,17 +51,17 @@ const ReportSheetView = ({
 }: ReportSheetViewProps) => {
   const { labels } = useCategoryLabels();
   const [search, setSearch] = useState("");
-  const q = search.toLowerCase().trim();
+  const q = search.trim();
 
-  const filteredAgents = useMemo(() => q ? agentEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : agentEntries, [q, agentEntries]);
-  const filteredVip = useMemo(() => q ? vipEntries.filter((e: any) => `${e.customer_name} ${e.commodity} ${e.date}`.toLowerCase().includes(q)) : vipEntries, [q, vipEntries]);
-  const filteredSales = useMemo(() => q ? salesEntries.filter((e: any) => `${e.customer_name || ""} ${e.commodity || ""} ${e.date}`.toLowerCase().includes(q)) : salesEntries, [q, salesEntries]);
-  const filteredExpenses = useMemo(() => q ? expenses.filter((e: any) => `${e.category} ${e.notes || ""} ${e.date}`.toLowerCase().includes(q)) : expenses, [q, expenses]);
-  const filteredWorkers = useMemo(() => q ? workers.filter((w: any) => `${w.name} ${w.role}`.toLowerCase().includes(q)) : workers, [q, workers]);
-  const filteredStock = useMemo(() => q ? stockData.filter((s: any) => s.commodity.toLowerCase().includes(q)) : stockData, [q, stockData]);
-  const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => c.toLowerCase().includes(q))) : commodityBreakdown, [q, commodityBreakdown]);
-  const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => c.commodity.toLowerCase().includes(q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
-  const filteredDebts = useMemo(() => q ? debts.filter((d: any) => `${d.customer_name} ${d.description}`.toLowerCase().includes(q)) : debts, [q, debts]);
+  const filteredAgents = useMemo(() => q ? agentEntries.filter((e: any) => nameIncludes(`${e.customer_name} ${e.commodity} ${e.date}`, q)) : agentEntries, [q, agentEntries]);
+  const filteredVip = useMemo(() => q ? vipEntries.filter((e: any) => nameIncludes(`${e.customer_name} ${e.commodity} ${e.date}`, q)) : vipEntries, [q, vipEntries]);
+  const filteredSales = useMemo(() => q ? salesEntries.filter((e: any) => nameIncludes(`${e.customer_name || ""} ${e.commodity || ""} ${e.date}`, q)) : salesEntries, [q, salesEntries]);
+  const filteredExpenses = useMemo(() => q ? expenses.filter((e: any) => nameIncludes(`${e.category} ${e.notes || ""} ${e.date}`, q)) : expenses, [q, expenses]);
+  const filteredWorkers = useMemo(() => q ? workers.filter((w: any) => nameIncludes(`${w.name} ${w.role}`, q)) : workers, [q, workers]);
+  const filteredStock = useMemo(() => q ? stockData.filter((s: any) => nameIncludes(s.commodity, q)) : stockData, [q, stockData]);
+  const filteredCommodityBreakdown = useMemo(() => q ? Object.fromEntries(Object.entries(commodityBreakdown).filter(([c]) => nameIncludes(c, q))) : commodityBreakdown, [q, commodityBreakdown]);
+  const filteredProfitBreakdown = useMemo(() => q ? commodityProfitBreakdown.filter(c => nameIncludes(c.commodity, q)) : commodityProfitBreakdown, [q, commodityProfitBreakdown]);
+  const filteredDebts = useMemo(() => q ? debts.filter((d: any) => nameIncludes(`${d.customer_name} ${d.description}`, q)) : debts, [q, debts]);
 
   const agentGroups = useMemo(() => groupEntriesByCustomer(filteredAgents), [filteredAgents]);
   const vipGroups = useMemo(() => groupEntriesByCustomer(filteredVip), [filteredVip]);
