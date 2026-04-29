@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,29 +14,74 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import LoginPage from "@/pages/LoginPage";
 
-// Lazy-loaded routes — keeps initial bundle small so the app paints instantly.
-const SystemAdminPage = lazy(() => import("@/pages/SystemAdminPage"));
-const SystemAdminGate = lazy(() => import("@/components/SystemAdminGate"));
-const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
-const DataEntryPage = lazy(() => import("@/pages/DataEntryPage"));
-const RatesPage = lazy(() => import("@/pages/RatesPage"));
-const InventoryPage = lazy(() => import("@/pages/InventoryPage"));
-const ExpensesPage = lazy(() => import("@/pages/ExpensesPage"));
-const WorkersPage = lazy(() => import("@/pages/WorkersPage"));
-const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const AdminPage = lazy(() => import("@/pages/AdminPage"));
-const SalaryPage = lazy(() => import("@/pages/SalaryPage"));
-const FinancialReportPage = lazy(() => import("@/pages/FinancialReportPage"));
-const MessagesPage = lazy(() => import("@/pages/MessagesPage"));
-const AttendancePage = lazy(() => import("@/pages/AttendancePage"));
-const AttendanceScanPage = lazy(() => import("@/pages/AttendanceScanPage"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
-const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
-const LandingPage = lazy(() => import("@/pages/LandingPage"));
-const MyInfoPage = lazy(() => import("@/pages/MyInfoPage"));
-const DebtManagementPage = lazy(() => import("@/pages/DebtManagementPage"));
-const SavingsPage = lazy(() => import("@/pages/SavingsPage"));
-const DeletionHistoryPage = lazy(() => import("@/pages/DeletionHistoryPage"));
+// Lazy-loaded routes — keep factory refs so we can prefetch all chunks once
+// the shell mounts. Prefetching means subsequent navigations are instant
+// (no chunk download, no Suspense fallback flash).
+const loaders = {
+  SystemAdminPage: () => import("@/pages/SystemAdminPage"),
+  SystemAdminGate: () => import("@/components/SystemAdminGate"),
+  DashboardPage: () => import("@/pages/DashboardPage"),
+  DataEntryPage: () => import("@/pages/DataEntryPage"),
+  RatesPage: () => import("@/pages/RatesPage"),
+  InventoryPage: () => import("@/pages/InventoryPage"),
+  ExpensesPage: () => import("@/pages/ExpensesPage"),
+  WorkersPage: () => import("@/pages/WorkersPage"),
+  SettingsPage: () => import("@/pages/SettingsPage"),
+  AdminPage: () => import("@/pages/AdminPage"),
+  SalaryPage: () => import("@/pages/SalaryPage"),
+  FinancialReportPage: () => import("@/pages/FinancialReportPage"),
+  MessagesPage: () => import("@/pages/MessagesPage"),
+  AttendancePage: () => import("@/pages/AttendancePage"),
+  AttendanceScanPage: () => import("@/pages/AttendanceScanPage"),
+  NotFound: () => import("@/pages/NotFound"),
+  ResetPasswordPage: () => import("@/pages/ResetPasswordPage"),
+  LandingPage: () => import("@/pages/LandingPage"),
+  MyInfoPage: () => import("@/pages/MyInfoPage"),
+  DebtManagementPage: () => import("@/pages/DebtManagementPage"),
+  SavingsPage: () => import("@/pages/SavingsPage"),
+  DeletionHistoryPage: () => import("@/pages/DeletionHistoryPage"),
+};
+
+const SystemAdminPage = lazy(loaders.SystemAdminPage);
+const SystemAdminGate = lazy(loaders.SystemAdminGate);
+const DashboardPage = lazy(loaders.DashboardPage);
+const DataEntryPage = lazy(loaders.DataEntryPage);
+const RatesPage = lazy(loaders.RatesPage);
+const InventoryPage = lazy(loaders.InventoryPage);
+const ExpensesPage = lazy(loaders.ExpensesPage);
+const WorkersPage = lazy(loaders.WorkersPage);
+const SettingsPage = lazy(loaders.SettingsPage);
+const AdminPage = lazy(loaders.AdminPage);
+const SalaryPage = lazy(loaders.SalaryPage);
+const FinancialReportPage = lazy(loaders.FinancialReportPage);
+const MessagesPage = lazy(loaders.MessagesPage);
+const AttendancePage = lazy(loaders.AttendancePage);
+const AttendanceScanPage = lazy(loaders.AttendanceScanPage);
+const NotFound = lazy(loaders.NotFound);
+const ResetPasswordPage = lazy(loaders.ResetPasswordPage);
+const LandingPage = lazy(loaders.LandingPage);
+const MyInfoPage = lazy(loaders.MyInfoPage);
+const DebtManagementPage = lazy(loaders.DebtManagementPage);
+const SavingsPage = lazy(loaders.SavingsPage);
+const DeletionHistoryPage = lazy(loaders.DeletionHistoryPage);
+
+let prefetchStarted = false;
+const prefetchAllRoutes = () => {
+  if (prefetchStarted) return;
+  prefetchStarted = true;
+  // Stagger imports so we don't hammer the network in parallel — but kick
+  // them all off within ~half a second.
+  const entries = Object.values(loaders);
+  entries.forEach((load, i) => {
+    const start = () => { void load().catch(() => {}); };
+    const delay = Math.min(i * 30, 600);
+    if (typeof (window as any).requestIdleCallback === "function") {
+      (window as any).requestIdleCallback(start, { timeout: delay + 200 });
+    } else {
+      setTimeout(start, delay);
+    }
+  });
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,14 +93,17 @@ const queryClient = new QueryClient({
   },
 });
 
-const RouteFallback = () => (
-  <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
-    <div className="h-8 w-8 rounded-full border-2 border-amber-500/25 border-t-amber-500 animate-spin" />
-  </div>
-);
+// Transparent fallback — no spinner, no layout shift. Cached chunks render
+// instantly; for the rare uncached chunk the user sees the previous page
+// content until the new one is ready (a few ms on a warm app).
+const RouteFallback = () => <div aria-hidden="true" />;
 
 const AuthenticatedApp = () => {
   const { user, loading, isSystemAdmin } = useAuth();
+
+  // Warm every route chunk in the background once the shell mounts so future
+  // navigations are instant.
+  useEffect(() => { prefetchAllRoutes(); }, []);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar">

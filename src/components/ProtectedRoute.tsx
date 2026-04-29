@@ -11,19 +11,10 @@ const ProtectedRoute = forwardRef<HTMLDivElement, ProtectedRouteProps>(
   ({ permission, children }, ref) => {
     const { hasPermission, loading } = useAuth();
 
-    // While auth/permissions are still resolving, render a transparent
-    // placeholder instead of an "Access Denied" flash. This is what causes
-    // the brief blank screen during navigation.
+    // While auth/permissions are still resolving, render an invisible
+    // placeholder so we don't flash a spinner on top of the previous page.
     if (loading) {
-      return (
-        <div
-          ref={ref}
-          className="flex items-center justify-center min-h-[40vh]"
-          aria-busy="true"
-        >
-          <div className="h-8 w-8 rounded-full border-2 border-amber-500/25 border-t-amber-500 animate-spin" />
-        </div>
-      );
+      return <div ref={ref} aria-hidden="true" />;
     }
 
     if (!hasPermission(permission)) {
