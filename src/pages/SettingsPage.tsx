@@ -13,6 +13,7 @@ import ChangePasswordCard from "@/components/ChangePasswordCard";
 import RolesManager from "@/components/RolesManager";
 import CompanyBrandingSettings from "@/components/CompanyBrandingSettings";
 import StorageManagementCard from "@/components/StorageManagementCard";
+import StorageOverviewCard from "@/components/StorageOverviewCard";
 import CompanyDataManagementCard from "@/components/CompanyDataManagementCard";
 
 const SettingsPage = () => {
@@ -165,6 +166,8 @@ const SettingsPage = () => {
       </Card>
 
       {isAdmin && <RolesManager />}
+
+      <StorageOverviewCard compact />
 
       <StorageManagementCard />
 
