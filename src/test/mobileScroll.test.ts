@@ -73,6 +73,12 @@ describe("mobile/tablet scroll behaviour", () => {
 });
 
 describe("scroll containers inside page sections", () => {
+  it("app scroll containers explicitly contain overscroll chaining", () => {
+    const appScrollBlock = findRuleBlock(".app-scroll") ?? "";
+    expect(appScrollBlock).toMatch(/overscroll-behavior-y\s*:\s*contain/);
+    expect(appScrollBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
+  });
+
   it("inner scroll containers do not declare touch-action:none", () => {
     // A `touch-action: none` rule on a generic `.overflow-y-auto` style
     // would prevent the user from scrolling cards, lists, and tables on
