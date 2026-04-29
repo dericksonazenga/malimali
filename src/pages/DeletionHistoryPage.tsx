@@ -85,12 +85,11 @@ const DeletionHistoryPage = () => {
     const target = getTarget(e);
     if (tableFilter && target !== tableFilter) return false;
     if (!search.trim()) return true;
-    const q = search.toLowerCase();
     return (
-      e.changed_by_name.toLowerCase().includes(q) ||
-      target.toLowerCase().includes(q) ||
-      e.action.toLowerCase().includes(q) ||
-      formatFilters(e).toLowerCase().includes(q)
+      nameIncludes(e.changed_by_name, search) ||
+      nameIncludes(target, search) ||
+      nameIncludes(e.action, search) ||
+      nameIncludes(formatFilters(e), search)
     );
   }), [entries, search, tableFilter]);
 
