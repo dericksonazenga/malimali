@@ -53,12 +53,11 @@ const getCachedUser = (): { user: User; companyId: string | null } | null => {
   }
 };
 
-const fetchRolePermissions = async (role: UserRole): Promise<Permission[]> => {
+const fetchRolePermissions = async (role: UserRole, companyId: string | null): Promise<Permission[]> => {
   if (role === "admin") return ALL_PERMISSIONS;
-  const { data, error } = await supabase
-    .from("role_permissions")
-    .select("permission")
-    .eq("role", role);
+  let q = supabase.from("role_permissions").select("permission").eq("role", role);
+  if (companyId) q = q.eq("company_id", companyId);
+  const { data, error } = await q;
   if (error || !data || data.length === 0) return [];
   return data.map((r: any) => r.permission as Permission);
 };
