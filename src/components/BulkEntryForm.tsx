@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { namesEqual } from "@/utils/nameMatch";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
