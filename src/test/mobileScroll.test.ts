@@ -72,21 +72,14 @@ describe("mobile/tablet scroll behaviour", () => {
   });
 });
 
-describe("runtime overscroll behaviour (jsdom)", () => {
-  it("computed overscroll-behavior-y on <html> is 'none' after CSS applies", () => {
-    // jsdom does not parse external CSS automatically — inject the rule we
-    // assert on in CSS so the runtime check mirrors the build output.
-    const style = document.createElement("style");
-    style.textContent = "html { overscroll-behavior-y: none; }";
-    document.head.appendChild(style);
-
-    const computed = getComputedStyle(document.documentElement);
-    // jsdom may report the longhand or shorthand — accept either.
-    const value =
-      computed.getPropertyValue("overscroll-behavior-y") ||
-      computed.getPropertyValue("overscroll-behavior");
-    expect(value.trim()).toBe("none");
-
-    style.remove();
+describe("scroll containers inside page sections", () => {
+  it("inner scroll containers do not declare touch-action:none", () => {
+    // A `touch-action: none` rule on a generic `.overflow-y-auto` style
+    // would prevent the user from scrolling cards, lists, and tables on
+    // touch devices.
+    const overflowAutoBlock = findRuleBlock("\\.overflow-y-auto") ?? "";
+    const overflowScrollBlock = findRuleBlock("\\.overflow-y-scroll") ?? "";
+    expect(overflowAutoBlock).not.toMatch(/touch-action\s*:\s*none/);
+    expect(overflowScrollBlock).not.toMatch(/touch-action\s*:\s*none/);
   });
 });
