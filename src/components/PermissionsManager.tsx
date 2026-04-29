@@ -209,7 +209,7 @@ const PermissionsManager = () => {
                   <td
                     colSpan={1 + allRoles.length}
                     className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
-              </React.Fragment>
+                  >
                     {group.section}
                   </td>
                 </tr>
@@ -228,7 +228,7 @@ const PermissionsManager = () => {
                     ))}
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
             <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
               <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
