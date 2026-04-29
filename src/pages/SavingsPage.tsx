@@ -41,6 +41,7 @@ interface SavingsTransaction {
 const SavingsPage = () => {
   const { user, hasPermission } = useAuth();
   const canManage = hasPermission("manage_savings");
+  const canActOnAccounts = canManage || hasPermission("edit_savings") || hasPermission("withdraw_savings") || hasPermission("delete_savings") || user?.role === "admin";
   const canEditSavings = hasPermission("edit_savings") || user?.role === "admin";
   const canWithdrawSavings = hasPermission("withdraw_savings") || user?.role === "admin";
   const canDeleteSavings = hasPermission("delete_savings") || user?.role === "admin";
@@ -425,7 +426,7 @@ const SavingsPage = () => {
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openHistory(a)} title="History">
                           <History className="w-3.5 h-3.5" />
                         </Button>
-                        {canManage && (
+                        {canActOnAccounts && (
                           <>
                             {canWithdrawSavings && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
@@ -479,7 +480,7 @@ const SavingsPage = () => {
                   <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => openHistory(a)}>
                     <History className="w-3 h-3 mr-1" /> History
                   </Button>
-                  {canManage && (
+                  {canActOnAccounts && (
                     <>
                       {canWithdrawSavings && (
                         <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => {
