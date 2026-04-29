@@ -256,8 +256,59 @@
 @layer components {
   .rounded-lg.border.bg-card {
     background: var(--gradient-surface);
-    border-color: hsl(var(--border));
+    border-color: hsl(var(--border) / 0.7);
     box-shadow: var(--shadow-card);
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rounded-lg.border.bg-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.35), transparent);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Polished primary buttons with subtle gradient + amber halo */
+  .bg-primary {
+    background: var(--gradient-primary) !important;
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.18) inset,
+      0 6px 18px -8px hsl(var(--primary) / 0.55);
+  }
+  .bg-primary:hover {
+    filter: brightness(1.06) saturate(1.05);
+  }
+
+  /* Inputs: clearer surfaces */
+  input, textarea, select {
+    background-color: hsl(var(--input) / 0.6);
+    border-color: hsl(var(--border));
+    transition: border-color 0.18s var(--transition-smooth), box-shadow 0.18s var(--transition-smooth);
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: hsl(var(--primary) / 0.6);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.18);
+  }
+
+  /* Section / page headings */
+  .page-title {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  /* Premium table rows */
+  table tbody tr {
+    transition: background-color 0.15s var(--transition-smooth);
+  }
+  table tbody tr:hover {
+    background-color: hsl(var(--primary) / 0.04);
   }
 }
 
