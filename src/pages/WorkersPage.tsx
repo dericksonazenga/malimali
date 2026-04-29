@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Trash2, Pencil, Check, X, Mail, Phone, IdCard } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -11,6 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isSuperAdminProfile } from "@/constants/superAdmin";
 import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
+import { useCustomRoles } from "@/hooks/useCustomRoles";
+import { isSuperAdmin } from "@/constants/superAdmin";
 
 interface WorkerRow {
   id: string;
