@@ -98,6 +98,7 @@ const DeletionHistoryPage = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
+      <StorageOverviewCard refreshMs={10000} compact />
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between flex-wrap gap-3">
