@@ -101,6 +101,10 @@ const RouteFallback = () => <div aria-hidden="true" />;
 const AuthenticatedApp = () => {
   const { user, loading, isSystemAdmin } = useAuth();
 
+  // Warm every route chunk in the background once the shell mounts so future
+  // navigations are instant.
+  useEffect(() => { prefetchAllRoutes(); }, []);
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar">
       <div className="h-10 w-10 rounded-full border-2 border-amber-500/25 border-t-amber-500 animate-spin" />
