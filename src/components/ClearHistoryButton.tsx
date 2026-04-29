@@ -36,9 +36,10 @@ const ClearHistoryButton = ({ tableName, actionFilter, label = "Clear History", 
     try {
       let q: any = supabase.from("audit_log").delete().eq("company_id", companyId);
       if (tableName) q = q.eq("table_name", tableName);
+      if (actionFilter && actionFilter.length) q = q.in("action", actionFilter);
       const { error } = await q;
       if (error) { toast.error(error.message); return; }
-      toast.success(tableName ? `Cleared history for ${tableName}` : "Cleared all history");
+      toast.success(tableName ? `Cleared history for ${tableName}` : "Cleared history");
       setOpen(false);
       onCleared?.();
     } finally { setWorking(false); }
