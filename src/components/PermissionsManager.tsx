@@ -287,13 +287,14 @@ const PermissionsManager = () => {
                           <span>{perm.label}</span>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className="text-muted-foreground hover:text-primary transition-colors"
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                className="text-muted-foreground hover:text-primary transition-colors inline-flex cursor-help"
                                 aria-label={`What does ${perm.label} allow?`}
                               >
                                 <Info className="w-3.5 h-3.5" />
-                              </button>
+                              </span>
                             </TooltipTrigger>
                             <TooltipContent side="right" className="max-w-xs text-xs">
                               {PERMISSION_HELP[perm.key] ?? "No description."}
