@@ -21,6 +21,8 @@ type TableConfig = {
   dateField?: string;
   customerField?: string;
   commodityField?: string;
+  /** Has a status column with paid/unpaid/partial values */
+  hasPaymentStatus?: boolean;
   displayFields: string[];
 };
 
@@ -29,8 +31,8 @@ const TABLES: TableConfig[] = [
   { key: "vip_entries", label: "VIP Entries", dateField: "date", customerField: "customer_name", commodityField: "commodity", displayFields: ["date", "customer_name", "commodity", "actual_weight", "rate", "amount"] },
   { key: "sales_entries", label: "Sales Entries", dateField: "date", customerField: "customer_name", commodityField: "commodity", displayFields: ["date", "customer_name", "commodity", "weight", "rate", "amount"] },
   { key: "expenses", label: "Expenses", dateField: "date", displayFields: ["date", "category", "amount", "verified_by", "notes"] },
-  { key: "debts", label: "Debts", customerField: "customer_name", displayFields: ["customer_name", "description", "total_amount", "balance", "status"] },
-  { key: "creditors", label: "Creditors", customerField: "customer_name", commodityField: "commodity", displayFields: ["customer_name", "commodity", "kg", "total_amount", "balance", "status"] },
+  { key: "debts", label: "Debts", customerField: "customer_name", hasPaymentStatus: true, displayFields: ["customer_name", "description", "total_amount", "balance", "status"] },
+  { key: "creditors", label: "Creditors", customerField: "customer_name", commodityField: "commodity", hasPaymentStatus: true, displayFields: ["customer_name", "commodity", "kg", "total_amount", "balance", "status"] },
   { key: "savings_accounts", label: "Savings Accounts", customerField: "customer_name", displayFields: ["customer_name", "balance"] },
   { key: "attendance", label: "Attendance", dateField: "date", displayFields: ["date", "worker_name", "status", "sign_in_at", "sign_out_at"] },
   { key: "stock_adjustments", label: "Stock Adjustments", commodityField: "commodity", displayFields: ["created_at", "commodity", "previous_weight", "new_weight", "reason"] },
