@@ -29,28 +29,38 @@ const ALL_PERMISSIONS: Permission[] = [
 const USER_ROLES: string[] = ["admin", "accountant", "data_manager", "human_resource", "cashier", "boss"];
 
 const SESSION_CACHE_KEY = "malimali_user_cache";
+const MANUAL_LOGOUT_KEY = "malimali_manual_logout";
 
+// Persistent cache: lives in localStorage so it survives tab close, browser
+// restart, and background suspension. Only cleared on MANUAL logout.
 const cacheUser = (user: User | null, companyId: string | null) => {
   if (user) {
     try {
-      sessionStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ user, companyId, ts: Date.now() }));
+      localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({ user, companyId, ts: Date.now() }));
     } catch {}
   } else {
+    localStorage.removeItem(SESSION_CACHE_KEY);
     sessionStorage.removeItem(SESSION_CACHE_KEY);
   }
 };
 
 const getCachedUser = (): { user: User; companyId: string | null } | null => {
   try {
-    const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+    // Prefer long-lived localStorage; fall back to legacy sessionStorage entries.
+    const raw = localStorage.getItem(SESSION_CACHE_KEY) || sessionStorage.getItem(SESSION_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Cache valid for 30 minutes
-    if (Date.now() - parsed.ts > 30 * 60 * 1000) return null;
     return { user: parsed.user, companyId: parsed.companyId };
   } catch {
     return null;
   }
+};
+
+const clearCachedUser = () => {
+  try {
+    localStorage.removeItem(SESSION_CACHE_KEY);
+    sessionStorage.removeItem(SESSION_CACHE_KEY);
+  } catch {}
 };
 
 const fetchRolePermissions = async (role: UserRole, companyId: string | null): Promise<Permission[]> => {
