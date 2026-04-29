@@ -271,9 +271,9 @@ const FinancialReportPage = () => {
   const revenueCSV = () => [["Category", "Amount"], [`${labels.sales} Revenue`, String(salesTotal)], [`${labels.agent} Purchases`, String(-agentTotal)], [`${labels.vip} Purchases`, String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
   const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
-    <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
-      <span className="text-sm">{label}</span>
-      <span className={`font-mono text-sm ${negative ? "text-destructive" : value >= 0 ? "text-success" : "text-destructive"}`}>
+    <div className={`flex justify-between items-center gap-2 py-1.5 min-w-0 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
+      <span className="text-sm truncate min-w-0">{label}</span>
+      <span className={`font-mono text-sm whitespace-nowrap shrink-0 ${negative ? "text-destructive" : value >= 0 ? "text-success" : "text-destructive"}`}>
         {negative ? "-" : ""}{symbol}{fmt(Math.abs(value))}
       </span>
     </div>
