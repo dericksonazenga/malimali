@@ -224,6 +224,69 @@ const CompanyBrandingSettings = () => {
             This name appears on the dashboard and throughout the application.
           </p>
         </div>
+
+        {/* Contact details — visible to system admin and used to reach the company */}
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div>
+            <Label className="text-base">Contact Details</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown to the system administrator. Phone numbers will be clickable to call.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-phone" className="text-xs flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" /> Phone
+              </Label>
+              <Input
+                id="contact-phone"
+                type="tel"
+                inputMode="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+255 712 345 678"
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-email" className="text-xs flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" /> Email
+              </Label>
+              <Input
+                id="contact-email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="info@company.com"
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="contact-address" className="text-xs flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> Address
+            </Label>
+            <Input
+              id="contact-address"
+              value={contactAddress}
+              onChange={(e) => setContactAddress(e.target.value)}
+              placeholder="Street, City, Country"
+              className="h-10"
+            />
+          </div>
+
+          <Button
+            size="sm"
+            className="gap-1"
+            onClick={handleSaveContact}
+            disabled={savingContact || !contactDirty}
+          >
+            {savingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+            Save Contact Details
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
