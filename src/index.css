@@ -156,13 +156,6 @@
     background-attachment: fixed;
   }
 
-  /* Disable the browser's pull-to-refresh gesture without blocking normal
-     scrolling. `overscroll-behavior-y: none` on the root element prevents
-     the refresh trigger while leaving vertical scrolling fully intact. */
-  html {
-    overscroll-behavior-y: none;
-  }
-
   html,
   body,
   #root {
@@ -261,25 +254,12 @@
   }
 
   .app-scroll {
-    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
     min-height: 0;
   }
 
-  .overflow-y-auto {
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .overflow-y-scroll {
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
   .touch-scroll-y {
-    overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
   }
 }
 
