@@ -17,6 +17,7 @@ import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface SavingsAccount {
   id: string;
