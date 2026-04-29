@@ -62,9 +62,9 @@ const fetchRolePermissions = async (role: UserRole, companyId: string | null): P
   return data.map((r: any) => r.permission as Permission);
 };
 
-const buildUser = async (profile: { user_id: string; display_name: string; role: string }): Promise<User> => {
+const buildUser = async (profile: { user_id: string; display_name: string; role: string; company_id?: string | null }): Promise<User> => {
   const role = (profile.role || "boss") as UserRole;
-  const permissions = await fetchRolePermissions(role);
+  const permissions = await fetchRolePermissions(role, profile.company_id ?? null);
   return {
     id: profile.user_id,
     name: profile.display_name || "User",
