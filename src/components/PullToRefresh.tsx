@@ -33,7 +33,7 @@ function isInsideInnerScroller(target: HTMLElement, container: HTMLElement): boo
 }
 
 const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
-  ({ children, className, onRefresh, threshold, maxPull = 260 }, ref) => {
+  ({ children, className, onRefresh, threshold, maxPull = 180 }, ref) => {
     const innerRef = useRef<HTMLElement>(null);
     const scrollRef = (ref as React.MutableRefObject<HTMLElement>) || innerRef;
     const startY = useRef<number | null>(null);
@@ -41,10 +41,11 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
     const [pullDistance, setPullDistance] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Effective threshold: require swipe from top to ~bottom of viewport
-    const effectiveThreshold = threshold ?? Math.max(220, Math.round(window.innerHeight * 0.6));
-    // Only initiate pull-to-refresh when the touch begins very close to the top edge of the screen
-    const TOP_EDGE_ZONE = 60;
+    // Trigger threshold — comfortable thumb pull (~90px after resistance).
+    // Must always be < maxPull or refresh can never fire.
+    const effectiveThreshold = threshold ?? 90;
+    // Only initiate pull-to-refresh when the touch begins near the top edge of the screen
+    const TOP_EDGE_ZONE = 80;
 
     useEffect(() => {
       const el = scrollRef.current;
@@ -89,8 +90,8 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        // Stronger resistance so the user has to pull a long way
-        const resisted = Math.min(maxPull, delta * 0.35);
+        // Moderate resistance — pull feels weighty but reaches threshold
+        const resisted = Math.min(maxPull, delta * 0.55);
         setPullDistance(resisted);
         if (e.cancelable) e.preventDefault();
       };
