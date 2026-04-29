@@ -478,9 +478,9 @@ const FinancialReportPage = () => {
     const summaryWs = wb.Sheets["Summary"];
     if (summaryWs) styleSheet(summaryWs, 1, 8, 2);
 
-    // Apply thousands-separator number format to every numeric cell across all sheets
-    // Format "#,##0.##" -> integers show as 1,000 / 1,000,000; decimals up to 2 places when present.
-    const numFmt = "#,##0.##";
+    // Apply thousands-separator number format to every numeric cell across all sheets.
+    // Use integer format ("#,##0") when the value has no decimal part to avoid a
+    // trailing dot (e.g. "1,000" not "1,000."), and "#,##0.##" only when decimals exist.
     wb.SheetNames.forEach((sn) => {
       const sheet = wb.Sheets[sn];
       if (!sheet || !sheet["!ref"]) return;
@@ -490,8 +490,10 @@ const FinancialReportPage = () => {
           const addr = XLSX.utils.encode_cell({ r, c });
           const cell = sheet[addr];
           if (cell && cell.t === "n") {
-            cell.z = numFmt;
-            cell.s = { ...(cell.s || {}), numFmt };
+            const v = Number(cell.v);
+            const fmt = Number.isFinite(v) && Math.floor(v) === v ? "#,##0" : "#,##0.##";
+            cell.z = fmt;
+            cell.s = { ...(cell.s || {}), numFmt: fmt };
           }
         }
       }
