@@ -335,21 +335,66 @@ const FinancialReportPage = () => {
       // Merge customer name header vertically (rows 1-2)
       ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
 
-      autoFitColumns(ws, aoa);
-      // Bold title, headers, and TOTAL row
-      const styleCell = (addr: string, bold = true, fill?: string) => {
-        if (!ws[addr]) return;
-        ws[addr].s = ws[addr].s || {};
-        ws[addr].s.font = { bold, sz: addr === "A1" ? 14 : 11 };
-        ws[addr].s.alignment = { ...(ws[addr].s.alignment || {}), horizontal: "center", vertical: "center", wrapText: true };
-        if (fill) ws[addr].s.fill = { fgColor: { rgb: fill } };
+      // Explicit column widths matching screenshot: customer wide, weight narrow, amount medium
+      ws["!cols"] = [
+        { wch: 22 },
+        ...commodities.flatMap(() => [{ wch: 8 }, { wch: 10 }]),
+      ];
+
+      // Row heights
+      ws["!rows"] = [
+        { hpt: 22 },
+        { hpt: 20 },
+        { hpt: 18 },
+        ...customers.map(() => ({ hpt: 16 })),
+        { hpt: 20 },
+      ];
+
+      const border = {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
       };
-      styleCell("A1");
+
+      const styleCell = (addr: string, opts: { bold?: boolean; fill?: string; color?: string; size?: number; align?: string } = {}) => {
+        if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+        ws[addr].s = ws[addr].s || {};
+        ws[addr].s.font = { bold: opts.bold ?? false, sz: opts.size ?? 11, color: { rgb: opts.color ?? "000000" } };
+        ws[addr].s.alignment = { horizontal: opts.align ?? "center", vertical: "center", wrapText: true };
+        if (opts.fill) ws[addr].s.fill = { patternType: "solid", fgColor: { rgb: opts.fill } };
+        ws[addr].s.border = border;
+      };
+
+      // Title row
       for (let c = 0; c < totalCols; c++) {
-        styleCell(XLSX.utils.encode_cell({ r: 1, c }), true, "FFE4B5");
-        styleCell(XLSX.utils.encode_cell({ r: 2, c }), true, "FFF8DC");
-        styleCell(XLSX.utils.encode_cell({ r: totalRowIdx, c }), true, "D3D3D3");
+        styleCell(XLSX.utils.encode_cell({ r: 0, c }), { bold: true, size: 14, fill: "FFFFFF" });
       }
+      // Commodity header row - bold (red text for commodity names)
+      for (let c = 0; c < totalCols; c++) {
+        styleCell(XLSX.utils.encode_cell({ r: 1, c }), { bold: true, size: 12, color: c === 0 ? "000000" : "C00000", fill: "FFFFFF" });
+      }
+      // Sub-header row (WEIGHT / AMOUNT) - red text
+      for (let c = 1; c < totalCols; c++) {
+        styleCell(XLSX.utils.encode_cell({ r: 2, c }), { bold: true, size: 10, color: "C00000", fill: "FFFFFF" });
+      }
+      styleCell("A2", { bold: true, size: 12, color: "C00000", fill: "FFFFFF" });
+
+      // Data rows
+      customers.forEach((_, ci) => {
+        const r = dataStartRow + ci;
+        styleCell(XLSX.utils.encode_cell({ r, c: 0 }), { bold: false, size: 11, align: "left" });
+        for (let c = 1; c < totalCols; c++) {
+          styleCell(XLSX.utils.encode_cell({ r, c }), { bold: false, size: 11, align: "right" });
+        }
+      });
+
+      // TOTAL row
+      styleCell(XLSX.utils.encode_cell({ r: totalRowIdx, c: 0 }), { bold: true, size: 12, align: "left" });
+      for (let c = 1; c < totalCols; c++) {
+        styleCell(XLSX.utils.encode_cell({ r: totalRowIdx, c }), { bold: true, size: 11, align: "right" });
+      }
+
       ws["!freeze"] = { xSplit: 1, ySplit: 3 };
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
