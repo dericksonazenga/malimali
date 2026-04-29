@@ -350,15 +350,17 @@ const FinancialReportPage = () => {
         weight: Number(e[weightKey] || 0),
         rate: Number(e.rate || 0),
         amount: Number(e.amount || 0),
+        commodity: e.commodity || "",
+        customer: e.customerName || e.customer_name || "",
       }));
 
       const aoa: any[][] = [];
-      aoa.push([title.split(" - ")[0], "", "", ""]);
-      aoa.push(["KG", "VALUE", "", "AMOUNT"]);
-      rows.forEach(r => aoa.push([r.weight, r.rate, "", r.amount]));
-      aoa.push(["TOTAL", "", "", ""]);
+      aoa.push([title.split(" - ")[0], "", "", "", "", ""]);
+      aoa.push(["KG", "VALUE", "", "AMOUNT", "COMMODITY", "CUSTOMER"]);
+      rows.forEach(r => aoa.push([r.weight, r.rate, "", r.amount, r.commodity, r.customer]));
+      aoa.push(["TOTAL", "", "", "", "", ""]);
       const sumsRowIdx = 2 + rows.length + 1;
-      aoa.push(["", "", "", ""]);
+      aoa.push(["", "", "", "", "", ""]);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
 
@@ -376,7 +378,7 @@ const FinancialReportPage = () => {
         ws[amtAddr] = { t: "n", f: `SUM(D${firstRow}:D${lastRow})`, v: amtSum };
       }
 
-      ws["!cols"] = [{ wch: 10 }, { wch: 10 }, { wch: 4 }, { wch: 12 }];
+      ws["!cols"] = [{ wch: 10 }, { wch: 10 }, { wch: 4 }, { wch: 12 }, { wch: 18 }, { wch: 20 }];
 
       const border = {
         top: { style: "thin", color: { rgb: "000000" } },
@@ -394,10 +396,11 @@ const FinancialReportPage = () => {
       };
 
       styleCell("A1", { bold: true, size: 14, align: "left", border: false });
-      ["A2", "B2", "D2"].forEach(a => styleCell(a, { bold: true, size: 11, align: "left" }));
+      ["A2", "B2", "D2", "E2", "F2"].forEach(a => styleCell(a, { bold: true, size: 11, align: "left" }));
       rows.forEach((_, i) => {
         const r = 2 + i;
         ["A", "B", "D"].forEach(col => styleCell(`${col}${r + 1}`, { align: "right" }));
+        ["E", "F"].forEach(col => styleCell(`${col}${r + 1}`, { align: "left" }));
       });
       styleCell(`A${2 + rows.length + 1}`, { bold: true, size: 11, align: "left", border: false });
       const sumsExcelRow = sumsRowIdx + 1;
