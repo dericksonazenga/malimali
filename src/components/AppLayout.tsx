@@ -158,7 +158,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </Button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        <nav className="app-scroll flex-1 p-2 space-y-0.5 overflow-y-auto">
           {filteredNav.map((item) => {
             const active = location.pathname === item.path || (item.path === "/data-entry" && location.pathname.startsWith("/data-entry"));
             return (
@@ -259,7 +259,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">
+        <main className="app-scroll flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">
           <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
             {children}
           </div>
