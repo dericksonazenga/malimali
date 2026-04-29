@@ -167,31 +167,39 @@ const DeletionHistoryPage = () => {
                 <TableRow>
                   <TableHead>When</TableHead>
                   <TableHead>User</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Table</TableHead>
                   <TableHead className="text-right">Rows</TableHead>
-                  <TableHead>Filters</TableHead>
+                  <TableHead>Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Loading...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No deletion events.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No deletion events.</TableCell></TableRow>
                 ) : filtered.map((e) => {
-                  const target = e.new_data?.target_table || e.table_name;
-                  const rowCount = e.new_data?.row_count ?? 0;
+                  const target = getTarget(e);
+                  const rowCount = getRowCount(e);
+                  const isBulk = e.action === "bulk_delete";
+                  const details = formatFilters(e);
                   return (
                     <TableRow key={e.id}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {format(new Date(e.created_at), "MMM dd, yyyy HH:mm:ss")}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{e.changed_by_name || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={isBulk ? "destructive" : "secondary"} className="text-xs">
+                          {isBulk ? "Bulk" : "Single"}
+                        </Badge>
+                      </TableCell>
                       <TableCell><Badge variant="outline" className="font-mono text-xs">{target}</Badge></TableCell>
                       <TableCell className="text-right">
                         <Badge variant="destructive">{rowCount}</Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate" title={formatFilters(e.new_data)}>
-                        {formatFilters(e.new_data)}
+                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate" title={details}>
+                        {details}
                       </TableCell>
                     </TableRow>
                   );
@@ -202,17 +210,23 @@ const DeletionHistoryPage = () => {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
+            {loading && <p className="text-center text-muted-foreground py-6 text-sm">Loading...</p>}
+            {!loading && filtered.length === 0 && <p className="text-center text-muted-foreground py-6 text-sm">No deletion events.</p>}
             {filtered.map((e) => {
-              const target = e.new_data?.target_table || e.table_name;
-              const rowCount = e.new_data?.row_count ?? 0;
+              const target = getTarget(e);
+              const rowCount = getRowCount(e);
+              const isBulk = e.action === "bulk_delete";
               return (
                 <div key={e.id} className="border border-border rounded-lg p-3 space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="font-mono text-xs">{target}</Badge>
-                    <Badge variant="destructive">{rowCount} rows</Badge>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant={isBulk ? "destructive" : "secondary"} className="text-[10px]">{isBulk ? "Bulk" : "Single"}</Badge>
+                      <Badge variant="outline" className="font-mono text-xs">{target}</Badge>
+                    </div>
+                    <Badge variant="destructive">{rowCount} {rowCount === 1 ? "row" : "rows"}</Badge>
                   </div>
                   <p className="text-sm font-medium">{e.changed_by_name}</p>
-                  <p className="text-xs text-muted-foreground">{formatFilters(e.new_data)}</p>
+                  <p className="text-xs text-muted-foreground">{formatFilters(e)}</p>
                   <p className="text-[10px] text-muted-foreground">{format(new Date(e.created_at), "MMM dd, yyyy HH:mm:ss")}</p>
                 </div>
               );
