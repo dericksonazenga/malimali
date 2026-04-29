@@ -84,13 +84,13 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           startY.current = null;
           return;
         }
-        const shouldRefresh = pullDistance >= threshold;
+        const shouldRefresh = pullDistance >= effectiveThreshold;
         startY.current = null;
         pulling.current = false;
 
         if (shouldRefresh) {
           setRefreshing(true);
-          setPullDistance(threshold);
+          setPullDistance(effectiveThreshold);
           try {
             if (onRefresh) {
               await onRefresh();
