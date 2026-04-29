@@ -90,8 +90,8 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
           return;
         }
         pulling.current = true;
-        // Stronger resistance so the user has to pull a long way
-        const resisted = Math.min(maxPull, delta * 0.35);
+        // Moderate resistance — pull feels weighty but reaches threshold
+        const resisted = Math.min(maxPull, delta * 0.55);
         setPullDistance(resisted);
         if (e.cancelable) e.preventDefault();
       };
