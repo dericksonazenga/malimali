@@ -264,7 +264,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       salaryTotal, salaryPaid, salaryBalance,
       debtTotal, debtPaid, debtBalance,
       creditorTotal, creditorPaid, creditorBalance,
-      totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
+      totalPurchases, grossProfit, netProfit, commodityBreakdown: cbDisplay,
       dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);
