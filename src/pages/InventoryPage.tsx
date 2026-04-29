@@ -85,14 +85,18 @@ const InventoryPage = () => {
     Object.entries(persistentStock || {}).forEach(([k, v]) => {
       stockMap[normalizeName(k)] = (stockMap[normalizeName(k)] || 0) + Number(v || 0);
     });
-    return commodities.map((c) => {
-      const dailyIn = agentEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0)
-        + vipEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0);
-      const dailyOut = salesEntries.filter((e) => namesEqual(e.commodity, c.name) && !e.isExchange).reduce((s, e) => s + e.weight, 0);
-      const persistent = stockMap[normalizeName(c.name)] || 0;
-      const current = persistent + dailyIn - dailyOut;
-      return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
-    });
+    return commodities
+      // Hide the standalone "Special" row — its sales are attributed to Heavy.
+      .filter((c) => !isSpecialCommodity(c.name))
+      .map((c) => {
+        const dailyIn = agentEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0)
+          + vipEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0);
+        // Special sales physically deduct from Heavy — route via resolveStockCommodity.
+        const dailyOut = salesEntries.filter((e) => !e.isExchange && namesEqual(resolveStockCommodity(e.commodity), c.name)).reduce((s, e) => s + e.weight, 0);
+        const persistent = stockMap[normalizeName(c.name)] || 0;
+        const current = persistent + dailyIn - dailyOut;
+        return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
+      });
   }, [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
 
   const totalDailyIn = commodityStock.reduce((s, c) => s + c.stockIn, 0);
