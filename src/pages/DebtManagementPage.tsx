@@ -461,7 +461,7 @@ const DebtManagementPage = () => {
     setPayAmount(""); setPayNotes(""); setPayMethod("cash"); setPayToName("");
     toast.success("Payment recorded");
     fetchPayments(payDebt.id);
-    fetchDebts();
+    // realtime keeps the list in sync — no manual refetch needed
     setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
   };
 
