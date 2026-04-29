@@ -209,7 +209,7 @@ const PermissionsManager = () => {
                   <td
                     colSpan={1 + allRoles.length}
                     className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
-                  >
+              </React.Fragment>
                     {group.section}
                   </td>
                 </tr>
