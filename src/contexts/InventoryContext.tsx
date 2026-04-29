@@ -307,7 +307,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     });
     salesEntries.forEach(e => {
       if (e.commodity && !e.isExchange) {
-        updates[e.commodity] = (updates[e.commodity] || 0) - e.weight;
+        // "Special" sales physically deduct from "Heavy" stock.
+        const stockCommodity = resolveStockCommodity(e.commodity);
+        updates[stockCommodity] = (updates[stockCommodity] || 0) - e.weight;
       }
     });
 
