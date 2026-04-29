@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { groupEntriesByCustomer } from "@/utils/groupEntries";
 import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
+import { nameIncludes } from "@/utils/nameMatch";
 
 interface ReportSheetViewProps {
   symbol: string;
