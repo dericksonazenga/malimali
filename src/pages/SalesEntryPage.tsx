@@ -47,11 +47,17 @@ const SalesEntryPage = () => {
   };
 
   const selectedCommodity = commodities.find((c) => c.name === commodity);
-  const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
+  const isSpecial = isSpecialCommodity(commodity);
+  // Special sales must have a manually-typed rate (no default sales rate).
+  const defaultSalesRate = isSpecial ? 0 : (selectedCommodity?.salesRate || 0);
+  const rate = rateOverride ? parseFloat(rateOverride) : defaultSalesRate;
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = rate > 0 ? actualWeight * rate : undefined;
   const exchFee = parseFloat(exchangeFee) || 0;
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
+  // For "Special" the physical stock comes from Heavy.
+  const stockSourceCommodity = isSpecial ? SPECIAL_SOURCE_COMMODITY : commodity;
+  const availableStock = stockSourceCommodity ? (persistentStock[stockSourceCommodity] || 0) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
