@@ -613,7 +613,7 @@ const DebtManagementPage = () => {
 
   const getStatusBadge = (status: string) => {
     if (status === "paid") return <Badge variant="default" className="text-xs">Paid</Badge>;
-    if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30"><ArrowUpCircle className="w-3 h-3 mr-1" />Debt</Badge>;
+    if (status === "money_out") return <Badge variant="secondary" className="text-xs bg-orange-500/15 text-orange-600 border-orange-500/30"><ArrowUpCircle className="w-3 h-3 mr-1" />Debtor</Badge>;
     return <Badge variant="destructive" className="text-xs"><ArrowDownCircle className="w-3 h-3 mr-1" />Advance</Badge>;
   };
 
