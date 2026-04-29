@@ -204,8 +204,8 @@ const DashboardPage = () => {
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base"><Settings className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="space-y-2 sm:space-y-3">
-              {commodities.slice(0, 5).map((c) => (
+            <div className="max-h-[260px] sm:max-h-[320px] overflow-y-auto pr-1 -mr-1 space-y-2 sm:space-y-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+              {commodities.map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-1.5 sm:py-2 border-b border-border last:border-0">
                   <span className="font-medium text-xs sm:text-sm">{c.name}</span>
                    <div className="flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-0.5 text-[10px] sm:text-sm font-mono justify-end">
@@ -215,6 +215,9 @@ const DashboardPage = () => {
                   </div>
                 </div>
               ))}
+              {commodities.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">No commodities yet</p>
+              )}
             </div>
           </CardContent>
         </Card>
