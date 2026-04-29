@@ -427,7 +427,7 @@ const SavingsPage = () => {
                         </Button>
                         {canManage && (
                           <>
-                            {canEditSavings && (
+                            {canWithdrawSavings && (
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
                                 setSelectedAccount(a);
                                 setAmount("");
@@ -481,7 +481,7 @@ const SavingsPage = () => {
                   </Button>
                   {canManage && (
                     <>
-                      {canEditSavings && (
+                      {canWithdrawSavings && (
                         <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => {
                           setSelectedAccount(a); setAmount(""); setPaymentMethod("cash"); setNotes(""); setShowWithdrawDialog(true);
                         }}>
