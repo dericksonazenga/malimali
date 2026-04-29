@@ -1373,6 +1373,10 @@ export type Database = {
       cleanup_expired_otps: { Args: never; Returns: undefined }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_of: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_system_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
