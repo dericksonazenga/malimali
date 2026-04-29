@@ -13,6 +13,7 @@ import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
 import { namesEqual, normalizeName } from "@/utils/nameMatch";
+import { resolveStockCommodity, isSpecialCommodity } from "@/constants/specialCommodity";
 
 interface AdjustmentLog {
   id: string;
