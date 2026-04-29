@@ -261,11 +261,14 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <ThemeToggle />
           </div>
         </header>
-        <main ref={mainScrollRef} className="app-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-6">
+        <PullToRefresh
+          ref={mainScrollRef}
+          className="app-scroll flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-6"
+        >
           <div className="app-content mx-auto w-full max-w-[1600px] 2xl:max-w-[1800px]">
             {children}
           </div>
-        </main>
+        </PullToRefresh>
       </div>
     </div>
   );
