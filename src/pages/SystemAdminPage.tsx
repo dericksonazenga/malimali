@@ -77,7 +77,12 @@ const SystemAdminPage = () => {
       // Create company
       const { data: company, error: companyErr } = await supabase
         .from("companies")
-        .insert({ name: newCompanyName.trim() })
+        .insert({
+          name: newCompanyName.trim(),
+          contact_phone: newContactPhone.trim() || null,
+          contact_email: newContactEmail.trim() || null,
+          contact_address: newContactAddress.trim() || null,
+        } as any)
         .select()
         .single();
       if (companyErr || !company) throw companyErr;
@@ -97,6 +102,9 @@ const SystemAdminPage = () => {
       setNewCompanyName("");
       setAdminName("");
       setAdminEmail("");
+      setNewContactPhone("");
+      setNewContactEmail("");
+      setNewContactAddress("");
       fetchCompanies();
     } catch (err: any) {
       toast.error(err?.message || "Failed to create company");
