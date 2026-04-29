@@ -11,6 +11,7 @@ import { CommodityProvider } from "@/contexts/CommodityContext";
 import { CategoryLabelsProvider } from "@/contexts/CategoryLabelsContext";
 import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ScrollToTop from "@/components/ScrollToTop";
 import LoginPage from "@/pages/LoginPage";
 
 // Lazy-loaded routes — keeps initial bundle small so the app paints instantly.
@@ -103,6 +104,7 @@ const App = () => (
             <CurrencyProvider>
               <InventoryProvider>
                 <BrowserRouter>
+                  <ScrollToTop />
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       <Route path="/landing" element={<LandingPage />} />
