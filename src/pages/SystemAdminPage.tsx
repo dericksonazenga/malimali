@@ -210,8 +210,8 @@ const SystemAdminPage = () => {
           <ScrollArea className="h-[400px]">
             <div className="space-y-2">
               {companies.map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border gap-2">
-                  <div className="min-w-0">
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 rounded-lg border gap-2">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{c.name}</p>
                     <p className="text-xs text-muted-foreground">
                       Created: {new Date(c.created_at).toLocaleDateString()}
@@ -228,8 +228,36 @@ const SystemAdminPage = () => {
                         </p>
                       );
                     })()}
+
+                    {(c.contact_phone || c.contact_email || c.contact_address) ? (
+                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {c.contact_phone && (
+                          <a
+                            href={`tel:${c.contact_phone.replace(/\s+/g, "")}`}
+                            className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                          >
+                            <Phone className="w-3 h-3" /> {c.contact_phone}
+                          </a>
+                        )}
+                        {c.contact_email && (
+                          <a
+                            href={`mailto:${c.contact_email}`}
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            <Mail className="w-3 h-3" /> {c.contact_email}
+                          </a>
+                        )}
+                        {c.contact_address && (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <MapPin className="w-3 h-3" /> {c.contact_address}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-1.5 text-[11px] italic text-muted-foreground">No contact details yet</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Badge variant={c.is_active ? "default" : "secondary"}>
                       {c.is_active ? "Active" : "Inactive"}
                     </Badge>
