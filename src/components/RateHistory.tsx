@@ -111,6 +111,8 @@ const RateHistory = forwardRef<HTMLDivElement>((_props, _ref) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+RateHistory.displayName = "RateHistory";
 
 export default RateHistory;
