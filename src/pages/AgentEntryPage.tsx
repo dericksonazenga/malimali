@@ -228,7 +228,7 @@ const AgentEntryPage = () => {
                             <TableHead className="text-right">Weight</TableHead>
                             <TableHead className="text-right">Rate</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
-                            {hasPermission("delete_entries") && <TableHead />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableHead />}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -238,8 +238,15 @@ const AgentEntryPage = () => {
                               <TableCell className="text-right font-mono font-semibold">{entry.actualWeight}</TableCell>
                               <TableCell className="text-right font-mono">{symbol}{entry.rate}</TableCell>
                               <TableCell className="text-right font-mono font-semibold text-primary">{symbol}{entry.amount.toLocaleString()}</TableCell>
-                              {hasPermission("delete_entries") && (
-                                <TableCell><Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeAgentEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button></TableCell>
+                              {(hasPermission("edit_records") || hasPermission("delete_entries")) && (
+                                <TableCell className="flex items-center justify-end gap-1">
+                                  {hasPermission("edit_records") && (
+                                    <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)} title="Edit"><Pencil className="w-4 h-4" /></Button>
+                                  )}
+                                  {hasPermission("delete_entries") && (
+                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeAgentEntry(entry.id)}><Trash2 className="w-4 h-4" /></Button>
+                                  )}
+                                </TableCell>
                               )}
                             </TableRow>
                           ))}
@@ -248,7 +255,7 @@ const AgentEntryPage = () => {
                             <TableCell className="text-right font-mono">{totalActual}</TableCell>
                             <TableCell />
                             <TableCell className="text-right font-mono text-primary">{symbol}{totalAmt.toLocaleString()}</TableCell>
-                            {hasPermission("delete_entries") && <TableCell />}
+                            {(hasPermission("edit_records") || hasPermission("delete_entries")) && <TableCell />}
                           </TableRow>
                         </TableBody>
                       </Table>
