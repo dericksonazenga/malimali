@@ -86,9 +86,18 @@ export async function downloadPDF({ title, filename, headers, rows, summary }: P
 
   doc.setTextColor(0);
 
+  const formatCell = (c: string | number | null | undefined): string => {
+    if (c == null) return "";
+    if (typeof c === "number" && Number.isFinite(c)) {
+      // 1,000 / 1,000,000 — preserve up to 2 decimals where present
+      return c.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
+    return String(c);
+  };
+
   autoTable(doc, {
     head: [headers],
-    body: rows.map((r) => r.map((c) => (c == null ? "" : String(c)))),
+    body: rows.map((r) => r.map(formatCell)),
     startY: cursorY + 10,
     margin: { left: 40, right: 40 },
     styles: { fontSize: 9, cellPadding: 5 },
