@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileSpreadsheet, TrendingUp, TrendingDown, DollarSign,
-  BarChart3, Package, Users, Receipt, Loader2, PiggyBank, CreditCard, HandCoins
+  BarChart3, Package, Users, Receipt, Loader2, PiggyBank, CreditCard, HandCoins, Printer
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnalyticsData, DateRangeValue } from "@/hooks/useAnalyticsData";
@@ -280,7 +280,7 @@ const FinancialReportPage = () => {
   );
 
   return (
-    <div className="space-y-5 max-w-6xl pb-10">
+    <div className="space-y-5 max-w-6xl pb-10 print-report">
       {/* Header */}
       <div className="flex flex-col gap-3">
         <h1 className="text-xl font-bold">Analytics & Reports</h1>
@@ -315,6 +315,9 @@ const FinancialReportPage = () => {
           />
           <Button onClick={downloadFullReport} className="h-10 gap-2 text-xs sm:text-sm">
             <FileSpreadsheet className="w-4 h-4" /> <span className="hidden sm:inline">Download</span> Full Report
+          </Button>
+          <Button onClick={() => window.print()} variant="outline" className="h-10 gap-2 text-xs sm:text-sm no-print">
+            <Printer className="w-4 h-4" /> Print
           </Button>
         </div>
       </div>

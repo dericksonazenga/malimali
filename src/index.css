@@ -285,3 +285,99 @@ td, th {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ===== Print-friendly mode (A4 / Letter) ===== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide chrome: sidebar, headers, buttons, charts */
+  .no-print,
+  [data-sidebar],
+  aside,
+  nav,
+  header.app-header,
+  button {
+    display: none !important;
+  }
+
+  /* Expand main content full width */
+  main, .max-w-6xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Print container scope */
+  .print-report {
+    display: block !important;
+  }
+
+  .print-report * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Tickets/cards: keep on one line, scale font, prevent breaking inside */
+  .print-report .rounded-lg,
+  .print-report [class*="border-border"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-color: #999 !important;
+  }
+
+  /* KPI grid: keep all 6 in a row at print */
+  .print-report .grid.grid-cols-2.lg\:grid-cols-6 {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 6pt !important;
+  }
+
+  .print-report .grid.grid-cols-2.lg\:grid-cols-6 > div {
+    padding: 6pt !important;
+  }
+
+  /* Force values on a single line, override clamp() inline font-size */
+  .print-report .font-mono {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 9pt !important;
+  }
+
+  .print-report .text-xs { font-size: 8pt !important; }
+  .print-report .text-sm { font-size: 9pt !important; }
+  .print-report .text-lg,
+  .print-report .text-xl { font-size: 12pt !important; }
+  .print-report h1 { font-size: 16pt !important; }
+
+  /* Two-column detail sections */
+  .print-report .grid.lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Remove scroll caps so all data prints */
+  .print-report .max-h-48,
+  .print-report .max-h-64 {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Hide charts (raster/svg often break across pages poorly) */
+  .print-report .recharts-wrapper,
+  .print-report .recharts-responsive-container {
+    display: none !important;
+  }
+
+  a { color: #000 !important; text-decoration: none !important; }
+}
