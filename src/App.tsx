@@ -48,8 +48,8 @@ const queryClient = new QueryClient({
 });
 
 const RouteFallback = () => (
-  <div className="min-h-[40vh] flex items-center justify-center">
-    <div className="text-muted-foreground text-sm">Loading…</div>
+  <div className="min-h-[40vh] flex items-center justify-center" aria-busy="true">
+    <div className="h-8 w-8 rounded-full border-2 border-amber-500/25 border-t-amber-500 animate-spin" />
   </div>
 );
 
@@ -58,7 +58,7 @@ const AuthenticatedApp = () => {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-sidebar">
-      <div className="text-sidebar-foreground/60">Loading...</div>
+      <div className="h-10 w-10 rounded-full border-2 border-amber-500/25 border-t-amber-500 animate-spin" />
     </div>
   );
 
