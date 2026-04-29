@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import { useCommodities } from "@/contexts/CommodityContext";
-import { namesEqual } from "@/utils/nameMatch";
+import { namesEqual, nameIncludes } from "@/utils/nameMatch";
 import { VipEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
