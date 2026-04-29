@@ -109,7 +109,12 @@ const DeletionHistoryPage = () => {
               </p>
             </div>
             {user?.role === "admin" && (
-              <ClearHistoryButton iconOnly={false} label="Clear Deletion History" />
+              <ClearHistoryButton
+                iconOnly={false}
+                label="Clear Deletion History"
+                actionFilter={["bulk_delete", "delete"]}
+                onCleared={fetchEntries}
+              />
             )}
           </div>
         </CardHeader>
