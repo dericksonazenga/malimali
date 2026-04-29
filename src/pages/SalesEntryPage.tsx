@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
 import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { isSpecialCommodity, SPECIAL_SOURCE_COMMODITY } from "@/constants/specialCommodity";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
