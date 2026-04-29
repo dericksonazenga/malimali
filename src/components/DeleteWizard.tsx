@@ -90,6 +90,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     if (config.dateField && toDate) q = q.lte(config.dateField, format(toDate, "yyyy-MM-dd"));
     if (config.customerField && customer.trim()) q = q.ilike(config.customerField, `%${customer.trim()}%`);
     if (config.commodityField && commodity.trim()) q = q.ilike(config.commodityField, `%${commodity.trim()}%`);
+    if (config.hasPaymentStatus && statusFilter !== "any") q = q.eq("status", statusFilter);
     return q;
   };
 
