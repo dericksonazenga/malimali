@@ -283,7 +283,7 @@ const SavingsPage = () => {
   };
 
   const filtered = accounts.filter(a =>
-    a.customer_name.toLowerCase().includes(search.toLowerCase())
+    nameIncludes(a.customer_name, search)
   );
 
   const totalSavings = accounts.reduce((s, a) => s + a.balance, 0);
