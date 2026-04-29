@@ -254,6 +254,32 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
               </div>
             )}
 
+            {config.hasPaymentStatus && (
+              <div>
+                <Label className="text-xs">Payment status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any status</SelectItem>
+                    <SelectItem value="paid">Paid only</SelectItem>
+                    <SelectItem value="unpaid">Unpaid only</SelectItem>
+                    <SelectItem value="partial">Partially paid only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">Sort preview by {config.dateField || "created_at"}</Label>
+              <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "desc" | "asc")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Newest first</SelectItem>
+                  <SelectItem value="asc">Oldest first</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {!filtersActive && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
                 <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
