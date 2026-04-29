@@ -2,10 +2,44 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Shield } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Shield, HelpCircle, Info, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useCustomRoles } from "@/hooks/useCustomRoles";
 import { getCompanyId } from "@/utils/getCompanyId";
+
+// Per-permission descriptions explaining exactly what each grant unlocks.
+const PERMISSION_HELP: Record<string, string> = {
+  view_dashboard: "See the main Dashboard page with daily totals and KPIs.",
+  view_data_entry: "Open the Data Entry page in read-only mode (cannot add or edit).",
+  view_debts: "Open the Debts page to see customer debts, advances, and creditors.",
+  view_savings: "Open the Savings page to see customer savings balances.",
+  view_messages: "Open the in-app Messages inbox.",
+  view_my_info: "Open the personal 'My Info' tab with their attendance and salary.",
+  view_settings: "Open the Settings page (read-only — cannot change global settings).",
+  view_financial_report: "Open the Financial Report with profit, cost, and analytics.",
+  data_entry: "Add new Agent, VIP, and Sales entries on the Data Entry page.",
+  edit_records: "Edit existing entries (weight, rate, customer, etc.) after they were saved.",
+  update_rates: "Change today's commodity buying/selling rates on the Rates page.",
+  end_of_day: "Run End of Day — closes the working day and resets daily totals.",
+  manage_debts: "Record a new debt or advance against a customer (add only).",
+  pay_debts: "Record payments against existing debts.",
+  edit_debts: "Modify the amount, customer, or notes of an existing debt.",
+  manage_savings: "Accept a deposit into a customer's savings account.",
+  edit_savings: "Withdraw from or edit a customer's savings balance.",
+  manage_workers: "Add, edit, and remove workers on the Workers page.",
+  manage_expenses: "Record new expenses on the Expenses page.",
+  manage_inventory: "Add or remove commodities and modify the inventory list.",
+  adjust_stock: "Manually adjust stock weight (e.g. corrections, spoilage).",
+  delete_entries: "Delete any Agent, VIP, or Sales entry from Data Entry.",
+  delete_expenses: "Delete previously recorded expenses.",
+  delete_debts: "Delete a debt record entirely.",
+  delete_savings: "Delete a savings transaction or close an account.",
+  delete_rates: "Delete entries from the Rate Change History log.",
+  delete_history: "Delete records from the End-of-Day history archive.",
+};
+
 
 // Grouped by section. Keys MUST match what AuthContext / ProtectedRoute check across the app.
 const PERMISSION_GROUPS: { section: string; perms: { key: string; label: string }[] }[] = [
