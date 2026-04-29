@@ -901,7 +901,7 @@ const DebtManagementPage = () => {
                   `Advance: ${symbol}${totalAdvance.toLocaleString()}  •  Debt: ${symbol}${totalDebt.toLocaleString()}  •  Creditors: ${symbol}${totalCreditors.toLocaleString()}`,
                 ]}
               />
-              {canEdit && <Button size="sm" onClick={() => setShowAdd(!showAdd)}><Plus className="w-4 h-4 mr-1" /> Add</Button>}
+              {canAdd && <Button size="sm" onClick={() => setShowAdd(!showAdd)}><Plus className="w-4 h-4 mr-1" /> Add</Button>}
             </div>
           </CardTitle>
         </CardHeader>
