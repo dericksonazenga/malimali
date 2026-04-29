@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -45,9 +45,14 @@ export function useCompanyStatus(): CompanyStatus {
     nextBillingDate: null,
   });
 
+  // Track last applied raw values so we only setState on real changes —
+  // prevents the whole tree from re-rendering every poll (which caused the
+  // dashboard to flicker / go blank and back on desktop).
+  const lastSigRef = useRef<string>("");
+
   useEffect(() => {
     if (!companyId) {
-      setState((s) => ({ ...s, loading: false }));
+      setState((s) => (s.loading ? { ...s, loading: false } : s));
       return;
     }
 
@@ -58,6 +63,12 @@ export function useCompanyStatus(): CompanyStatus {
       const isActive = !!row.is_active;
       const deactivatedAt = row.deactivated_at ?? null;
       const createdAt = row.created_at ?? null;
+      // Signature only includes raw stable fields. Derived values (daysLeft,
+      // nextBillingDate) recompute deterministically from these.
+      const sig = `${isActive}|${deactivatedAt}|${createdAt}`;
+      if (sig === lastSigRef.current) return; // No real change → no re-render.
+      lastSigRef.current = sig;
+
       const daysLeft = !isActive && deactivatedAt ? computeDaysLeft(deactivatedAt) : null;
       const gracePeriodExpired = !isActive && deactivatedAt ? daysLeft === 0 : false;
       const nextBillingDate = createdAt ? computeNextBilling(createdAt) : null;
@@ -83,22 +94,20 @@ export function useCompanyStatus(): CompanyStatus {
 
     fetchStatus();
 
-    // Recompute countdown every minute.
+    // Recompute countdown every minute (only when deactivated, only changes daysLeft).
     const tick = setInterval(() => {
       setState((s) => {
         if (s.isActive || !s.deactivatedAt) return s;
         const daysLeft = computeDaysLeft(s.deactivatedAt);
+        if (daysLeft === s.daysLeft) return s;
         return { ...s, daysLeft, gracePeriodExpired: daysLeft === 0 };
       });
     }, 60_000);
 
-    // Safety polling: realtime can be missed if the websocket was sleeping
-    // (mobile background, lost wifi, PWA suspended). Poll every 15s so a
-    // deactivation/reactivation flips the UI within seconds even when the
-    // websocket misfires. The query is tiny (single row, 3 columns).
-    const poll = setInterval(() => { fetchStatus(); }, 15_000);
+    // Light safety polling (60s, not 15s) — realtime + visibility/online
+    // listeners cover the fast path; this is just a backstop.
+    const poll = setInterval(() => { fetchStatus(); }, 60_000);
 
-    // Re-check immediately when the device wakes up / tab regains focus.
     const onWake = () => {
       if (document.visibilityState === "visible") fetchStatus();
     };
@@ -114,8 +123,6 @@ export function useCompanyStatus(): CompanyStatus {
         (payload: any) => apply(payload.new),
       )
       .subscribe((status) => {
-        // When the channel (re)connects, fetch fresh state in case we missed
-        // an UPDATE while disconnected.
         if (status === "SUBSCRIBED") fetchStatus();
       });
 

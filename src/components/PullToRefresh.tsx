@@ -18,8 +18,6 @@ interface PullToRefreshProps {
 function isInsideInnerScroller(target: HTMLElement, container: HTMLElement): boolean {
   let node: HTMLElement | null = target;
   while (node && node !== container) {
-    // Skip elements with explicit overflow scroll/auto and real scrollable content,
-    // or any element opting out via [data-no-ptr]
     if (node.hasAttribute("data-no-ptr")) return true;
     const style = window.getComputedStyle(node);
     const oy = style.overflowY;
@@ -36,36 +34,42 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
   ({ children, className, onRefresh, threshold, maxPull = 180 }, ref) => {
     const innerRef = useRef<HTMLElement>(null);
     const scrollRef = (ref as React.MutableRefObject<HTMLElement>) || innerRef;
+
+    // All gesture state lives in refs — re-rendering during a pull would
+    // re-attach handlers and drop the gesture. We only setState for visuals.
     const startY = useRef<number | null>(null);
     const pulling = useRef(false);
+    const pullDistanceRef = useRef(0);
+    const refreshingRef = useRef(false);
+    const onRefreshRef = useRef(onRefresh);
+    onRefreshRef.current = onRefresh;
+
     const [pullDistance, setPullDistance] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Trigger threshold — comfortable thumb pull (~90px after resistance).
-    // Must always be < maxPull or refresh can never fire.
     const effectiveThreshold = threshold ?? 90;
-    // Only initiate pull-to-refresh when the touch begins near the top edge of the screen
     const TOP_EDGE_ZONE = 80;
 
     useEffect(() => {
       const el = scrollRef.current;
       if (!el) return;
 
+      const setDistance = (d: number) => {
+        pullDistanceRef.current = d;
+        setPullDistance(d);
+      };
 
       const handleTouchStart = (e: TouchEvent) => {
-        if (refreshing) return;
+        if (refreshingRef.current) return;
         if (el.scrollTop > 0) {
           startY.current = null;
           return;
         }
         const touch = e.touches[0];
-        // Only start tracking if the finger is touching near the top of the screen
         if (touch.clientY > TOP_EDGE_ZONE) {
           startY.current = null;
           return;
         }
-        // Ignore touches that begin inside an inner scrollable element (so users can
-        // freely scroll within tickets/cards/dialogs without triggering refresh)
         const target = e.target as HTMLElement | null;
         if (target && isInsideInnerScroller(target, el)) {
           startY.current = null;
@@ -76,59 +80,58 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       };
 
       const handleTouchMove = (e: TouchEvent) => {
-        if (refreshing || startY.current === null) return;
+        if (refreshingRef.current || startY.current === null) return;
         const delta = e.touches[0].clientY - startY.current;
         if (delta <= 0) {
-          setPullDistance(0);
+          setDistance(0);
           pulling.current = false;
           return;
         }
         if (el.scrollTop > 0) {
-          setPullDistance(0);
+          setDistance(0);
           pulling.current = false;
           startY.current = null;
           return;
         }
         pulling.current = true;
-        // Moderate resistance — pull feels weighty but reaches threshold
         const resisted = Math.min(maxPull, delta * 0.55);
-        setPullDistance(resisted);
+        setDistance(resisted);
         if (e.cancelable) e.preventDefault();
       };
 
-      const handleTouchEnd = async () => {
+      const finishGesture = async () => {
         if (!pulling.current) {
-          setPullDistance(0);
+          setDistance(0);
           startY.current = null;
           return;
         }
-        const shouldRefresh = pullDistance >= effectiveThreshold;
+        const shouldRefresh = pullDistanceRef.current >= effectiveThreshold;
         startY.current = null;
         pulling.current = false;
 
         if (shouldRefresh) {
+          refreshingRef.current = true;
           setRefreshing(true);
-          setPullDistance(effectiveThreshold);
+          setDistance(effectiveThreshold);
           try {
-            if (onRefresh) {
-              await onRefresh();
+            if (onRefreshRef.current) {
+              await onRefreshRef.current();
             } else {
-              // Default: reload current view
               window.location.reload();
               return;
             }
           } finally {
+            refreshingRef.current = false;
             setRefreshing(false);
-            setPullDistance(0);
+            setDistance(0);
           }
         } else {
-          setPullDistance(0);
+          setDistance(0);
         }
       };
 
-      // Mouse drag (desktop browsers)
       const handleMouseDown = (e: MouseEvent) => {
-        if (refreshing || el.scrollTop > 0) return;
+        if (refreshingRef.current || el.scrollTop > 0) return;
         if (e.clientY > TOP_EDGE_ZONE) return;
         const target = e.target as HTMLElement | null;
         if (target && isInsideInnerScroller(target, el)) return;
@@ -136,27 +139,27 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
         pulling.current = false;
       };
       const handleMouseMove = (e: MouseEvent) => {
-        if (refreshing || startY.current === null) return;
+        if (refreshingRef.current || startY.current === null) return;
         if ((e.buttons & 1) === 0) {
           startY.current = null;
-          setPullDistance(0);
+          setDistance(0);
           return;
         }
         const delta = e.clientY - startY.current;
         if (delta <= 0 || el.scrollTop > 0) {
-          setPullDistance(0);
+          setDistance(0);
           pulling.current = false;
           return;
         }
         pulling.current = true;
-        setPullDistance(Math.min(maxPull, delta * 0.35));
+        setDistance(Math.min(maxPull, delta * 0.35));
       };
-      const handleMouseUp = () => { handleTouchEnd(); };
+      const handleMouseUp = () => { finishGesture(); };
 
       el.addEventListener("touchstart", handleTouchStart, { passive: true });
       el.addEventListener("touchmove", handleTouchMove, { passive: false });
-      el.addEventListener("touchend", handleTouchEnd, { passive: true });
-      el.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+      el.addEventListener("touchend", finishGesture, { passive: true });
+      el.addEventListener("touchcancel", finishGesture, { passive: true });
       el.addEventListener("mousedown", handleMouseDown);
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
@@ -164,13 +167,17 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       return () => {
         el.removeEventListener("touchstart", handleTouchStart);
         el.removeEventListener("touchmove", handleTouchMove);
-        el.removeEventListener("touchend", handleTouchEnd);
-        el.removeEventListener("touchcancel", handleTouchEnd);
+        el.removeEventListener("touchend", finishGesture);
+        el.removeEventListener("touchcancel", finishGesture);
         el.removeEventListener("mousedown", handleMouseDown);
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
       };
-    }, [onRefresh, refreshing, effectiveThreshold, maxPull, pullDistance, scrollRef]);
+      // Intentionally stable: handlers read latest props/state via refs so we
+      // attach listeners ONCE per mount. Re-attaching on every pull update
+      // dropped touchmove events and broke mobile pull-to-refresh.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [effectiveThreshold, maxPull]);
 
     const progress = Math.min(1, pullDistance / effectiveThreshold);
     const showIndicator = pullDistance > 0 || refreshing;
@@ -180,7 +187,6 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
         ref={scrollRef as any}
         className={cn("relative", className)}
       >
-        {/* Pull indicator */}
         <div
           className="pointer-events-none absolute left-0 right-0 top-0 z-40 flex justify-center"
           style={{
