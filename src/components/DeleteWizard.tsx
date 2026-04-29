@@ -41,8 +41,20 @@ const TABLES: TableConfig[] = [
 
 type Step = 1 | 2 | 3 | 4;
 
-const DeleteWizard = () => {
+interface DeleteWizardProps {
+  /** When provided, requires user to enter this PIN before deletion. */
+  requiredPin?: string | null;
+  /** Hide tables that should not be exposed in company settings mode. */
+  excludeTables?: string[];
+}
+
+const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) => {
   const { companyId } = useAuth();
+  const tables = useMemo(
+    () => (excludeTables?.length ? TABLES.filter((t) => !excludeTables.includes(t.key)) : TABLES),
+    [excludeTables]
+  );
+  const [enteredPin, setEnteredPin] = useState("");
   const [step, setStep] = useState<Step>(1);
   const [tableKey, setTableKey] = useState<string>("");
   const [fromDate, setFromDate] = useState<Date | undefined>();
