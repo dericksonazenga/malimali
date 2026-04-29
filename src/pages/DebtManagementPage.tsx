@@ -994,10 +994,10 @@ const DebtManagementPage = () => {
             </div>
           )}
 
-          {/* Debt Section */}
+          {/* Debtors Section */}
           {debtDebts.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debts ({debtDebts.length})</h3>
+              <h3 className="text-sm font-semibold flex items-center gap-2"><ArrowUpCircle className="w-4 h-4 text-orange-500" /> Debtors ({debtDebts.length})</h3>
               {renderDebtSection(debtDebts)}
             </div>
           )}
