@@ -5,11 +5,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Calculator, Banknote, BarChart3, MessageSquare, ClipboardList, FileBarChart, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History,
+  ShieldCheck, Banknote, BarChart3, MessageSquare, ClipboardList, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import EndOfDayButton from "@/components/EndOfDayButton";
 import ThemeToggle from "@/components/ThemeToggle";
 
 interface NavItem {
@@ -22,7 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="w-5 h-5" />, permission: "view_dashboard" },
   { label: "Admin", path: "/admin", icon: <ShieldCheck className="w-5 h-5" />, permission: "__admin_only__" },
-  { label: "Accountant", path: "/accountant", icon: <Calculator className="w-5 h-5" />, permission: "view_accountant" },
+  
   { label: "Data Entry", path: "/data-entry", icon: <FileText className="w-5 h-5" />, permission: "view_data_entry" },
   { label: "Rates", path: "/rates", icon: <Settings2 className="w-5 h-5" />, permission: "update_rates" },
   { label: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" />, permission: "manage_inventory" },
@@ -32,7 +31,7 @@ const navItems: NavItem[] = [
   { label: "Workers", path: "/workers", icon: <Users className="w-5 h-5" />, permission: "manage_workers" },
   { label: "Salary", path: "/salary", icon: <Banknote className="w-5 h-5" />, permission: "manage_workers" },
   { label: "Financial Report", path: "/financial-report", icon: <BarChart3 className="w-5 h-5" />, permission: "view_financial_report" },
-  { label: "Daily Summaries", path: "/daily-summaries", icon: <FileBarChart className="w-5 h-5" />, permission: "view_daily_summaries" },
+  
   { label: "Messages", path: "/messages", icon: <MessageSquare className="w-5 h-5" />, permission: "view_messages" },
   { label: "Attendance", path: "/attendance", icon: <ClipboardList className="w-5 h-5" />, permission: "manage_workers" },
   { label: "My Info", path: "/my-info", icon: <UserCircle className="w-5 h-5" />, permission: "view_my_info" },
@@ -252,7 +251,6 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </h2>
           <div className="ml-auto shrink-0 flex items-center gap-1">
             <ThemeToggle />
-            <EndOfDayButton />
           </div>
         </header>
         <main className="flex-1 p-2 sm:p-3 lg:p-6 overflow-x-hidden overflow-y-auto">

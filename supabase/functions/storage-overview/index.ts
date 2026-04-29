@@ -17,7 +17,7 @@ const TABLES = [
   "savings_accounts", "savings_transactions",
   "workers", "salary_payments", "attendance", "biometric_credentials",
   "commodities", "persistent_stock", "stock_adjustments",
-  "rate_change_history", "daily_summaries", "end_of_day_log",
+  "rate_change_history", "end_of_day_log",
   "messages", "message_recipients",
   "audit_log", "recruited_workers", "profiles", "custom_roles", "role_permissions",
 ];

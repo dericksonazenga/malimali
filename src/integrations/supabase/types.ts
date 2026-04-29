@@ -479,68 +479,6 @@ export type Database = {
           },
         ]
       }
-      daily_summaries: {
-        Row: {
-          agent_entries: Json
-          company_id: string
-          created_at: string
-          created_by: string | null
-          date: string
-          expenses: Json
-          id: string
-          net_profit: number
-          sales_entries: Json
-          stock_changes: Json
-          total_agent_amount: number
-          total_expenses: number
-          total_sales_amount: number
-          total_vip_amount: number
-          vip_entries: Json
-        }
-        Insert: {
-          agent_entries?: Json
-          company_id: string
-          created_at?: string
-          created_by?: string | null
-          date?: string
-          expenses?: Json
-          id?: string
-          net_profit?: number
-          sales_entries?: Json
-          stock_changes?: Json
-          total_agent_amount?: number
-          total_expenses?: number
-          total_sales_amount?: number
-          total_vip_amount?: number
-          vip_entries?: Json
-        }
-        Update: {
-          agent_entries?: Json
-          company_id?: string
-          created_at?: string
-          created_by?: string | null
-          date?: string
-          expenses?: Json
-          id?: string
-          net_profit?: number
-          sales_entries?: Json
-          stock_changes?: Json
-          total_agent_amount?: number
-          total_expenses?: number
-          total_sales_amount?: number
-          total_vip_amount?: number
-          vip_entries?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_summaries_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       debt_payments: {
         Row: {
           amount: number
