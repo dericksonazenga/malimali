@@ -105,7 +105,7 @@ const DeletionHistoryPage = () => {
                 <History className="w-5 h-5 text-primary" /> Deletion History
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Audit trail of every bulk deletion performed in your company.
+                Audit trail of every deletion (single-row + bulk wizard) performed in your company.
               </p>
             </div>
             {user?.role === "admin" && (
