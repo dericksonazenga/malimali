@@ -77,21 +77,23 @@ const DeletionHistoryPage = () => {
     return () => { supabase.removeChannel(ch); };
   }, [fetchEntries]);
 
-  const tableNames = useMemo(() => Array.from(new Set(entries.map((e) => (e.new_data?.target_table) || e.table_name))).sort(), [entries]);
+  const tableNames = useMemo(() => Array.from(new Set(entries.map(getTarget))).sort(), [entries]);
 
   const filtered = useMemo(() => entries.filter((e) => {
-    const target = (e.new_data?.target_table) || e.table_name;
+    const target = getTarget(e);
     if (tableFilter && target !== tableFilter) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
       e.changed_by_name.toLowerCase().includes(q) ||
       target.toLowerCase().includes(q) ||
-      formatFilters(e.new_data).toLowerCase().includes(q)
+      e.action.toLowerCase().includes(q) ||
+      formatFilters(e).toLowerCase().includes(q)
     );
   }), [entries, search, tableFilter]);
 
-  const totalRows = filtered.reduce((sum, e) => sum + (e.new_data?.row_count || 0), 0);
+  const totalRows = filtered.reduce((sum, e) => sum + getRowCount(e), 0);
+  const bulkCount = filtered.filter(e => e.action === "bulk_delete").length;
 
   return (
     <div className="space-y-6 max-w-6xl">
