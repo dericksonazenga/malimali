@@ -21,6 +21,8 @@ type TableConfig = {
   dateField?: string;
   customerField?: string;
   commodityField?: string;
+  /** Has a status column with paid/unpaid/partial values */
+  hasPaymentStatus?: boolean;
   displayFields: string[];
 };
 
@@ -29,8 +31,8 @@ const TABLES: TableConfig[] = [
   { key: "vip_entries", label: "VIP Entries", dateField: "date", customerField: "customer_name", commodityField: "commodity", displayFields: ["date", "customer_name", "commodity", "actual_weight", "rate", "amount"] },
   { key: "sales_entries", label: "Sales Entries", dateField: "date", customerField: "customer_name", commodityField: "commodity", displayFields: ["date", "customer_name", "commodity", "weight", "rate", "amount"] },
   { key: "expenses", label: "Expenses", dateField: "date", displayFields: ["date", "category", "amount", "verified_by", "notes"] },
-  { key: "debts", label: "Debts", customerField: "customer_name", displayFields: ["customer_name", "description", "total_amount", "balance", "status"] },
-  { key: "creditors", label: "Creditors", customerField: "customer_name", commodityField: "commodity", displayFields: ["customer_name", "commodity", "kg", "total_amount", "balance", "status"] },
+  { key: "debts", label: "Debts", customerField: "customer_name", hasPaymentStatus: true, displayFields: ["customer_name", "description", "total_amount", "balance", "status"] },
+  { key: "creditors", label: "Creditors", customerField: "customer_name", commodityField: "commodity", hasPaymentStatus: true, displayFields: ["customer_name", "commodity", "kg", "total_amount", "balance", "status"] },
   { key: "savings_accounts", label: "Savings Accounts", customerField: "customer_name", displayFields: ["customer_name", "balance"] },
   { key: "attendance", label: "Attendance", dateField: "date", displayFields: ["date", "worker_name", "status", "sign_in_at", "sign_out_at"] },
   { key: "stock_adjustments", label: "Stock Adjustments", commodityField: "commodity", displayFields: ["created_at", "commodity", "previous_weight", "new_weight", "reason"] },
@@ -61,6 +63,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
   const [toDate, setToDate] = useState<Date | undefined>();
   const [customer, setCustomer] = useState("");
   const [commodity, setCommodity] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("any");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
   const [previewRows, setPreviewRows] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -71,7 +75,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
 
   const reset = () => {
     setStep(1); setTableKey(""); setFromDate(undefined); setToDate(undefined);
-    setCustomer(""); setCommodity(""); setPreviewRows([]); setTotalCount(0); setConfirmPhrase(""); setEnteredPin("");
+    setCustomer(""); setCommodity(""); setStatusFilter("any"); setSortOrder("desc");
+    setPreviewRows([]); setTotalCount(0); setConfirmPhrase(""); setEnteredPin("");
   };
 
   const buildQuery = (countOnly: boolean) => {
@@ -85,6 +90,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     if (config.dateField && toDate) q = q.lte(config.dateField, format(toDate, "yyyy-MM-dd"));
     if (config.customerField && customer.trim()) q = q.ilike(config.customerField, `%${customer.trim()}%`);
     if (config.commodityField && commodity.trim()) q = q.ilike(config.commodityField, `%${commodity.trim()}%`);
+    if (config.hasPaymentStatus && statusFilter !== "any") q = q.eq("status", statusFilter);
     return q;
   };
 
@@ -94,7 +100,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     try {
       const q = buildQuery(false);
       if (!q) return;
-      const { data, count, error } = await q.limit(50).order(config.dateField || "created_at", { ascending: false });
+      const { data, count, error } = await q.limit(50).order(config.dateField || "created_at", { ascending: sortOrder === "asc" });
       if (error) { toast.error(error.message); return; }
       setPreviewRows(data || []);
       setTotalCount(count || 0);
@@ -116,6 +122,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
       if (config.dateField && toDate) q = q.lte(config.dateField, format(toDate, "yyyy-MM-dd"));
       if (config.customerField && customer.trim()) q = q.ilike(config.customerField, `%${customer.trim()}%`);
       if (config.commodityField && commodity.trim()) q = q.ilike(config.commodityField, `%${commodity.trim()}%`);
+      if (config.hasPaymentStatus && statusFilter !== "any") q = q.eq("status", statusFilter);
       const { error } = await q;
       if (error) { toast.error(error.message); return; }
 
@@ -142,6 +149,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
               to_date: toDate ? format(toDate, "yyyy-MM-dd") : null,
               customer: customer.trim() || null,
               commodity: commodity.trim() || null,
+              status: config.hasPaymentStatus && statusFilter !== "any" ? statusFilter : null,
+              sort: sortOrder,
             },
           } as any,
           changed_by: userId,
@@ -157,7 +166,7 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
     } finally { setDeleting(false); }
   };
 
-  const filtersActive = !!(fromDate || toDate || customer.trim() || commodity.trim());
+  const filtersActive = !!(fromDate || toDate || customer.trim() || commodity.trim() || (config?.hasPaymentStatus && statusFilter !== "any"));
 
   return (
     <Card className="border-destructive/30">
@@ -244,6 +253,32 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
                 <Input value={commodity} onChange={(e) => setCommodity(e.target.value.slice(0, 100))} placeholder="e.g. Copper" />
               </div>
             )}
+
+            {config.hasPaymentStatus && (
+              <div>
+                <Label className="text-xs">Payment status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any status</SelectItem>
+                    <SelectItem value="paid">Paid only</SelectItem>
+                    <SelectItem value="unpaid">Unpaid only</SelectItem>
+                    <SelectItem value="partial">Partially paid only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs">Sort preview by {config.dateField || "created_at"}</Label>
+              <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "desc" | "asc")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">Newest first</SelectItem>
+                  <SelectItem value="asc">Oldest first</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {!filtersActive && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
