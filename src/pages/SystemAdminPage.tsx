@@ -123,11 +123,15 @@ const SystemAdminPage = () => {
       })
       .eq("id", company.id);
     if (error) {
-      toast.error("Failed to update");
-    } else {
-      toast.success(`${company.name} ${company.is_active ? "deactivated" : "activated"}`);
-      fetchCompanies();
+      toast.error(error.message || "Failed to update");
+      return;
     }
+    if (nextActive) {
+      toast.success(`${company.name} reactivated — full access restored on all devices`);
+    } else {
+      toast.success(`${company.name} deactivated — dashboard limited; data entry blocks in 10 days`);
+    }
+    fetchCompanies();
   };
 
   const handleDeleteCompany = async () => {
