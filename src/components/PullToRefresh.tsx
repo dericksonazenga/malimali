@@ -28,9 +28,6 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       const el = scrollRef.current;
       if (!el) return;
 
-      // Only enable on touch (mobile/tablet)
-      const isTouch = window.matchMedia("(pointer: coarse)").matches;
-      if (!isTouch) return;
 
       const handleTouchStart = (e: TouchEvent) => {
         if (refreshing) return;
@@ -93,16 +90,46 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
         }
       };
 
+      // Mouse drag (desktop browsers)
+      const handleMouseDown = (e: MouseEvent) => {
+        if (refreshing || el.scrollTop > 0) return;
+        startY.current = e.clientY;
+        pulling.current = false;
+      };
+      const handleMouseMove = (e: MouseEvent) => {
+        if (refreshing || startY.current === null) return;
+        if ((e.buttons & 1) === 0) {
+          startY.current = null;
+          setPullDistance(0);
+          return;
+        }
+        const delta = e.clientY - startY.current;
+        if (delta <= 0 || el.scrollTop > 0) {
+          setPullDistance(0);
+          pulling.current = false;
+          return;
+        }
+        pulling.current = true;
+        setPullDistance(Math.min(maxPull, delta * 0.5));
+      };
+      const handleMouseUp = () => { handleTouchEnd(); };
+
       el.addEventListener("touchstart", handleTouchStart, { passive: true });
       el.addEventListener("touchmove", handleTouchMove, { passive: false });
       el.addEventListener("touchend", handleTouchEnd, { passive: true });
       el.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+      el.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
 
       return () => {
         el.removeEventListener("touchstart", handleTouchStart);
         el.removeEventListener("touchmove", handleTouchMove);
         el.removeEventListener("touchend", handleTouchEnd);
         el.removeEventListener("touchcancel", handleTouchEnd);
+        el.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
       };
     }, [onRefresh, refreshing, threshold, maxPull, pullDistance, scrollRef]);
 
