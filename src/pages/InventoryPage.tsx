@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
+import { namesEqual, normalizeName } from "@/utils/nameMatch";
 
 interface AdjustmentLog {
   id: string;
