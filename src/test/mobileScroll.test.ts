@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import {
+  canArmPullToRefresh,
+  hasScrollableContent,
+  isScrolledToTop,
+} from "@/components/PullToRefresh";
 
 /**
  * Automated regression checks ensuring the mobile/tablet pull-to-refresh
@@ -103,5 +108,25 @@ describe("scroll containers inside page sections", () => {
     const overflowScrollBlock = findRuleBlock("\\.overflow-y-scroll") ?? "";
     expect(overflowAutoBlock).not.toMatch(/touch-action\s*:\s*none/);
     expect(overflowScrollBlock).not.toMatch(/touch-action\s*:\s*none/);
+  });
+});
+
+describe("pull-to-refresh arming rules", () => {
+  it("does not arm refresh when the page has no vertical scroll", () => {
+    const metrics = { scrollTop: 0, clientHeight: 900, scrollHeight: 900 };
+    expect(hasScrollableContent(metrics)).toBe(false);
+    expect(canArmPullToRefresh(metrics)).toBe(false);
+  });
+
+  it("arms refresh only when scrollable content is already at the top", () => {
+    const atTop = { scrollTop: 0, clientHeight: 900, scrollHeight: 1400 };
+    const belowTop = { scrollTop: 24, clientHeight: 900, scrollHeight: 1400 };
+
+    expect(hasScrollableContent(atTop)).toBe(true);
+    expect(isScrolledToTop(atTop)).toBe(true);
+    expect(canArmPullToRefresh(atTop)).toBe(true);
+
+    expect(isScrolledToTop(belowTop)).toBe(false);
+    expect(canArmPullToRefresh(belowTop)).toBe(false);
   });
 });
