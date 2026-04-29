@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import ChangePasswordCard from "@/components/ChangePasswordCard";
 import RolesManager from "@/components/RolesManager";
 import CompanyBrandingSettings from "@/components/CompanyBrandingSettings";
+import StorageManagementCard from "@/components/StorageManagementCard";
 
 const SettingsPage = () => {
   const { currency, symbol, globalCurrency, globalSymbol, setCurrencyCode, setGlobalCurrency, isPersonalOverride, clearPersonalOverride } = useCurrency();
@@ -163,6 +164,8 @@ const SettingsPage = () => {
       </Card>
 
       {isAdmin && <RolesManager />}
+
+      <StorageManagementCard />
 
       <ChangePasswordCard />
     </div>
