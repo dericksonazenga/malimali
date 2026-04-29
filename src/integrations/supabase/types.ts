@@ -315,6 +315,9 @@ export type Database = {
       }
       companies: {
         Row: {
+          contact_address: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           deactivated_at: string | null
           id: string
@@ -323,6 +326,9 @@ export type Database = {
           name: string
         }
         Insert: {
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           deactivated_at?: string | null
           id?: string
@@ -331,6 +337,9 @@ export type Database = {
           name: string
         }
         Update: {
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           deactivated_at?: string | null
           id?: string

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Building2, Upload, Loader2, Save, Trash2 } from "lucide-react";
+import { Building2, Upload, Loader2, Save, Trash2, Phone, Mail, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 const CompanyBrandingSettings = () => {
@@ -18,22 +18,65 @@ const CompanyBrandingSettings = () => {
   const [originalName, setOriginalName] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Contact details
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactAddress, setContactAddress] = useState("");
+  const [originalContact, setOriginalContact] = useState({ phone: "", email: "", address: "" });
+  const [savingContact, setSavingContact] = useState(false);
+
   useEffect(() => {
     if (!companyId) return;
     const fetch = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("name, logo_url")
+        .select("name, logo_url, contact_phone, contact_email, contact_address")
         .eq("id", companyId)
         .single();
       if (data) {
         setCompanyName(data.name);
         setOriginalName(data.name);
         setLogoUrl(data.logo_url);
+        const phone = (data as any).contact_phone || "";
+        const email = (data as any).contact_email || "";
+        const address = (data as any).contact_address || "";
+        setContactPhone(phone);
+        setContactEmail(email);
+        setContactAddress(address);
+        setOriginalContact({ phone, email, address });
       }
     };
     fetch();
   }, [companyId]);
+
+  const contactDirty =
+    contactPhone.trim() !== originalContact.phone ||
+    contactEmail.trim() !== originalContact.email ||
+    contactAddress.trim() !== originalContact.address;
+
+  const handleSaveContact = async () => {
+    if (!companyId) return;
+    setSavingContact(true);
+    const { error } = await supabase
+      .from("companies")
+      .update({
+        contact_phone: contactPhone.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_address: contactAddress.trim() || null,
+      } as any)
+      .eq("id", companyId);
+    setSavingContact(false);
+    if (error) {
+      toast.error("Failed to update contact details");
+    } else {
+      setOriginalContact({
+        phone: contactPhone.trim(),
+        email: contactEmail.trim(),
+        address: contactAddress.trim(),
+      });
+      toast.success("Contact details updated!");
+    }
+  };
 
   const handleSaveName = async () => {
     if (!companyId || !companyName.trim()) return;
@@ -180,6 +223,69 @@ const CompanyBrandingSettings = () => {
           <p className="text-sm text-muted-foreground">
             This name appears on the dashboard and throughout the application.
           </p>
+        </div>
+
+        {/* Contact details — visible to system admin and used to reach the company */}
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div>
+            <Label className="text-base">Contact Details</Label>
+            <p className="text-xs text-muted-foreground">
+              Shown to the system administrator. Phone numbers will be clickable to call.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-phone" className="text-xs flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" /> Phone
+              </Label>
+              <Input
+                id="contact-phone"
+                type="tel"
+                inputMode="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+255 712 345 678"
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-email" className="text-xs flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" /> Email
+              </Label>
+              <Input
+                id="contact-email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="info@company.com"
+                className="h-10"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="contact-address" className="text-xs flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" /> Address
+            </Label>
+            <Input
+              id="contact-address"
+              value={contactAddress}
+              onChange={(e) => setContactAddress(e.target.value)}
+              placeholder="Street, City, Country"
+              className="h-10"
+            />
+          </div>
+
+          <Button
+            size="sm"
+            className="gap-1"
+            onClick={handleSaveContact}
+            disabled={savingContact || !contactDirty}
+          >
+            {savingContact ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+            Save Contact Details
+          </Button>
         </div>
       </CardContent>
     </Card>

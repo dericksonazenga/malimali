@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2, Trash2 } from "lucide-react";
+import { Building2, Plus, UserPlus, Power, PowerOff, KeyRound, Mail, ShieldCheck, Loader2, Trash2, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -25,6 +25,9 @@ interface Company {
   is_active: boolean;
   created_at: string;
   deactivated_at: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  contact_address: string | null;
 }
 
 const BILLING_CYCLE_DAYS = 30;
@@ -40,6 +43,9 @@ const SystemAdminPage = () => {
   const [newCompanyName, setNewCompanyName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newContactAddress, setNewContactAddress] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
@@ -48,10 +54,18 @@ const SystemAdminPage = () => {
 
   const fetchCompanies = async () => {
     const { data } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
-    if (data) setCompanies(data);
+    if (data) setCompanies(data as Company[]);
   };
 
-  useEffect(() => { fetchCompanies(); }, []);
+  useEffect(() => {
+    fetchCompanies();
+    // Live-update whenever any company row changes (e.g. a tenant updates contact details).
+    const channel = supabase
+      .channel(`sysadmin-companies-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, () => fetchCompanies())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const handleCreateCompany = async () => {
     if (!newCompanyName.trim() || !adminName.trim() || !adminEmail.trim()) {
@@ -63,7 +77,12 @@ const SystemAdminPage = () => {
       // Create company
       const { data: company, error: companyErr } = await supabase
         .from("companies")
-        .insert({ name: newCompanyName.trim() })
+        .insert({
+          name: newCompanyName.trim(),
+          contact_phone: newContactPhone.trim() || null,
+          contact_email: newContactEmail.trim() || null,
+          contact_address: newContactAddress.trim() || null,
+        } as any)
         .select()
         .single();
       if (companyErr || !company) throw companyErr;
@@ -83,6 +102,9 @@ const SystemAdminPage = () => {
       setNewCompanyName("");
       setAdminName("");
       setAdminEmail("");
+      setNewContactPhone("");
+      setNewContactEmail("");
+      setNewContactAddress("");
       fetchCompanies();
     } catch (err: any) {
       toast.error(err?.message || "Failed to create company");
@@ -159,6 +181,20 @@ const SystemAdminPage = () => {
               <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@company.com" />
             </div>
           </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><Phone className="w-3 h-3" /> Contact Phone (optional)</Label>
+              <Input type="tel" inputMode="tel" value={newContactPhone} onChange={(e) => setNewContactPhone(e.target.value)} placeholder="+255 712 345 678" />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><Mail className="w-3 h-3" /> Contact Email (optional)</Label>
+              <Input type="email" value={newContactEmail} onChange={(e) => setNewContactEmail(e.target.value)} placeholder="info@company.com" />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Address (optional)</Label>
+              <Input value={newContactAddress} onChange={(e) => setNewContactAddress(e.target.value)} placeholder="Street, City" />
+            </div>
+          </div>
           <Button onClick={handleCreateCompany} disabled={loading} className="gap-2">
             <UserPlus className="w-4 h-4" /> Create Company & Pre-register Admin
           </Button>
@@ -174,8 +210,8 @@ const SystemAdminPage = () => {
           <ScrollArea className="h-[400px]">
             <div className="space-y-2">
               {companies.map((c) => (
-                <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border gap-2">
-                  <div className="min-w-0">
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-start sm:justify-between p-3 rounded-lg border gap-2">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{c.name}</p>
                     <p className="text-xs text-muted-foreground">
                       Created: {new Date(c.created_at).toLocaleDateString()}
@@ -192,8 +228,36 @@ const SystemAdminPage = () => {
                         </p>
                       );
                     })()}
+
+                    {(c.contact_phone || c.contact_email || c.contact_address) ? (
+                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                        {c.contact_phone && (
+                          <a
+                            href={`tel:${c.contact_phone.replace(/\s+/g, "")}`}
+                            className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                          >
+                            <Phone className="w-3 h-3" /> {c.contact_phone}
+                          </a>
+                        )}
+                        {c.contact_email && (
+                          <a
+                            href={`mailto:${c.contact_email}`}
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            <Mail className="w-3 h-3" /> {c.contact_email}
+                          </a>
+                        )}
+                        {c.contact_address && (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <MapPin className="w-3 h-3" /> {c.contact_address}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-1.5 text-[11px] italic text-muted-foreground">No contact details yet</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <Badge variant={c.is_active ? "default" : "secondary"}>
                       {c.is_active ? "Active" : "Inactive"}
                     </Badge>
