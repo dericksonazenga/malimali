@@ -13,6 +13,8 @@ import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import LoginPage from "@/pages/LoginPage";
+import CompanySuspendedScreen from "@/components/CompanySuspendedScreen";
+import { useCompanyStatus } from "@/hooks/useCompanyStatus";
 
 // Lazy-loaded routes — keep factory refs so we can prefetch all chunks once
 // the shell mounts. Prefetching means subsequent navigations are instant
@@ -100,6 +102,7 @@ const RouteFallback = () => <div aria-hidden="true" />;
 
 const AuthenticatedApp = () => {
   const { user, loading, isSystemAdmin } = useAuth();
+  const { gracePeriodExpired } = useCompanyStatus();
 
   // Warm every route chunk in the background once the shell mounts so future
   // navigations are instant.
@@ -112,6 +115,21 @@ const AuthenticatedApp = () => {
   );
 
   if (!user) return <LoginPage />;
+
+  // Hard lockout: deactivated AND grace period (10 days) has expired.
+  // System admins keep full access so they can reactivate.
+  if (gracePeriodExpired && !isSystemAdmin) {
+    return (
+      <AppLayout>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/system-admin" element={isSystemAdmin ? <SystemAdminGate><SystemAdminPage /></SystemAdminGate> : <CompanySuspendedScreen />} />
+            <Route path="*" element={<CompanySuspendedScreen />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
