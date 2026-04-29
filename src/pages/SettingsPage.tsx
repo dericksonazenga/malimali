@@ -13,6 +13,7 @@ import ChangePasswordCard from "@/components/ChangePasswordCard";
 import RolesManager from "@/components/RolesManager";
 import CompanyBrandingSettings from "@/components/CompanyBrandingSettings";
 import StorageManagementCard from "@/components/StorageManagementCard";
+import CompanyDataManagementCard from "@/components/CompanyDataManagementCard";
 
 const SettingsPage = () => {
   const { currency, symbol, globalCurrency, globalSymbol, setCurrencyCode, setGlobalCurrency, isPersonalOverride, clearPersonalOverride } = useCurrency();
@@ -166,6 +167,8 @@ const SettingsPage = () => {
       {isAdmin && <RolesManager />}
 
       <StorageManagementCard />
+
+      <CompanyDataManagementCard />
 
       <ChangePasswordCard />
     </div>
