@@ -149,9 +149,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setLoading(false);
         cacheUser(null, null);
+        void import("@/utils/getCompanyId").then((m) => m.clearCompanyIdCache());
         return;
       }
 
+      // If the signed-in user changed, clear the company cache so the new user
+      // doesn't inherit the previous user's company_id.
+      if (currentUserIdRef.current && currentUserIdRef.current !== session.user.id) {
+        void import("@/utils/getCompanyId").then((m) => m.clearCompanyIdCache());
+      }
       currentUserIdRef.current = session.user.id;
       setTimeout(() => {
         void fetchProfile(session.user);
