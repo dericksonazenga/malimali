@@ -628,11 +628,11 @@ const DebtManagementPage = () => {
         <TableCell className="text-muted-foreground max-w-[150px] truncate" title={d.description}>
           {isDebt && deductionAmount > 0 ? d.description.split(" | ")[0] || d.description : d.description}
         </TableCell>
-        <TableCell className="text-right font-mono">{isDebt ? symbol + gross.toLocaleString() : "-"}</TableCell>
-        <TableCell className="text-right font-mono text-destructive">{isDebt && deductionAmount > 0 ? "-" + symbol + deductionAmount.toLocaleString() : "-"}</TableCell>
-        <TableCell className="text-right font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</TableCell>
-        <TableCell className="text-right font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
-        <TableCell className="text-right font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono whitespace-nowrap">{isDebt ? symbol + gross.toLocaleString() : "-"}</TableCell>
+        <TableCell className="text-right font-mono text-destructive whitespace-nowrap">{isDebt && deductionAmount > 0 ? "-" + symbol + deductionAmount.toLocaleString() : "-"}</TableCell>
+        <TableCell className="text-right font-mono font-semibold whitespace-nowrap">{symbol}{d.total_amount.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono text-green-600 whitespace-nowrap">{symbol}{d.paid_amount.toLocaleString()}</TableCell>
+        <TableCell className="text-right font-mono text-destructive font-semibold whitespace-nowrap">{symbol}{d.balance.toLocaleString()}</TableCell>
         <TableCell>{getStatusBadge(d.status)}</TableCell>
         <TableCell>
           <div className="flex items-center justify-end gap-1">
