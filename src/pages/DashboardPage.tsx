@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { useCommodities } from "@/contexts/CommodityContext";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings, CreditCard, ArrowDownCircle, ArrowUpCircle, Users } from "lucide-react";
+import { TrendingUp, TrendingDown, Package, Wallet, FileText, Star, ShoppingCart, Settings, CreditCard, ArrowDownCircle, ArrowUpCircle, Users, Receipt } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCategoryLabels } from "@/contexts/CategoryLabelsContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompanyStatus } from "@/hooks/useCompanyStatus";
+import DeactivationBanner from "@/components/DeactivationBanner";
 
 const StatCard = ({ title, value, subtitle, icon, color, onClick }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string; onClick?: () => void }) => (
   <Card className={cn("animate-fade-in transition-all active:scale-[0.98]", onClick && "cursor-pointer hover:ring-2 hover:ring-primary/30")} onClick={onClick}>
@@ -32,6 +34,7 @@ const DashboardPage = () => {
   const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
   const { labels } = useCategoryLabels();
   const navigate = useNavigate();
+  const { isActive: companyActive } = useCompanyStatus();
   const [expenseTotal, setExpenseTotal] = useState(0);
   const [expenseCount, setExpenseCount] = useState(0);
   const [companyName, setCompanyName] = useState("");
