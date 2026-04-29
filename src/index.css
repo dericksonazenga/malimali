@@ -230,6 +230,21 @@
   }
 }
 
+/* Generous desktop width: lift narrow per-page max-w caps and center content */
+@media (min-width: 1024px) {
+  .app-content > .max-w-md,
+  .app-content > .max-w-lg,
+  .app-content > .max-w-xl,
+  .app-content > .max-w-2xl,
+  .app-content > .max-w-3xl,
+  .app-content > .max-w-4xl,
+  .app-content > .max-w-5xl {
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
 /* Global responsive text overflow prevention */
 * {
   word-wrap: break-word;
