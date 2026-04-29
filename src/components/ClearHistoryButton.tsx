@@ -12,6 +12,8 @@ import { toast } from "sonner";
 interface ClearHistoryButtonProps {
   /** When set, only history rows for this table_name are cleared. Omit to clear ALL audit history. */
   tableName?: string;
+  /** When set, only history rows whose action is in this list are cleared. */
+  actionFilter?: string[];
   /** Visual label fallback when shown as a wider button. */
   label?: string;
   /** Show only the icon (default) — fits next to history headers. */
@@ -20,7 +22,7 @@ interface ClearHistoryButtonProps {
   onCleared?: () => void;
 }
 
-const ClearHistoryButton = ({ tableName, label = "Clear History", iconOnly = true, onCleared }: ClearHistoryButtonProps) => {
+const ClearHistoryButton = ({ tableName, actionFilter, label = "Clear History", iconOnly = true, onCleared }: ClearHistoryButtonProps) => {
   const { user, companyId } = useAuth();
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
@@ -34,9 +36,10 @@ const ClearHistoryButton = ({ tableName, label = "Clear History", iconOnly = tru
     try {
       let q: any = supabase.from("audit_log").delete().eq("company_id", companyId);
       if (tableName) q = q.eq("table_name", tableName);
+      if (actionFilter && actionFilter.length) q = q.in("action", actionFilter);
       const { error } = await q;
       if (error) { toast.error(error.message); return; }
-      toast.success(tableName ? `Cleared history for ${tableName}` : "Cleared all history");
+      toast.success(tableName ? `Cleared history for ${tableName}` : "Cleared history");
       setOpen(false);
       onCleared?.();
     } finally { setWorking(false); }

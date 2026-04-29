@@ -23,16 +23,30 @@ interface DeletionEntry {
   old_data: any;
 }
 
-const formatFilters = (newData: any) => {
-  if (!newData || typeof newData !== "object") return "—";
-  const f = newData.filters || {};
-  const parts: string[] = [];
-  if (f.from_date) parts.push(`from ${f.from_date}`);
-  if (f.to_date) parts.push(`to ${f.to_date}`);
-  if (f.customer) parts.push(`customer ~ "${f.customer}"`);
-  if (f.commodity) parts.push(`commodity ~ "${f.commodity}"`);
-  return parts.length ? parts.join(", ") : "no filters (all rows)";
+const formatFilters = (e: DeletionEntry) => {
+  if (e.action === "bulk_delete") {
+    const f = e.new_data?.filters || {};
+    const parts: string[] = [];
+    if (f.from_date) parts.push(`from ${f.from_date}`);
+    if (f.to_date) parts.push(`to ${f.to_date}`);
+    if (f.customer) parts.push(`customer ~ "${f.customer}"`);
+    if (f.commodity) parts.push(`commodity ~ "${f.commodity}"`);
+    if (f.status) parts.push(`status: ${f.status}`);
+    if (f.sort) parts.push(`sort: ${f.sort}`);
+    return parts.length ? parts.join(", ") : "no filters (all rows)";
+  }
+  // Single-row delete — describe the record briefly
+  const o = e.old_data || {};
+  const bits: string[] = [];
+  if (o.customer_name) bits.push(`customer: ${o.customer_name}`);
+  if (o.commodity) bits.push(`commodity: ${o.commodity}`);
+  if (o.amount != null) bits.push(`amount: ${o.amount}`);
+  if (o.date) bits.push(`date: ${o.date}`);
+  return bits.length ? `single row — ${bits.join(", ")}` : `single row (id: ${e.record_id.slice(0, 8)})`;
 };
+
+const getRowCount = (e: DeletionEntry) => e.action === "bulk_delete" ? (e.new_data?.row_count ?? 0) : 1;
+const getTarget = (e: DeletionEntry) => e.new_data?.target_table || e.table_name;
 
 const DeletionHistoryPage = () => {
   const { user } = useAuth();
@@ -46,7 +60,7 @@ const DeletionHistoryPage = () => {
     const { data, error } = await supabase
       .from("audit_log")
       .select("*")
-      .eq("action", "bulk_delete")
+      .in("action", ["bulk_delete", "delete"])
       .order("created_at", { ascending: false })
       .limit(500);
     if (error) { toast.error(error.message); setLoading(false); return; }
@@ -63,21 +77,23 @@ const DeletionHistoryPage = () => {
     return () => { supabase.removeChannel(ch); };
   }, [fetchEntries]);
 
-  const tableNames = useMemo(() => Array.from(new Set(entries.map((e) => (e.new_data?.target_table) || e.table_name))).sort(), [entries]);
+  const tableNames = useMemo(() => Array.from(new Set(entries.map(getTarget))).sort(), [entries]);
 
   const filtered = useMemo(() => entries.filter((e) => {
-    const target = (e.new_data?.target_table) || e.table_name;
+    const target = getTarget(e);
     if (tableFilter && target !== tableFilter) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
       e.changed_by_name.toLowerCase().includes(q) ||
       target.toLowerCase().includes(q) ||
-      formatFilters(e.new_data).toLowerCase().includes(q)
+      e.action.toLowerCase().includes(q) ||
+      formatFilters(e).toLowerCase().includes(q)
     );
   }), [entries, search, tableFilter]);
 
-  const totalRows = filtered.reduce((sum, e) => sum + (e.new_data?.row_count || 0), 0);
+  const totalRows = filtered.reduce((sum, e) => sum + getRowCount(e), 0);
+  const bulkCount = filtered.filter(e => e.action === "bulk_delete").length;
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -89,11 +105,16 @@ const DeletionHistoryPage = () => {
                 <History className="w-5 h-5 text-primary" /> Deletion History
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Audit trail of every bulk deletion performed in your company.
+                Audit trail of every deletion (single-row + bulk wizard) performed in your company.
               </p>
             </div>
             {user?.role === "admin" && (
-              <ClearHistoryButton iconOnly={false} label="Clear Deletion History" />
+              <ClearHistoryButton
+                iconOnly={false}
+                label="Clear Deletion History"
+                actionFilter={["bulk_delete", "delete"]}
+                onCleared={fetchEntries}
+              />
             )}
           </div>
         </CardHeader>
@@ -151,31 +172,39 @@ const DeletionHistoryPage = () => {
                 <TableRow>
                   <TableHead>When</TableHead>
                   <TableHead>User</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Table</TableHead>
                   <TableHead className="text-right">Rows</TableHead>
-                  <TableHead>Filters</TableHead>
+                  <TableHead>Details</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">Loading...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No deletion events.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-6">No deletion events.</TableCell></TableRow>
                 ) : filtered.map((e) => {
-                  const target = e.new_data?.target_table || e.table_name;
-                  const rowCount = e.new_data?.row_count ?? 0;
+                  const target = getTarget(e);
+                  const rowCount = getRowCount(e);
+                  const isBulk = e.action === "bulk_delete";
+                  const details = formatFilters(e);
                   return (
                     <TableRow key={e.id}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {format(new Date(e.created_at), "MMM dd, yyyy HH:mm:ss")}
                       </TableCell>
                       <TableCell className="text-sm font-medium">{e.changed_by_name || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={isBulk ? "destructive" : "secondary"} className="text-xs">
+                          {isBulk ? "Bulk" : "Single"}
+                        </Badge>
+                      </TableCell>
                       <TableCell><Badge variant="outline" className="font-mono text-xs">{target}</Badge></TableCell>
                       <TableCell className="text-right">
                         <Badge variant="destructive">{rowCount}</Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate" title={formatFilters(e.new_data)}>
-                        {formatFilters(e.new_data)}
+                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate" title={details}>
+                        {details}
                       </TableCell>
                     </TableRow>
                   );
@@ -186,17 +215,23 @@ const DeletionHistoryPage = () => {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
+            {loading && <p className="text-center text-muted-foreground py-6 text-sm">Loading...</p>}
+            {!loading && filtered.length === 0 && <p className="text-center text-muted-foreground py-6 text-sm">No deletion events.</p>}
             {filtered.map((e) => {
-              const target = e.new_data?.target_table || e.table_name;
-              const rowCount = e.new_data?.row_count ?? 0;
+              const target = getTarget(e);
+              const rowCount = getRowCount(e);
+              const isBulk = e.action === "bulk_delete";
               return (
                 <div key={e.id} className="border border-border rounded-lg p-3 space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="font-mono text-xs">{target}</Badge>
-                    <Badge variant="destructive">{rowCount} rows</Badge>
+                  <div className="flex justify-between items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant={isBulk ? "destructive" : "secondary"} className="text-[10px]">{isBulk ? "Bulk" : "Single"}</Badge>
+                      <Badge variant="outline" className="font-mono text-xs">{target}</Badge>
+                    </div>
+                    <Badge variant="destructive">{rowCount} {rowCount === 1 ? "row" : "rows"}</Badge>
                   </div>
                   <p className="text-sm font-medium">{e.changed_by_name}</p>
-                  <p className="text-xs text-muted-foreground">{formatFilters(e.new_data)}</p>
+                  <p className="text-xs text-muted-foreground">{formatFilters(e)}</p>
                   <p className="text-[10px] text-muted-foreground">{format(new Date(e.created_at), "MMM dd, yyyy HH:mm:ss")}</p>
                 </div>
               );
