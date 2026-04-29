@@ -289,6 +289,21 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
               <Input value={confirmPhrase} onChange={(e) => setConfirmPhrase(e.target.value)} placeholder="DELETE" className="font-mono" />
             </div>
 
+            {requiredPin && (
+              <div>
+                <Label className="text-xs">Enter company delete PIN</Label>
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  value={enteredPin}
+                  onChange={(e) => setEnteredPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="••••"
+                  className="font-mono tracking-widest"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(3)} disabled={deleting} className="gap-1"><ChevronLeft className="w-4 h-4" /> Back</Button>
               <div className="flex gap-2">
