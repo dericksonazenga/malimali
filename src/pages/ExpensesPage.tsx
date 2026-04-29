@@ -194,7 +194,7 @@ const ExpensesPage = () => {
           </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
             {dbWorkers
-              .filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || w.role.toLowerCase().includes(workerSearch.toLowerCase()))
+              .filter((w) => nameIncludes(w.name, workerSearch) || nameIncludes(w.role, workerSearch))
               .map((w) => (
                 <button key={w.id} type="button" onClick={() => { handleWorkerSelect(w); setWorkerSearch(""); }}
                   className="w-full flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent transition-colors text-left">
