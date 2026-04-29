@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isSpecialCommodity, SPECIAL_SOURCE_COMMODITY } from "@/constants/specialCommodity";
 import {
   startOfDay, endOfDay, subDays, startOfWeek, endOfWeek,
   startOfMonth, endOfMonth, startOfYear, endOfYear, subWeeks, subMonths, subYears
@@ -185,7 +186,9 @@ export function useAnalyticsData(range: DateRangeValue) {
       if (e.is_exchange || !commodity || saleWeight === 0) {
         grossProfit += saleAmount;
       } else {
-        const buyRate = avgBuyRateMap[commodity] || 0;
+        // "Special" sales draw cost basis from Heavy's weighted-avg buy rate.
+        const costCommodity = isSpecialCommodity(commodity) ? SPECIAL_SOURCE_COMMODITY : commodity;
+        const buyRate = avgBuyRateMap[costCommodity] || 0;
         grossProfit += (saleRate - buyRate) * saleWeight;
       }
     });
@@ -197,7 +200,13 @@ export function useAnalyticsData(range: DateRangeValue) {
     const ensure = (c: string) => { if (!cb[c]) cb[c] = { bought: 0, sold: 0, net: 0 }; };
     agentRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
     vipRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
-    salesRows.forEach((e: any) => { if (e.commodity) { ensure(e.commodity); cb[e.commodity].sold += Number(e.weight); } });
+    salesRows.forEach((e: any) => {
+      if (e.commodity) {
+        const stockCommodity = isSpecialCommodity(e.commodity) ? SPECIAL_SOURCE_COMMODITY : e.commodity;
+        ensure(stockCommodity);
+        cb[stockCommodity].sold += Number(e.weight);
+      }
+    });
     Object.keys(cb).forEach(c => { cb[c].net = cb[c].bought - cb[c].sold; });
 
     // Daily profit trend

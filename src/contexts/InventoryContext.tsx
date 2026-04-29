@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect,
 import { supabase } from "@/integrations/supabase/client";
 import { AgentEntry, VipEntry, SalesEntry } from "@/types";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
+import { resolveStockCommodity } from "@/constants/specialCommodity";
 
 interface InventoryContextType {
   agentEntries: AgentEntry[];
@@ -307,7 +308,9 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     });
     salesEntries.forEach(e => {
       if (e.commodity && !e.isExchange) {
-        updates[e.commodity] = (updates[e.commodity] || 0) - e.weight;
+        // "Special" sales physically deduct from "Heavy" stock.
+        const stockCommodity = resolveStockCommodity(e.commodity);
+        updates[stockCommodity] = (updates[stockCommodity] || 0) - e.weight;
       }
     });
 

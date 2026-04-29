@@ -19,13 +19,14 @@ import { toast } from "sonner";
 import BulkEntryForm from "@/components/BulkEntryForm";
 import { evalWeightExpression, hasMathOperators } from "@/utils/evalWeightExpression";
 import { usePersistedState } from "@/hooks/usePersistedState";
+import { isSpecialCommodity, SPECIAL_SOURCE_COMMODITY } from "@/constants/specialCommodity";
 
 const SalesEntryPage = () => {
   const [bulkMode, setBulkMode] = useState(false);
   const [lastSubmit, setLastSubmit] = useState<{ key: string; time: number } | null>(null);
   const { hasPermission } = useAuth();
   const { symbol } = useCurrency();
-  const { salesEntries: entries, addSalesEntry, removeSalesEntry, refresh } = useInventory();
+  const { salesEntries: entries, addSalesEntry, removeSalesEntry, refresh, persistentStock } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
   const { commodities } = useCommodities();
   const [customerName, setCustomerName] = usePersistedState("sales_customerName", "");
@@ -46,11 +47,17 @@ const SalesEntryPage = () => {
   };
 
   const selectedCommodity = commodities.find((c) => c.name === commodity);
-  const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.salesRate || 0);
+  const isSpecial = isSpecialCommodity(commodity);
+  // Special sales must have a manually-typed rate (no default sales rate).
+  const defaultSalesRate = isSpecial ? 0 : (selectedCommodity?.salesRate || 0);
+  const rate = rateOverride ? parseFloat(rateOverride) : defaultSalesRate;
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = rate > 0 ? actualWeight * rate : undefined;
   const exchFee = parseFloat(exchangeFee) || 0;
   const totalAmount = useMemo(() => entries.reduce((s, e) => s + (e.amount || 0), 0), [entries]);
+  // For "Special" the physical stock comes from Heavy.
+  const stockSourceCommodity = isSpecial ? SPECIAL_SOURCE_COMMODITY : commodity;
+  const availableStock = stockSourceCommodity ? (persistentStock[stockSourceCommodity] || 0) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,8 +141,15 @@ const SalesEntryPage = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Rate ({symbol}/kg)</Label>
-                  <Input type="number" value={rateOverride} onChange={(e) => setRateOverride(e.target.value)} placeholder={`${selectedCommodity?.salesRate || "Auto"}`} disabled={!hasPermission("update_rates")} className="h-12" />
+                  <Label>Rate ({symbol}/kg) {isSpecial && <span className="text-xs text-amber-500">— type manually</span>}</Label>
+                  <Input
+                    type="number"
+                    value={rateOverride}
+                    onChange={(e) => setRateOverride(e.target.value)}
+                    placeholder={isSpecial ? "Enter sale price" : `${selectedCommodity?.salesRate || "Auto"}`}
+                    disabled={!isSpecial && !hasPermission("update_rates")}
+                    className="h-12"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Calculated</Label>
@@ -143,6 +157,14 @@ const SalesEntryPage = () => {
                     <span>Wt: <strong>{actualWeight}</strong>kg</span>
                     <span>Amt: {amount !== undefined ? <strong className="text-primary">{symbol}{amount.toLocaleString()}</strong> : <span className="text-muted-foreground">Pending</span>}</span>
                   </div>
+                  {commodity && (
+                    <p className="text-xs text-muted-foreground">
+                      {isSpecial ? `Deducts from ${SPECIAL_SOURCE_COMMODITY} stock: ` : "Available: "}
+                      <strong className={availableStock < actualWeight ? "text-destructive" : "text-foreground"}>
+                        {availableStock.toLocaleString()}kg
+                      </strong>
+                    </p>
+                  )}
                 </div>
 
                 {/* Exchange Section */}
