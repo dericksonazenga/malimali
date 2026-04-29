@@ -24,7 +24,16 @@ interface Company {
   name: string;
   is_active: boolean;
   created_at: string;
+  deactivated_at: string | null;
 }
+
+const BILLING_CYCLE_DAYS = 30;
+const computeNextBilling = (createdAt: string): Date => {
+  const created = new Date(createdAt);
+  const diffMs = Date.now() - created.getTime();
+  const cycles = Math.floor(diffMs / (BILLING_CYCLE_DAYS * 86400_000)) + 1;
+  return new Date(created.getTime() + cycles * BILLING_CYCLE_DAYS * 86400_000);
+};
 
 const SystemAdminPage = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -83,9 +92,13 @@ const SystemAdminPage = () => {
   };
 
   const toggleActive = async (company: Company) => {
+    const nextActive = !company.is_active;
     const { error } = await supabase
       .from("companies")
-      .update({ is_active: !company.is_active })
+      .update({
+        is_active: nextActive,
+        deactivated_at: nextActive ? null : new Date().toISOString(),
+      })
       .eq("id", company.id);
     if (error) {
       toast.error("Failed to update");
