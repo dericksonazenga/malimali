@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -7,38 +7,63 @@ import { toast } from "sonner";
 import { useCustomRoles } from "@/hooks/useCustomRoles";
 import { getCompanyId } from "@/utils/getCompanyId";
 
-const ALL_PERMISSIONS = [
-  { key: "view_dashboard", label: "View Dashboard" },
-  { key: "view_data_entry", label: "View Data Entry (Read-Only)" },
-  { key: "data_entry", label: "Data Entry (Add/Edit)" },
-  { key: "view_debts", label: "View Debts (Read-Only)" },
-  { key: "view_messages", label: "View Messages" },
-  { key: "view_my_info", label: "View My Info" },
-  { key: "view_settings", label: "View Settings (Read-Only)" },
-  { key: "update_rates", label: "Update Rates" },
-  { key: "edit_records", label: "Edit Records" },
-  { key: "delete_entries", label: "Delete All Entries" },
-  { key: "delete_agent_vip_entries", label: "Delete Agent & VIP Entries" },
-  { key: "delete_sales_entries", label: "Delete Sales Entries" },
-  { key: "delete_expenses", label: "Delete Expenses" },
-  { key: "delete_debts", label: "Delete Debts" },
-  { key: "delete_rates", label: "Delete Rate History" },
-  { key: "view_reports", label: "View Reports (Legacy)" },
-  { key: "view_financial_report", label: "View Financial Report" },
-  { key: "manage_workers", label: "Manage Workers" },
-  { key: "manage_expenses", label: "Manage Expenses" },
-  { key: "manage_inventory", label: "Manage Inventory" },
-  { key: "adjust_stock", label: "Adjust Stock" },
-  { key: "manage_debts", label: "Manage Debts (Add Only)" },
-  { key: "pay_debts", label: "Pay Debts" },
-  { key: "edit_debts", label: "Edit Debts" },
-  { key: "view_savings", label: "View Savings (Read-Only)" },
-  { key: "manage_savings", label: "Manage Savings (Deposit Only)" },
-  { key: "edit_savings", label: "Edit/Withdraw Savings" },
-  { key: "delete_savings", label: "Delete Savings" },
-  { key: "delete_history", label: "Delete History Records" },
-  { key: "end_of_day", label: "End of Day" },
+// Grouped by section. Keys MUST match what AuthContext / ProtectedRoute check across the app.
+const PERMISSION_GROUPS: { section: string; perms: { key: string; label: string }[] }[] = [
+  {
+    section: "Pages (View Access)",
+    perms: [
+      { key: "view_dashboard", label: "Dashboard" },
+      { key: "view_data_entry", label: "Data Entry" },
+      { key: "view_debts", label: "Debts" },
+      { key: "view_savings", label: "Savings" },
+      { key: "view_messages", label: "Messages" },
+      { key: "view_my_info", label: "My Info" },
+      { key: "view_settings", label: "Settings" },
+      { key: "view_financial_report", label: "Financial Report" },
+    ],
+  },
+  {
+    section: "Data Entry & Records",
+    perms: [
+      { key: "data_entry", label: "Add Entries" },
+      { key: "edit_records", label: "Edit Entries" },
+      { key: "update_rates", label: "Update Rates" },
+      { key: "end_of_day", label: "End of Day" },
+    ],
+  },
+  {
+    section: "Debts & Savings",
+    perms: [
+      { key: "manage_debts", label: "Add Debts" },
+      { key: "pay_debts", label: "Pay Debts" },
+      { key: "edit_debts", label: "Edit Debts" },
+      { key: "manage_savings", label: "Deposit Savings" },
+      { key: "edit_savings", label: "Edit / Withdraw Savings" },
+    ],
+  },
+  {
+    section: "Operations",
+    perms: [
+      { key: "manage_workers", label: "Manage Workers" },
+      { key: "manage_expenses", label: "Manage Expenses" },
+      { key: "manage_inventory", label: "Manage Inventory" },
+      { key: "adjust_stock", label: "Adjust Stock" },
+    ],
+  },
+  {
+    section: "Delete Permissions",
+    perms: [
+      { key: "delete_entries", label: "Delete Any Entry" },
+      { key: "delete_expenses", label: "Delete Expenses" },
+      { key: "delete_debts", label: "Delete Debts" },
+      { key: "delete_savings", label: "Delete Savings" },
+      { key: "delete_rates", label: "Delete Rate History" },
+      { key: "delete_history", label: "Delete History Records" },
+    ],
+  },
 ];
+
+const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) => g.perms);
 
 const PermissionsManager = () => {
   const { allRoles, loading: rolesLoading } = useCustomRoles();
@@ -178,20 +203,32 @@ const PermissionsManager = () => {
             </tr>
           </thead>
           <tbody>
-            {ALL_PERMISSIONS.map((perm) => (
-              <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                <td className="py-3 pr-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
-                {allRoles.map((role) => (
-                  <td key={role.role_key} className="text-center py-3 px-2">
-                    <Switch
-                      checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
-                      onCheckedChange={() => toggle(role.role_key, perm.key)}
-                      disabled={role.role_key === "admin"}
-                      className="mx-auto"
-                    />
+            {PERMISSION_GROUPS.map((group) => (
+              <React.Fragment key={group.section}>
+                <tr key={`section-${group.section}`} className="bg-muted/40">
+                  <td
+                    colSpan={1 + allRoles.length}
+                    className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
+                  >
+                    {group.section}
                   </td>
+                </tr>
+                {group.perms.map((perm) => (
+                  <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 pr-4 pl-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
+                    {allRoles.map((role) => (
+                      <td key={role.role_key} className="text-center py-3 px-2">
+                        <Switch
+                          checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
+                          onCheckedChange={() => toggle(role.role_key, perm.key)}
+                          disabled={role.role_key === "admin"}
+                          className="mx-auto"
+                        />
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
+              </React.Fragment>
             ))}
             <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
               <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
