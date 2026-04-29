@@ -290,7 +290,7 @@ const AnalyticsCharts = ({
         </CardContent>
       </Card>
 
-      {/* Stock Distribution Pie */}
+      {/* Stock Distribution — vertical bars, largest → smallest, vertical names */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Stock Distribution</CardTitle>
@@ -299,28 +299,30 @@ const AnalyticsCharts = ({
           {stockPieData.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-10">No stock</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(380, 280 + stockPieData.length * 16)}>
-              <PieChart margin={{ top: 50, right: 140, bottom: 50, left: 140 }}>
-                <Pie
-                  data={stockPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={75}
-                  innerRadius={0}
-                  paddingAngle={1}
-                  minAngle={4}
-                  startAngle={90}
-                  endAngle={-270}
-                  isAnimationActive={false}
-                  label={renderStockLabel}
-                  labelLine={false}
-                >
+            <ResponsiveContainer width="100%" height={Math.max(360, 220 + stockPieData.length * 8)}>
+              <BarChart
+                data={stockPieData}
+                margin={{ top: 20, right: 20, bottom: 110, left: 10 }}
+                barCategoryGap="20%"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  interval={0}
+                  angle={-90}
+                  textAnchor="end"
+                  height={110}
+                  tick={{ fill: "hsl(var(--foreground))", fontSize: 11 }}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  label={{ value: "Weight (kg)", angle: -90, position: "insideLeft", fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                />
+                <Tooltip content={<WeightTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.3)" }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
                   {stockPieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                </Pie>
-                <Tooltip content={<WeightTooltip />} />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>
