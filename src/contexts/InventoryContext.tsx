@@ -202,8 +202,11 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, [fetchToday, fetchPersistentStock, refreshEodCutoff, matchesView]);
 
   const addAgentEntry = useCallback(async (entry: AgentEntry) => {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    // Optimistic insert — appears instantly; realtime echo will replace by real id.
+    setAgentEntries((prev) => [{ ...entry, id: tempId }, ...prev]);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-    const { error } = await supabase.from("agent_entries").insert({
+    const { data, error } = await supabase.from("agent_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
       gross_weight: entry.grossWeight,
@@ -213,13 +216,22 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       amount: entry.amount,
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
-    });
-    if (error) console.error("Failed to add agent entry:", error);
+    }).select().single();
+    if (error) {
+      console.error("Failed to add agent entry:", error);
+      setAgentEntries((prev) => prev.filter((e) => e.id !== tempId));
+      return;
+    }
+    if (data) {
+      setAgentEntries((prev) => prev.map((e) => (e.id === tempId ? mapAgent(data) : e)));
+    }
   }, []);
 
   const addVipEntry = useCallback(async (entry: VipEntry) => {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    setVipEntries((prev) => [{ ...entry, id: tempId }, ...prev]);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-    const { error } = await supabase.from("vip_entries").insert({
+    const { data, error } = await supabase.from("vip_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
       gross_weight: entry.grossWeight,
@@ -229,13 +241,22 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       amount: entry.amount,
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
-    });
-    if (error) console.error("Failed to add vip entry:", error);
+    }).select().single();
+    if (error) {
+      console.error("Failed to add vip entry:", error);
+      setVipEntries((prev) => prev.filter((e) => e.id !== tempId));
+      return;
+    }
+    if (data) {
+      setVipEntries((prev) => prev.map((e) => (e.id === tempId ? mapVip(data) : e)));
+    }
   }, []);
 
   const addSalesEntry = useCallback(async (entry: SalesEntry) => {
+    const tempId = `temp-${crypto.randomUUID()}`;
+    setSalesEntries((prev) => [{ ...entry, id: tempId }, ...prev]);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
-    const { error } = await supabase.from("sales_entries").insert({
+    const { data, error } = await supabase.from("sales_entries").insert({
       customer_name: entry.customerName,
       commodity: entry.commodity,
       gross_weight: entry.grossWeight,
@@ -249,8 +270,15 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       exchange_fee: entry.exchangeFee || 0,
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
-    });
-    if (error) console.error("Failed to add sales entry:", error);
+    }).select().single();
+    if (error) {
+      console.error("Failed to add sales entry:", error);
+      setSalesEntries((prev) => prev.filter((e) => e.id !== tempId));
+      return;
+    }
+    if (data) {
+      setSalesEntries((prev) => prev.map((e) => (e.id === tempId ? mapSales(data) : e)));
+    }
   }, []);
 
   const removeAgentEntry = useCallback(async (id: string) => {
