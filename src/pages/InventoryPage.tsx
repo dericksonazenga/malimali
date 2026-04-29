@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
+import { namesEqual, normalizeName } from "@/utils/nameMatch";
 
 interface AdjustmentLog {
   id: string;
@@ -77,14 +78,21 @@ const InventoryPage = () => {
     toast.success("Adjustment log deleted");
   };
 
-  const commodityStock = useMemo(() => commodities.map((c) => {
-    const dailyIn = agentEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0)
-      + vipEntries.filter((e) => e.commodity === c.name).reduce((s, e) => s + e.actualWeight, 0);
-    const dailyOut = salesEntries.filter((e) => e.commodity === c.name && !e.isExchange).reduce((s, e) => s + e.weight, 0);
-    const persistent = persistentStock[c.name] || 0;
-    const current = persistent + dailyIn - dailyOut;
-    return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
-  }), [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
+  const commodityStock = useMemo(() => {
+    // Build case-insensitive persistent stock map so "heavy"/"Heavy"/"HEAVY" all match.
+    const stockMap: Record<string, number> = {};
+    Object.entries(persistentStock || {}).forEach(([k, v]) => {
+      stockMap[normalizeName(k)] = (stockMap[normalizeName(k)] || 0) + Number(v || 0);
+    });
+    return commodities.map((c) => {
+      const dailyIn = agentEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0)
+        + vipEntries.filter((e) => namesEqual(e.commodity, c.name)).reduce((s, e) => s + e.actualWeight, 0);
+      const dailyOut = salesEntries.filter((e) => namesEqual(e.commodity, c.name) && !e.isExchange).reduce((s, e) => s + e.weight, 0);
+      const persistent = stockMap[normalizeName(c.name)] || 0;
+      const current = persistent + dailyIn - dailyOut;
+      return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
+    });
+  }, [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
 
   const totalDailyIn = commodityStock.reduce((s, c) => s + c.stockIn, 0);
   const totalDailyOut = commodityStock.reduce((s, c) => s + c.stockOut, 0);

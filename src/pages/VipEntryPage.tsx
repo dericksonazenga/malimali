@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { namesEqual } from "@/utils/nameMatch";
 import { VipEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ const VipEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
+  const selectedCommodity = mockCommodities.find((c) => namesEqual(c.name, commodity));
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.vipRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = actualWeight * rate;

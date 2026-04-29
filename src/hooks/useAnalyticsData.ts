@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { isSpecialCommodity, SPECIAL_SOURCE_COMMODITY } from "@/constants/specialCommodity";
+import { normalizeName } from "@/utils/nameMatch";
 import {
   startOfDay, endOfDay, subDays, startOfWeek, endOfWeek,
   startOfMonth, endOfMonth, startOfYear, endOfYear, subWeeks, subMonths, subYears
@@ -169,11 +170,20 @@ export function useAnalyticsData(range: DateRangeValue) {
 
     const totalPurchases = agentTotal + vipTotal;
 
+    // Case-insensitive commodity bucketing: group by lowercased key, keep first-seen
+    // casing as the display label so "Heavy", "heavy", "HEAVY" roll into one bucket.
+    const displayName: Record<string, string> = {};
+    const keyOf = (raw: string) => {
+      const k = normalizeName(raw);
+      if (k && !displayName[k]) displayName[k] = raw;
+      return k;
+    };
+
     // Build average buying price per commodity
     const buyAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
-    const ensureBuy = (c: string) => { if (!buyAgg[c]) buyAgg[c] = { totalWeight: 0, totalAmount: 0 }; };
-    agentRows.forEach((e: any) => { ensureBuy(e.commodity); buyAgg[e.commodity].totalWeight += Number(e.actual_weight); buyAgg[e.commodity].totalAmount += Number(e.amount); });
-    vipRows.forEach((e: any) => { ensureBuy(e.commodity); buyAgg[e.commodity].totalWeight += Number(e.actual_weight); buyAgg[e.commodity].totalAmount += Number(e.amount); });
+    const ensureBuy = (k: string) => { if (!buyAgg[k]) buyAgg[k] = { totalWeight: 0, totalAmount: 0 }; };
+    agentRows.forEach((e: any) => { const k = keyOf(e.commodity); ensureBuy(k); buyAgg[k].totalWeight += Number(e.actual_weight); buyAgg[k].totalAmount += Number(e.amount); });
+    vipRows.forEach((e: any) => { const k = keyOf(e.commodity); ensureBuy(k); buyAgg[k].totalWeight += Number(e.actual_weight); buyAgg[k].totalAmount += Number(e.amount); });
     const avgBuyRateMap: Record<string, number> = {};
     Object.entries(buyAgg).forEach(([c, v]) => { avgBuyRateMap[c] = v.totalWeight > 0 ? v.totalAmount / v.totalWeight : 0; });
 
@@ -188,26 +198,30 @@ export function useAnalyticsData(range: DateRangeValue) {
       } else {
         // "Special" sales draw cost basis from Heavy's weighted-avg buy rate.
         const costCommodity = isSpecialCommodity(commodity) ? SPECIAL_SOURCE_COMMODITY : commodity;
-        const buyRate = avgBuyRateMap[costCommodity] || 0;
+        const buyRate = avgBuyRateMap[normalizeName(costCommodity)] || 0;
         grossProfit += (saleRate - buyRate) * saleWeight;
       }
     });
 
     const netProfit = grossProfit - expenseTotal;
 
-    // Commodity breakdown
+    // Commodity breakdown (case-insensitive)
     const cb: Record<string, { bought: number; sold: number; net: number }> = {};
-    const ensure = (c: string) => { if (!cb[c]) cb[c] = { bought: 0, sold: 0, net: 0 }; };
-    agentRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
-    vipRows.forEach((e: any) => { ensure(e.commodity); cb[e.commodity].bought += Number(e.actual_weight); });
+    const ensure = (k: string) => { if (!cb[k]) cb[k] = { bought: 0, sold: 0, net: 0 }; };
+    agentRows.forEach((e: any) => { const k = keyOf(e.commodity); ensure(k); cb[k].bought += Number(e.actual_weight); });
+    vipRows.forEach((e: any) => { const k = keyOf(e.commodity); ensure(k); cb[k].bought += Number(e.actual_weight); });
     salesRows.forEach((e: any) => {
       if (e.commodity) {
         const stockCommodity = isSpecialCommodity(e.commodity) ? SPECIAL_SOURCE_COMMODITY : e.commodity;
-        ensure(stockCommodity);
-        cb[stockCommodity].sold += Number(e.weight);
+        const k = keyOf(stockCommodity);
+        ensure(k);
+        cb[k].sold += Number(e.weight);
       }
     });
-    Object.keys(cb).forEach(c => { cb[c].net = cb[c].bought - cb[c].sold; });
+    Object.keys(cb).forEach(k => { cb[k].net = cb[k].bought - cb[k].sold; });
+    // Re-key cb by display name for downstream consumers expecting commodity-name keys
+    const cbDisplay: Record<string, { bought: number; sold: number; net: number }> = {};
+    Object.entries(cb).forEach(([k, v]) => { cbDisplay[displayName[k] || k] = v; });
 
     // Daily profit trend
     const dailyMap: Record<string, { sales: number; purchases: number; expenses: number }> = {};
@@ -220,24 +234,25 @@ export function useAnalyticsData(range: DateRangeValue) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, v]) => ({ date, sales: v.sales, purchases: v.purchases, expenses: v.expenses, profit: v.sales - v.purchases - v.expenses }));
 
-    // Per-commodity profit breakdown
+    // Per-commodity profit breakdown (case-insensitive)
     const sellAgg: Record<string, { totalWeight: number; totalAmount: number }> = {};
-    const ensureSA = (c: string) => { if (!sellAgg[c]) sellAgg[c] = { totalWeight: 0, totalAmount: 0 }; };
+    const ensureSA = (k: string) => { if (!sellAgg[k]) sellAgg[k] = { totalWeight: 0, totalAmount: 0 }; };
     salesRows.forEach((e: any) => {
       if (!e.is_exchange && e.commodity && Number(e.weight || 0) > 0) {
-        ensureSA(e.commodity);
-        sellAgg[e.commodity].totalWeight += Number(e.weight);
-        sellAgg[e.commodity].totalAmount += Number(e.amount || 0);
+        const k = keyOf(e.commodity);
+        ensureSA(k);
+        sellAgg[k].totalWeight += Number(e.weight);
+        sellAgg[k].totalAmount += Number(e.amount || 0);
       }
     });
     const allCommodities = new Set([...Object.keys(avgBuyRateMap), ...Object.keys(sellAgg)]);
-    const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(commodity => {
-      const sa = sellAgg[commodity] || { totalWeight: 0, totalAmount: 0 };
-      const avgBuyRate = avgBuyRateMap[commodity] || 0;
+    const commodityProfitBreakdown: CommodityProfit[] = Array.from(allCommodities).map(k => {
+      const sa = sellAgg[k] || { totalWeight: 0, totalAmount: 0 };
+      const avgBuyRate = avgBuyRateMap[k] || 0;
       const avgSellRate = sa.totalWeight > 0 ? sa.totalAmount / sa.totalWeight : 0;
       const marginPerKg = avgSellRate - avgBuyRate;
       const totalProfit = sa.totalWeight > 0 ? marginPerKg * sa.totalWeight : 0;
-      return { commodity, avgBuyRate, avgSellRate, marginPerKg, totalWeightSold: sa.totalWeight, totalProfit };
+      return { commodity: displayName[k] || k, avgBuyRate, avgSellRate, marginPerKg, totalWeightSold: sa.totalWeight, totalProfit };
     }).sort((a, b) => b.totalProfit - a.totalProfit);
 
     setData({
@@ -249,7 +264,7 @@ export function useAnalyticsData(range: DateRangeValue) {
       salaryTotal, salaryPaid, salaryBalance,
       debtTotal, debtPaid, debtBalance,
       creditorTotal, creditorPaid, creditorBalance,
-      totalPurchases, grossProfit, netProfit, commodityBreakdown: cb,
+      totalPurchases, grossProfit, netProfit, commodityBreakdown: cbDisplay,
       dailyProfitTrend, commodityProfitBreakdown,
     });
     setLoading(false);

@@ -3,6 +3,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import { SalesEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCommodities } from "@/contexts/CommodityContext";
+import { namesEqual } from "@/utils/nameMatch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,7 +47,7 @@ const SalesEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  const selectedCommodity = commodities.find((c) => c.name === commodity);
+  const selectedCommodity = commodities.find((c) => namesEqual(c.name, commodity));
   const isSpecial = isSpecialCommodity(commodity);
   // Special sales must have a manually-typed rate (no default sales rate).
   const defaultSalesRate = isSpecial ? 0 : (selectedCommodity?.salesRate || 0);
