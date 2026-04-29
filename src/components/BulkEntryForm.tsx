@@ -76,7 +76,7 @@ const BulkEntryForm = ({ type, title, storageKeyPrefix, onSubmitEntries }: BulkE
   const getRateForCommodity = (commodityName: string) => {
     const override = rateOverrides[commodityName];
     if (override && parseFloat(override)) return parseFloat(override);
-    const c = commodities.find(c => c.name === commodityName);
+    const c = commodities.find(c => namesEqual(c.name, commodityName));
     if (!c) return 0;
     if (type === "agent") return c.agentRate;
     if (type === "vip") return c.vipRate;
