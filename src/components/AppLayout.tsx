@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Banknote, BarChart3, MessageSquare, ClipboardList, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History,
+  ShieldCheck, Banknote, BarChart3, MessageSquare, ClipboardList, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -133,7 +133,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       >
         <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-3 gap-2.5")}>
           {companyLogo ? (
-            <img src={companyLogo} alt="" className="w-7 h-7 rounded-md object-contain shrink-0" />
+            <img src={companyLogo} alt="" width={28} height={28} loading="eager" decoding="async" className="w-7 h-7 rounded-md object-contain shrink-0" />
           ) : (
             <Recycle className="w-6 h-6 text-primary shrink-0" />
           )}
@@ -197,7 +197,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs shrink-0 overflow-hidden">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <img src={avatarUrl} alt="" width={32} height={32} loading="lazy" decoding="async" className="w-8 h-8 rounded-full object-cover" />
                 ) : (
                   user?.name?.charAt(0)
                 )}
@@ -265,6 +265,20 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                  .split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "))}
           </h1>
           <div className="ml-auto shrink-0 flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                const btn = document.activeElement as HTMLElement | null;
+                btn?.blur?.();
+                window.location.reload();
+              }}
+              title="Refresh"
+              aria-label="Refresh page"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
             <ThemeToggle />
           </div>
         </header>
