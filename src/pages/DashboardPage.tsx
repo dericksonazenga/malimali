@@ -124,6 +124,39 @@ const DashboardPage = () => {
 
   const canViewDebts = hasPermission("view_debts") || user?.role === "admin";
 
+  const totalPurchaseTickets = agentEntries.length + vipEntries.length;
+
+  if (!companyActive) {
+    return (
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 max-w-6xl">
+        <div className="flex items-center gap-3">
+          {companyLogo && (
+            <img src={companyLogo} alt={companyName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain bg-accent border border-border p-1 shrink-0" />
+          )}
+          <div>
+            <h1 className="text-lg sm:text-2xl font-bold">Welcome to {companyName || "Dashboard"}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Limited view — account deactivated</p>
+          </div>
+        </div>
+
+        <DeactivationBanner />
+
+        <Card className="max-w-md">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-primary/10">
+              <Receipt className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Total Purchase Tickets</p>
+              <p className="text-3xl font-bold font-mono">{totalPurchaseTickets.toLocaleString()}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Detailed breakdown hidden while deactivated.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 max-w-6xl">
       <div className="flex items-center gap-3">
