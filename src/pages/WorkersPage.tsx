@@ -184,9 +184,18 @@ const WorkersPage = () => {
                         </TableCell>
                         <TableCell>
                           {editingId === w.id ? (
-                            <Input className="h-8 w-28" value={editValues.role} onChange={(e) => setEditValues(v => ({ ...v, role: e.target.value }))} />
+                            <Select value={editValues.role} onValueChange={(v) => setEditValues(vals => ({ ...vals, role: v }))}>
+                              <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {allRoles
+                                  .filter(r => r.role_key !== "admin" || isSuperAdmin(user?.id))
+                                  .map(r => (
+                                    <SelectItem key={r.role_key} value={r.role_key}>{r.display_name}</SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{w.role}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{getRoleLabel(w.role)}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground space-y-0.5">
