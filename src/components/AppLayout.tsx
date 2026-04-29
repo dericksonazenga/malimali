@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
+import PullToRefresh from "@/components/PullToRefresh";
 
 interface NavItem {
   label: string;
