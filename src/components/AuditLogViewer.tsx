@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { History, ChevronDown, ChevronUp, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import ClearHistoryButton from "@/components/ClearHistoryButton";
 
 interface AuditEntry {
   id: string;
@@ -120,9 +121,12 @@ const AuditLogViewer = ({ tableName, title, limit = 50 }: AuditLogViewerProps) =
             <History className="w-5 h-5 text-primary" />
             {title || "Record History"} ({entries.length})
           </span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </Button>
+          <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <ClearHistoryButton tableName={tableName} onCleared={fetchLog} />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpanded(!expanded)}>
+              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+          </span>
         </CardTitle>
       </CardHeader>
       {expanded && (

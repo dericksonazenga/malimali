@@ -34,6 +34,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MyInfoPage from "@/pages/MyInfoPage";
 import DebtManagementPage from "@/pages/DebtManagementPage";
 import SavingsPage from "@/pages/SavingsPage";
+import DeletionHistoryPage from "@/pages/DeletionHistoryPage";
 const queryClient = new QueryClient();
 
 const AuthenticatedApp = () => {
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
         <Route path="/savings" element={<SavingsPage />} />
         <Route path="/my-info" element={<MyInfoPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/deletion-history" element={<ProtectedRoute permission="__admin_only__"><DeletionHistoryPage /></ProtectedRoute>} />
         {isSystemAdmin && <Route path="/system-admin" element={<SystemAdminGate><SystemAdminPage /></SystemAdminGate>} />}
         <Route path="*" element={<NotFound />} />
       </Routes>

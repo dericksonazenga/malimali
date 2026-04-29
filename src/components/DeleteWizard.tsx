@@ -118,6 +118,40 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
       if (config.commodityField && commodity.trim()) q = q.ilike(config.commodityField, `%${commodity.trim()}%`);
       const { error } = await q;
       if (error) { toast.error(error.message); return; }
+
+      // Log deletion event for company audit trail
+      try {
+        const userRes = await supabase.auth.getUser();
+        const userId = userRes.data.user?.id ?? null;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", userId)
+          .maybeSingle();
+        await supabase.from("audit_log").insert({
+          table_name: "audit_log",
+          record_id: crypto.randomUUID(),
+          action: "bulk_delete",
+          old_data: null,
+          new_data: {
+            target_table: config.key,
+            target_label: config.label,
+            row_count: totalCount,
+            filters: {
+              from_date: fromDate ? format(fromDate, "yyyy-MM-dd") : null,
+              to_date: toDate ? format(toDate, "yyyy-MM-dd") : null,
+              customer: customer.trim() || null,
+              commodity: commodity.trim() || null,
+            },
+          } as any,
+          changed_by: userId,
+          changed_by_name: profile?.display_name || userRes.data.user?.email || "unknown",
+          company_id: companyId,
+        });
+      } catch (logErr) {
+        console.warn("Failed to log deletion event", logErr);
+      }
+
       toast.success(`Deleted ${totalCount} row${totalCount === 1 ? "" : "s"} from ${config.label}`);
       reset();
     } finally { setDeleting(false); }
