@@ -149,6 +149,8 @@ const DeleteWizard = ({ requiredPin, excludeTables }: DeleteWizardProps = {}) =>
               to_date: toDate ? format(toDate, "yyyy-MM-dd") : null,
               customer: customer.trim() || null,
               commodity: commodity.trim() || null,
+              status: config.hasPaymentStatus && statusFilter !== "any" ? statusFilter : null,
+              sort: sortOrder,
             },
           } as any,
           changed_by: userId,
