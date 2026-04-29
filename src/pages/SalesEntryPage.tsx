@@ -3,7 +3,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import { SalesEntry } from "@/types";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCommodities } from "@/contexts/CommodityContext";
-import { namesEqual } from "@/utils/nameMatch";
+import { namesEqual, nameIncludes } from "@/utils/nameMatch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
