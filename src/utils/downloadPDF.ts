@@ -86,13 +86,15 @@ export async function downloadPDF({ title, filename, headers, rows, summary }: P
 
   doc.setTextColor(0);
 
+  const stripTrailingDot = (s: string) => s.replace(/\.0+$/, "").replace(/\.$/, "");
   const formatCell = (c: string | number | null | undefined): string => {
     if (c == null) return "";
     if (typeof c === "number" && Number.isFinite(c)) {
-      // 1,000 / 1,000,000 — preserve up to 2 decimals where present
-      return c.toLocaleString("en-US", { maximumFractionDigits: 2 });
+      // 1,000 / 1,000,000 — preserve up to 2 decimals where present, never a trailing dot
+      return stripTrailingDot(c.toLocaleString("en-US", { maximumFractionDigits: 2 }));
     }
-    return String(c);
+    // For string values that may already be pre-formatted (e.g. "1,000."), drop the trailing dot
+    return stripTrailingDot(String(c));
   };
 
   autoTable(doc, {
