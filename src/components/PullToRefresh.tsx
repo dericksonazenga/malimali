@@ -28,9 +28,6 @@ const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
       const el = scrollRef.current;
       if (!el) return;
 
-      // Only enable on touch (mobile/tablet)
-      const isTouch = window.matchMedia("(pointer: coarse)").matches;
-      if (!isTouch) return;
 
       const handleTouchStart = (e: TouchEvent) => {
         if (refreshing) return;
