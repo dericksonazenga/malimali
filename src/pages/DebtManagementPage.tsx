@@ -88,7 +88,8 @@ const DebtManagementPage = () => {
   const { symbol } = useCurrency();
   const { user, hasPermission } = useAuth();
   const { commodities } = useCommodities();
-  const canEdit = user?.role === "admin" || hasPermission("manage_debts") || hasPermission("edit_records");
+  const canAdd = user?.role === "admin" || hasPermission("manage_debts");
+  const canEdit = canAdd || hasPermission("edit_records");
   const canPay = user?.role === "admin" || hasPermission("pay_debts");
   const canEditDebt = user?.role === "admin" || hasPermission("edit_debts") || hasPermission("edit_records");
   const canDelete = user?.role === "admin" || hasPermission("delete_debts");
