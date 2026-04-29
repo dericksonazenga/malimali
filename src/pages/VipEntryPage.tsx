@@ -41,7 +41,7 @@ const VipEntryPage = () => {
     toast.success("Entries refreshed");
   };
 
-  const selectedCommodity = mockCommodities.find((c) => c.name === commodity);
+  const selectedCommodity = mockCommodities.find((c) => namesEqual(c.name, commodity));
   const rate = rateOverride ? parseFloat(rateOverride) : (selectedCommodity?.vipRate || 0);
   const actualWeight = evalWeightExpression(weightExpr);
   const amount = actualWeight * rate;
