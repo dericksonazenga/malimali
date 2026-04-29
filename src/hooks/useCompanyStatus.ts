@@ -92,6 +92,20 @@ export function useCompanyStatus(): CompanyStatus {
       });
     }, 60_000);
 
+    // Safety polling: realtime can be missed if the websocket was sleeping
+    // (mobile background, lost wifi, PWA suspended). Poll every 15s so a
+    // deactivation/reactivation flips the UI within seconds even when the
+    // websocket misfires. The query is tiny (single row, 3 columns).
+    const poll = setInterval(() => { fetchStatus(); }, 15_000);
+
+    // Re-check immediately when the device wakes up / tab regains focus.
+    const onWake = () => {
+      if (document.visibilityState === "visible") fetchStatus();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", fetchStatus);
+    window.addEventListener("online", fetchStatus);
+
     const channel = supabase
       .channel(`company-status-${companyId}-${crypto.randomUUID()}`)
       .on(
@@ -99,11 +113,19 @@ export function useCompanyStatus(): CompanyStatus {
         { event: "UPDATE", schema: "public", table: "companies", filter: `id=eq.${companyId}` },
         (payload: any) => apply(payload.new),
       )
-      .subscribe();
+      .subscribe((status) => {
+        // When the channel (re)connects, fetch fresh state in case we missed
+        // an UPDATE while disconnected.
+        if (status === "SUBSCRIBED") fetchStatus();
+      });
 
     return () => {
       cancelled = true;
       clearInterval(tick);
+      clearInterval(poll);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", fetchStatus);
+      window.removeEventListener("online", fetchStatus);
       supabase.removeChannel(channel);
     };
   }, [companyId, isSystemAdmin]);
