@@ -204,7 +204,7 @@ const DashboardPage = () => {
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base"><Settings className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Current Rates</CardTitle>
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-            <div className="max-h-[260px] sm:max-h-[320px] overflow-y-auto pr-1 -mr-1 space-y-2 sm:space-y-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            <div className="touch-scroll-y max-h-[260px] sm:max-h-[320px] overflow-y-auto pr-1 -mr-1 space-y-2 sm:space-y-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
               {commodities.map((c) => (
                 <div key={c.id} className="flex items-center justify-between py-1.5 sm:py-2 border-b border-border last:border-0">
                   <span className="font-medium text-xs sm:text-sm">{c.name}</span>

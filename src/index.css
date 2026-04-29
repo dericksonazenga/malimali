@@ -262,6 +262,22 @@
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
+
+  .overflow-y-auto {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overflow-y-scroll {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .touch-scroll-y {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
 
 /* Upgrade default shadcn Card look across the app */

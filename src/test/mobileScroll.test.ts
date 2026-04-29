@@ -79,6 +79,22 @@ describe("scroll containers inside page sections", () => {
     expect(appScrollBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
   });
 
+  it("generic vertical overflow containers contain touch overscroll on mobile", () => {
+    const overflowAutoBlock = findRuleBlock(".overflow-y-auto") ?? "";
+    const overflowScrollBlock = findRuleBlock(".overflow-y-scroll") ?? "";
+    expect(overflowAutoBlock).toMatch(/overscroll-behavior-y\s*:\s*contain/);
+    expect(overflowAutoBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
+    expect(overflowScrollBlock).toMatch(/overscroll-behavior-y\s*:\s*contain/);
+    expect(overflowScrollBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
+  });
+
+  it("touch-scroll-y keeps vertical swipes scrolling instead of refreshing", () => {
+    const touchScrollBlock = findRuleBlock(".touch-scroll-y") ?? "";
+    expect(touchScrollBlock).toMatch(/overscroll-behavior-y\s*:\s*contain/);
+    expect(touchScrollBlock).toMatch(/-webkit-overflow-scrolling\s*:\s*touch/);
+    expect(touchScrollBlock).toMatch(/touch-action\s*:\s*pan-y/);
+  });
+
   it("inner scroll containers do not declare touch-action:none", () => {
     // A `touch-action: none` rule on a generic `.overflow-y-auto` style
     // would prevent the user from scrolling cards, lists, and tables on
