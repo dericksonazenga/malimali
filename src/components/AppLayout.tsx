@@ -138,7 +138,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             <Recycle className="w-6 h-6 text-primary shrink-0" />
           )}
           {!sidebarCollapsed && (
-            <span className="text-sm font-bold text-sidebar-foreground truncate">
+            <span className="text-base lg:text-lg font-extrabold tracking-tight text-sidebar-foreground truncate drop-shadow-sm">
               {companyName || "ScrapFlow"}
             </span>
           )}
