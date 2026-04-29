@@ -251,6 +251,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Login error:", error.message);
       return false;
     }
+    // Clear the manual-logout flag so the session is treated as active.
+    localStorage.removeItem(MANUAL_LOGOUT_KEY);
     return true;
   };
 
@@ -264,10 +266,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       },
     });
     if (error) return error.message;
+    localStorage.removeItem(MANUAL_LOGOUT_KEY);
     return null;
   };
 
   const logout = async () => {
+    // Mark BEFORE calling signOut so the auth listener knows this is intentional.
+    localStorage.setItem(MANUAL_LOGOUT_KEY, "1");
     await supabase.auth.signOut();
     setUser(null);
     setCompanyId(null);
