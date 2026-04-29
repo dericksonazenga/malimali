@@ -29,7 +29,48 @@
   </head>
 
   <body>
+    <style>
+      html, body { background: #0b0f17; color: #d8dde6; margin: 0; }
+      #app-splash {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 16px;
+        background: #0b0f17; z-index: 9999;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        transition: opacity .25s ease;
+      }
+      #app-splash.hide { opacity: 0; pointer-events: none; }
+      #app-splash .ring {
+        width: 38px; height: 38px; border-radius: 50%;
+        border: 3px solid rgba(245, 158, 11, 0.25);
+        border-top-color: #f59e0b;
+        animation: spin .8s linear infinite;
+      }
+      #app-splash .label { font-size: 13px; color: #8b92a0; letter-spacing: .04em; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
     <div id="root"></div>
+    <div id="app-splash" aria-hidden="true">
+      <div class="ring"></div>
+      <div class="label">Loading Malimali…</div>
+    </div>
+    <script>
+      // Hide splash as soon as React mounts the first content node.
+      (function () {
+        var root = document.getElementById('root');
+        var splash = document.getElementById('app-splash');
+        if (!root || !splash) return;
+        var hide = function () {
+          splash.classList.add('hide');
+          setTimeout(function () { splash.remove(); }, 300);
+        };
+        var obs = new MutationObserver(function () {
+          if (root.childElementCount > 0) { obs.disconnect(); hide(); }
+        });
+        obs.observe(root, { childList: true });
+        // Safety timeout
+        setTimeout(function () { obs.disconnect(); hide(); }, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
