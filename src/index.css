@@ -161,6 +161,21 @@
     overscroll-behavior-y: contain;
   }
 
+  /* Prevent pull-to-refresh from being triggered by inner scroll containers
+     on mobile/tablet. The page itself (html/body) still allows the native
+     pull-to-refresh when the user pulls from the very top of the screen. */
+  @media (hover: none) and (pointer: coarse), (max-width: 1024px) {
+    [class*="overflow-y-auto"],
+    [class*="overflow-auto"],
+    [class*="overflow-y-scroll"],
+    [class*="overflow-scroll"],
+    [data-radix-scroll-area-viewport],
+    .scrollbar-thin {
+      overscroll-behavior-y: contain;
+      overscroll-behavior-x: contain;
+    }
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
     font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
