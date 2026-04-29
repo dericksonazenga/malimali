@@ -43,6 +43,9 @@ const SystemAdminPage = () => {
   const [newCompanyName, setNewCompanyName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newContactAddress, setNewContactAddress] = useState("");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
@@ -51,10 +54,18 @@ const SystemAdminPage = () => {
 
   const fetchCompanies = async () => {
     const { data } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
-    if (data) setCompanies(data);
+    if (data) setCompanies(data as Company[]);
   };
 
-  useEffect(() => { fetchCompanies(); }, []);
+  useEffect(() => {
+    fetchCompanies();
+    // Live-update whenever any company row changes (e.g. a tenant updates contact details).
+    const channel = supabase
+      .channel(`sysadmin-companies-${crypto.randomUUID()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "companies" }, () => fetchCompanies())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const handleCreateCompany = async () => {
     if (!newCompanyName.trim() || !adminName.trim() || !adminEmail.trim()) {
