@@ -131,14 +131,21 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-4 gap-2.5")}>
+        <div className={cn("flex items-center h-14 border-b border-sidebar-border shrink-0", sidebarCollapsed ? "px-2 justify-center" : "px-3 gap-2.5")}>
           {companyLogo ? (
             <img src={companyLogo} alt="" className="w-7 h-7 rounded-md object-contain shrink-0" />
           ) : (
             <Recycle className="w-6 h-6 text-primary shrink-0" />
           )}
           {!sidebarCollapsed && (
-            <span className="text-base lg:text-lg font-extrabold tracking-tight text-sidebar-foreground truncate drop-shadow-sm">
+            <div className="flex-1 min-w-0 hidden lg:flex items-center px-2.5 py-1.5 rounded-md bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/30 shadow-sm">
+              <span className="text-sm lg:text-base font-extrabold uppercase tracking-wide text-primary truncate">
+                {companyName || "ScrapFlow"}
+              </span>
+            </div>
+          )}
+          {!sidebarCollapsed && (
+            <span className="lg:hidden text-base font-extrabold tracking-tight text-sidebar-foreground truncate">
               {companyName || "ScrapFlow"}
             </span>
           )}
