@@ -15,6 +15,7 @@ import { logAuditEvent } from "@/utils/auditLog";
 import AuditLogViewer from "@/components/AuditLogViewer";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
+import { nameIncludes } from "@/utils/nameMatch";
 
 const ExpensesPage = () => {
   const { symbol } = useCurrency();
