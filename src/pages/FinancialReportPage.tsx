@@ -271,9 +271,9 @@ const FinancialReportPage = () => {
   const revenueCSV = () => [["Category", "Amount"], [`${labels.sales} Revenue`, String(salesTotal)], [`${labels.agent} Purchases`, String(-agentTotal)], [`${labels.vip} Purchases`, String(-vipTotal)], ["Total Expenses", String(-expenseTotal)], ["Salary Paid", String(-salaryPaid)], ["Gross Profit", String(grossProfit)], ["Net Profit", String(netProfit)]];
 
   const StatRow = ({ label, value, negative, bold }: { label: string; value: number; negative?: boolean; bold?: boolean }) => (
-    <div className={`flex justify-between py-1.5 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
-      <span className="text-sm">{label}</span>
-      <span className={`font-mono text-sm ${negative ? "text-destructive" : value >= 0 ? "text-success" : "text-destructive"}`}>
+    <div className={`flex justify-between items-center gap-2 py-1.5 min-w-0 ${bold ? "font-bold border-t border-border pt-2" : ""}`}>
+      <span className="text-sm truncate min-w-0">{label}</span>
+      <span className={`font-mono text-sm whitespace-nowrap shrink-0 ${negative ? "text-destructive" : value >= 0 ? "text-success" : "text-destructive"}`}>
         {negative ? "-" : ""}{symbol}{fmt(Math.abs(value))}
       </span>
     </div>
@@ -332,9 +332,15 @@ const FinancialReportPage = () => {
           { label: "Creditors Balance", value: creditorBalance, icon: <HandCoins className="w-4 h-4 text-amber-500" />, color: creditorBalance > 0 ? "text-amber-500" : "text-success" },
           { label: "Net Profit", value: netProfit, icon: <BarChart3 className="w-4 h-4 text-primary" />, color: netProfit >= 0 ? "text-success" : "text-destructive" },
         ].map(kpi => (
-          <div key={kpi.label} className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-center gap-1.5 mb-1">{kpi.icon}<span className="text-xs text-muted-foreground">{kpi.label}</span></div>
-            <p className={`text-lg sm:text-xl font-bold font-mono ${kpi.color} break-all`}>{symbol}{fmt(kpi.value)}</p>
+          <div key={kpi.label} className="rounded-lg border border-border bg-card p-4 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-1.5 mb-1 min-w-0">{kpi.icon}<span className="text-xs text-muted-foreground truncate">{kpi.label}</span></div>
+            <p
+              className={`font-bold font-mono ${kpi.color} whitespace-nowrap overflow-hidden text-ellipsis`}
+              style={{ fontSize: `clamp(0.75rem, ${Math.min(1.25, 9 / Math.max(8, (symbol + fmt(kpi.value)).length))}rem, 1.25rem)` }}
+              title={`${symbol}${fmt(kpi.value)}`}
+            >
+              {symbol}{fmt(kpi.value)}
+            </p>
           </div>
         ))}
       </div>
