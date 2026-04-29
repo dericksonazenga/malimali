@@ -16,6 +16,9 @@ interface InventoryContextType {
   removeAgentEntry: (id: string) => Promise<void>;
   removeVipEntry: (id: string) => Promise<void>;
   removeSalesEntry: (id: string) => Promise<void>;
+  updateAgentEntry: (id: string, patch: Partial<AgentEntry>) => Promise<void>;
+  updateVipEntry: (id: string, patch: Partial<VipEntry>) => Promise<void>;
+  updateSalesEntry: (id: string, patch: Partial<SalesEntry>) => Promise<void>;
   clearAll: () => void;
   refresh: () => Promise<void>;
 }
