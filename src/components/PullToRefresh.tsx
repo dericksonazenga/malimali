@@ -15,6 +15,23 @@ interface PullToRefreshProps {
  * Works inside a scroll container (browser native PTR is disabled globally).
  * Default behavior reloads the page if onRefresh isn't provided.
  */
+function isInsideInnerScroller(target: HTMLElement, container: HTMLElement): boolean {
+  let node: HTMLElement | null = target;
+  while (node && node !== container) {
+    // Skip elements with explicit overflow scroll/auto and real scrollable content,
+    // or any element opting out via [data-no-ptr]
+    if (node.hasAttribute("data-no-ptr")) return true;
+    const style = window.getComputedStyle(node);
+    const oy = style.overflowY;
+    const ox = style.overflowX;
+    const scrollableY = (oy === "auto" || oy === "scroll") && node.scrollHeight > node.clientHeight + 1;
+    const scrollableX = (ox === "auto" || ox === "scroll") && node.scrollWidth > node.clientWidth + 1;
+    if (scrollableY || scrollableX) return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
 const PullToRefresh = forwardRef<HTMLElement, PullToRefreshProps>(
   ({ children, className, onRefresh, threshold, maxPull = 260 }, ref) => {
     const innerRef = useRef<HTMLElement>(null);
