@@ -181,6 +181,20 @@ const SystemAdminPage = () => {
               <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@company.com" />
             </div>
           </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><Phone className="w-3 h-3" /> Contact Phone (optional)</Label>
+              <Input type="tel" inputMode="tel" value={newContactPhone} onChange={(e) => setNewContactPhone(e.target.value)} placeholder="+255 712 345 678" />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><Mail className="w-3 h-3" /> Contact Email (optional)</Label>
+              <Input type="email" value={newContactEmail} onChange={(e) => setNewContactEmail(e.target.value)} placeholder="info@company.com" />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5"><MapPin className="w-3 h-3" /> Address (optional)</Label>
+              <Input value={newContactAddress} onChange={(e) => setNewContactAddress(e.target.value)} placeholder="Street, City" />
+            </div>
+          </div>
           <Button onClick={handleCreateCompany} disabled={loading} className="gap-2">
             <UserPlus className="w-4 h-4" /> Create Company & Pre-register Admin
           </Button>
