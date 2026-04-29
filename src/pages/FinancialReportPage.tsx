@@ -199,60 +199,168 @@ const FinancialReportPage = () => {
       return { f: parts.join(""), v: weights.reduce((s, x) => s + x, 0) };
     };
 
-    // Flat sheet matching screenshot:
-    // Row 1: title (e.g., SALES)
-    // Row 2: KG | VALUE | (empty) | AMOUNT
-    // Rows 3..N: per-entry data (one row per entry; weight may be a sum formula if multiple raw weights)
-    // Last row: TOTAL with SUM formulas for KG and AMOUNT columns.
+    // ===== Pivot sheet (Agent / VIP): customers down rows, commodities across (Weight | Amount per commodity) =====
     const buildPivotSheet = (entries: any[], sheetName: string, title: string, weightKey = "actual_weight") => {
-      const aoa: any[][] = [];
-      aoa.push([title.split(" - ")[0], "", "", ""]); // e.g., "SALES"
-      aoa.push(["KG", "VALUE", "", "AMOUNT"]);
+      type CellAgg = { weights: number[]; rate: number; ratesUniform: boolean; amount: number };
+      const customerMap = new Map<string, Map<string, CellAgg>>();
+      const commoditySet = new Set<string>();
 
-      // One row per entry, preserving order
+      entries.forEach((e: any) => {
+        const customer = (e.customer_name || "").trim() || "No Name";
+        const commodity = e.commodity || "";
+        if (!commodity) return;
+        commoditySet.add(commodity);
+        const w = Number(e[weightKey] || 0);
+        const r = Number(e.rate || 0);
+        const a = Number(e.amount || 0);
+        if (!customerMap.has(customer)) customerMap.set(customer, new Map());
+        const cmap = customerMap.get(customer)!;
+        if (!cmap.has(commodity)) cmap.set(commodity, { weights: [], rate: r, ratesUniform: true, amount: 0 });
+        const agg = cmap.get(commodity)!;
+        agg.weights.push(w);
+        agg.amount += a;
+        if (agg.weights.length > 1 && Math.abs(agg.rate - r) > 0.0001) agg.ratesUniform = false;
+      });
+
+      const commodities = Array.from(commoditySet).sort();
+      const customers = Array.from(customerMap.keys()).sort();
+
+      const headerTop: any[] = ["CUSTOMER NAME"];
+      const headerSub: any[] = [""];
+      commodities.forEach(c => { headerTop.push(c, ""); headerSub.push("WEIGHT", "AMOUNT"); });
+
+      const totalCols = 1 + commodities.length * 2;
+      const aoa: any[][] = [];
+      aoa.push([title, ...Array(totalCols - 1).fill("")]);
+      aoa.push(headerTop);
+      aoa.push(headerSub);
+
+      customers.forEach(cust => {
+        const row: any[] = [cust];
+        const cmap = customerMap.get(cust)!;
+        commodities.forEach(c => {
+          const agg = cmap.get(c);
+          row.push(agg ? agg.weights.reduce((s, x) => s + x, 0) : 0, agg ? agg.amount : 0);
+        });
+        aoa.push(row);
+      });
+
+      const totalRow: any[] = ["TOTAL"];
+      commodities.forEach(c => {
+        let totW = 0, totA = 0;
+        customers.forEach(cust => {
+          const agg = customerMap.get(cust)!.get(c);
+          if (agg) { totW += agg.weights.reduce((s, x) => s + x, 0); totA += agg.amount; }
+        });
+        totalRow.push(totW, totA);
+      });
+      aoa.push(totalRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      const dataStartRow = 3;
+      customers.forEach((cust, ci) => {
+        const rowIdx = dataStartRow + ci;
+        const cmap = customerMap.get(cust)!;
+        commodities.forEach((c, cmi) => {
+          const wCol = 1 + cmi * 2;
+          const aCol = wCol + 1;
+          const wAddr = XLSX.utils.encode_cell({ r: rowIdx, c: wCol });
+          const aAddr = XLSX.utils.encode_cell({ r: rowIdx, c: aCol });
+          const agg = cmap.get(c);
+          if (!agg) { ws[wAddr] = { t: "n", v: 0 }; ws[aAddr] = { t: "n", v: 0 }; return; }
+          const wf = weightFormula(agg.weights);
+          if (typeof wf === "number") {
+            ws[wAddr] = { t: "n", v: wf };
+          } else if (agg.weights.length > 1) {
+            ws[wAddr] = { t: "n", f: wf.f, v: wf.v };
+          } else {
+            ws[wAddr] = { t: "n", v: wf.v };
+          }
+          if (agg.ratesUniform && agg.rate > 0) {
+            ws[aAddr] = { t: "n", f: `${wAddr}*${agg.rate}`, v: agg.amount };
+          } else {
+            ws[aAddr] = { t: "n", v: agg.amount };
+          }
+        });
+      });
+
+      const totalRowIdx = dataStartRow + customers.length;
+      commodities.forEach((_, cmi) => {
+        const wCol = 1 + cmi * 2;
+        const aCol = wCol + 1;
+        if (customers.length > 0) {
+          const wColLetter = XLSX.utils.encode_col(wCol);
+          const aColLetter = XLSX.utils.encode_col(aCol);
+          const firstRow = dataStartRow + 1;
+          const lastRow = dataStartRow + customers.length;
+          const wAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: wCol });
+          const aAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: aCol });
+          ws[wAddr] = { t: "n", f: `SUM(${wColLetter}${firstRow}:${wColLetter}${lastRow})`, v: ws[wAddr]?.v || 0 };
+          ws[aAddr] = { t: "n", f: `SUM(${aColLetter}${firstRow}:${aColLetter}${lastRow})`, v: ws[aAddr]?.v || 0 };
+        }
+      });
+
+      ws["!merges"] = ws["!merges"] || [];
+      ws["!merges"].push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
+      commodities.forEach((_, cmi) => {
+        const wCol = 1 + cmi * 2;
+        ws["!merges"]!.push({ s: { r: 1, c: wCol }, e: { r: 1, c: wCol + 1 } });
+      });
+      ws["!merges"].push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
+
+      ws["!cols"] = [{ wch: 22 }, ...commodities.flatMap(() => [{ wch: 8 }, { wch: 10 }])];
+      ws["!rows"] = [{ hpt: 22 }, { hpt: 20 }, { hpt: 18 }, ...customers.map(() => ({ hpt: 16 })), { hpt: 20 }];
+
+      const border = {
+        top: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+      };
+      const styleCell = (addr: string, opts: { bold?: boolean; fill?: string; color?: string; size?: number; align?: string } = {}) => {
+        if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+        ws[addr].s = ws[addr].s || {};
+        ws[addr].s.font = { bold: opts.bold ?? false, sz: opts.size ?? 11, color: { rgb: opts.color ?? "000000" } };
+        ws[addr].s.alignment = { horizontal: opts.align ?? "center", vertical: "center", wrapText: true };
+        if (opts.fill) ws[addr].s.fill = { patternType: "solid", fgColor: { rgb: opts.fill } };
+        ws[addr].s.border = border;
+      };
+
+      for (let c = 0; c < totalCols; c++) styleCell(XLSX.utils.encode_cell({ r: 0, c }), { bold: true, size: 14, fill: "FFFFFF" });
+      for (let c = 0; c < totalCols; c++) styleCell(XLSX.utils.encode_cell({ r: 1, c }), { bold: true, size: 12, color: c === 0 ? "000000" : "C00000", fill: "FFFFFF" });
+      for (let c = 1; c < totalCols; c++) styleCell(XLSX.utils.encode_cell({ r: 2, c }), { bold: true, size: 10, color: "C00000", fill: "FFFFFF" });
+      styleCell("A2", { bold: true, size: 12, color: "C00000", fill: "FFFFFF" });
+
+      customers.forEach((_, ci) => {
+        const r = dataStartRow + ci;
+        styleCell(XLSX.utils.encode_cell({ r, c: 0 }), { bold: false, size: 11, align: "left" });
+        for (let c = 1; c < totalCols; c++) styleCell(XLSX.utils.encode_cell({ r, c }), { bold: false, size: 11, align: "right" });
+      });
+      styleCell(XLSX.utils.encode_cell({ r: totalRowIdx, c: 0 }), { bold: true, size: 12, align: "left" });
+      for (let c = 1; c < totalCols; c++) styleCell(XLSX.utils.encode_cell({ r: totalRowIdx, c }), { bold: true, size: 11, align: "right" });
+
+      ws["!freeze"] = { xSplit: 1, ySplit: 3 };
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    };
+
+    // ===== Flat Sales sheet matching screenshot: KG | VALUE | (gap) | AMOUNT, with TOTAL row =====
+    const buildSalesSheet = (entries: any[], sheetName: string, title: string, weightKey = "weight") => {
       const rows = entries.map((e: any) => ({
         weight: Number(e[weightKey] || 0),
         rate: Number(e.rate || 0),
         amount: Number(e.amount || 0),
       }));
 
+      const aoa: any[][] = [];
+      aoa.push([title.split(" - ")[0], "", "", ""]);
+      aoa.push(["KG", "VALUE", "", "AMOUNT"]);
       rows.forEach(r => aoa.push([r.weight, r.rate, "", r.amount]));
-
-      const totalRowIdx = 2 + rows.length; // 0-indexed
       aoa.push(["TOTAL", "", "", ""]);
+      const sumsRowIdx = 2 + rows.length + 1;
+      aoa.push(["", "", "", ""]);
 
       const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-      // TOTAL formulas (only if there is data)
-      if (rows.length > 0) {
-        const firstRow = 3; // Excel 1-indexed: data starts row 3
-        const lastRow = 2 + rows.length;
-        const kgAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: 0 });
-        const valAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: 1 });
-        const amtAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: 3 });
-        const kgSum = rows.reduce((s, r) => s + r.weight, 0);
-        const valSum = rows.reduce((s, r) => s + r.rate, 0);
-        const amtSum = rows.reduce((s, r) => s + r.amount, 0);
-        ws[kgAddr] = { t: "n", f: `SUM(A${firstRow}:A${lastRow})`, v: kgSum };
-        ws[valAddr] = { t: "n", f: `SUM(B${firstRow}:B${lastRow})`, v: valSum };
-        ws[amtAddr] = { t: "n", f: `SUM(D${firstRow}:D${lastRow})`, v: amtSum };
-        // Re-set the TOTAL label cell (overwritten by aoa as text already, ensure preserved)
-        const labelAddr = XLSX.utils.encode_cell({ r: totalRowIdx, c: 0 - 0 });
-        // Note: TOTAL label sits in column A but we just put SUM there. Move label logic:
-      }
-
-      // The screenshot puts "TOTAL" as its own row label ABOVE the sums row.
-      // Restructure: insert a "TOTAL" label row, then sums row below.
-      // Simpler: keep TOTAL label in col A of its own row, and put sums in the row below.
-      // To match exactly, we rebuild with a label row + sums row.
-      const aoa2: any[][] = [];
-      aoa2.push([title.split(" - ")[0], "", "", ""]);
-      aoa2.push(["KG", "VALUE", "", "AMOUNT"]);
-      rows.forEach(r => aoa2.push([r.weight, r.rate, "", r.amount]));
-      aoa2.push(["TOTAL", "", "", ""]);
-      const sumsRowIdx = 2 + rows.length + 1; // 0-indexed row of sums (right after TOTAL label)
-      aoa2.push(["", "", "", ""]);
-      const ws2 = XLSX.utils.aoa_to_sheet(aoa2);
 
       if (rows.length > 0) {
         const firstRow = 3;
@@ -263,15 +371,13 @@ const FinancialReportPage = () => {
         const kgAddr = XLSX.utils.encode_cell({ r: sumsRowIdx, c: 0 });
         const valAddr = XLSX.utils.encode_cell({ r: sumsRowIdx, c: 1 });
         const amtAddr = XLSX.utils.encode_cell({ r: sumsRowIdx, c: 3 });
-        ws2[kgAddr] = { t: "n", f: `SUM(A${firstRow}:A${lastRow})`, v: kgSum };
-        ws2[valAddr] = { t: "n", f: `SUM(B${firstRow}:B${lastRow})`, v: valSum };
-        ws2[amtAddr] = { t: "n", f: `SUM(D${firstRow}:D${lastRow})`, v: amtSum };
+        ws[kgAddr] = { t: "n", f: `SUM(A${firstRow}:A${lastRow})`, v: kgSum };
+        ws[valAddr] = { t: "n", f: `SUM(B${firstRow}:B${lastRow})`, v: valSum };
+        ws[amtAddr] = { t: "n", f: `SUM(D${firstRow}:D${lastRow})`, v: amtSum };
       }
 
-      // Column widths matching screenshot proportions
-      ws2["!cols"] = [{ wch: 10 }, { wch: 10 }, { wch: 4 }, { wch: 12 }];
+      ws["!cols"] = [{ wch: 10 }, { wch: 10 }, { wch: 4 }, { wch: 12 }];
 
-      // Styling
       const border = {
         top: { style: "thin", color: { rgb: "000000" } },
         bottom: { style: "thin", color: { rgb: "000000" } },
@@ -279,35 +385,30 @@ const FinancialReportPage = () => {
         right: { style: "thin", color: { rgb: "000000" } },
       };
       const styleCell = (addr: string, opts: { bold?: boolean; size?: number; align?: string; border?: boolean } = {}) => {
-        if (!ws2[addr]) ws2[addr] = { t: "s", v: "" };
-        ws2[addr].s = {
+        if (!ws[addr]) ws[addr] = { t: "s", v: "" };
+        ws[addr].s = {
           font: { bold: opts.bold ?? false, sz: opts.size ?? 11, color: { rgb: "000000" } },
           alignment: { horizontal: opts.align ?? "right", vertical: "center" },
           ...(opts.border !== false ? { border } : {}),
         };
       };
 
-      // Title row (A1)
       styleCell("A1", { bold: true, size: 14, align: "left", border: false });
-      // Header row
       ["A2", "B2", "D2"].forEach(a => styleCell(a, { bold: true, size: 11, align: "left" }));
-      // Data rows
       rows.forEach((_, i) => {
         const r = 2 + i;
         ["A", "B", "D"].forEach(col => styleCell(`${col}${r + 1}`, { align: "right" }));
       });
-      // TOTAL label
       styleCell(`A${2 + rows.length + 1}`, { bold: true, size: 11, align: "left", border: false });
-      // Sums row
       const sumsExcelRow = sumsRowIdx + 1;
       ["A", "B", "D"].forEach(col => styleCell(`${col}${sumsExcelRow}`, { bold: true, size: 11, align: "right" }));
 
-      XLSX.utils.book_append_sheet(wb, ws2, sheetName);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     };
 
     buildPivotSheet(agentEntries, `${labels.agent} Entries`, `${labels.agent.toUpperCase()} - ${rangeLabel}`, "actual_weight");
     buildPivotSheet(vipEntries, `${labels.vip} Entries`, `${labels.vip.toUpperCase()} - ${rangeLabel}`, "actual_weight");
-    buildPivotSheet(salesEntries, `${labels.sales} Entries`, `${labels.sales.toUpperCase()} - ${rangeLabel}`, "weight");
+    buildSalesSheet(salesEntries, `${labels.sales} Entries`, `${labels.sales.toUpperCase()} - ${rangeLabel}`, "weight");
 
     // Expenses sheet
     const expRows2 = expenses.map((e: any) => [e.category, e.amount, e.notes || "", e.date]);
