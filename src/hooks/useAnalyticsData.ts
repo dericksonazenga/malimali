@@ -186,7 +186,9 @@ export function useAnalyticsData(range: DateRangeValue) {
       if (e.is_exchange || !commodity || saleWeight === 0) {
         grossProfit += saleAmount;
       } else {
-        const buyRate = avgBuyRateMap[commodity] || 0;
+        // "Special" sales draw cost basis from Heavy's weighted-avg buy rate.
+        const costCommodity = isSpecialCommodity(commodity) ? SPECIAL_SOURCE_COMMODITY : commodity;
+        const buyRate = avgBuyRateMap[costCommodity] || 0;
         grossProfit += (saleRate - buyRate) * saleWeight;
       }
     });
