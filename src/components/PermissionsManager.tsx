@@ -203,20 +203,32 @@ const PermissionsManager = () => {
             </tr>
           </thead>
           <tbody>
-            {ALL_PERMISSIONS.map((perm) => (
-              <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                <td className="py-3 pr-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
-                {allRoles.map((role) => (
-                  <td key={role.role_key} className="text-center py-3 px-2">
-                    <Switch
-                      checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
-                      onCheckedChange={() => toggle(role.role_key, perm.key)}
-                      disabled={role.role_key === "admin"}
-                      className="mx-auto"
-                    />
+            {PERMISSION_GROUPS.map((group) => (
+              <>
+                <tr key={`section-${group.section}`} className="bg-muted/40">
+                  <td
+                    colSpan={1 + allRoles.length}
+                    className="py-2 px-3 text-xs font-bold uppercase tracking-wider text-primary sticky left-0 bg-muted/40 z-10"
+                  >
+                    {group.section}
                   </td>
+                </tr>
+                {group.perms.map((perm) => (
+                  <tr key={perm.key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 pr-4 pl-4 font-medium sticky left-0 bg-card z-10 min-w-[160px]">{perm.label}</td>
+                    {allRoles.map((role) => (
+                      <td key={role.role_key} className="text-center py-3 px-2">
+                        <Switch
+                          checked={role.role_key === "admin" ? true : (matrix[role.role_key]?.has(perm.key) ?? false)}
+                          onCheckedChange={() => toggle(role.role_key, perm.key)}
+                          disabled={role.role_key === "admin"}
+                          className="mx-auto"
+                        />
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
+              </>
             ))}
             <tr className="border-t-2 border-border sticky bottom-0 bg-card z-10">
               <td className="py-3 pr-4 font-semibold text-muted-foreground sticky left-0 bg-card z-20">Select All</td>
