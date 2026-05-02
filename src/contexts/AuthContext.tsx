@@ -126,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setCompanyId(data.company_id);
+    setCompanyIdCache(data.company_id);
     const u = await buildUser(data);
     u.email = supabaseUser.email || "";
     setUser(u);
