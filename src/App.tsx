@@ -174,6 +174,7 @@ const App = () => (
                   <Suspense fallback={<RouteFallback />}>
                     <Routes>
                       <Route path="/landing" element={<LandingPage />} />
+                      <Route path="/download" element={<LandingPage />} />
                       <Route path="/reset-password" element={<ResetPasswordPage />} />
                       <Route path="/attendance-scan" element={<AttendanceScanPage />} />
                       <Route path="/*" element={<AuthenticatedApp />} />
