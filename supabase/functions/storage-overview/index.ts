@@ -39,12 +39,14 @@ Deno.serve(async (req) => {
       return json({ error: "missing auth" }, 401);
     }
 
-    // Resolve caller -> company_id
+    // Resolve caller -> company_id via JWT claims (no session needed)
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
-    const { data: userData, error: uErr } = await userClient.auth.getUser();
-    if (uErr || !userData.user) return json({ error: "unauthenticated" }, 401);
+    const token = auth.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) return json({ error: "unauthenticated" }, 401);
+    const userId = claimsData.claims.sub;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const { data: profile } = await admin
