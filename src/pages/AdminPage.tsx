@@ -42,7 +42,7 @@ const roleBadge = (r: string) =>
   "bg-muted text-muted-foreground";
 
 const AdminPage = () => {
-  const { user } = useAuth();
+  const { user, companyId: authCompanyId } = useAuth();
   const { symbol } = useCurrency();
   const { allRoles, getRoleLabel } = useCustomRoles();
   const isAdmin = user?.role === "admin";
