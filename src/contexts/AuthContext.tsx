@@ -87,6 +87,9 @@ const buildUser = async (profile: { user_id: string; display_name: string; role:
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const cached = getCachedUser();
+  // Seed the company ID cache immediately from localStorage so page-level
+  // fetches via getCompanyId() never hit "Not authenticated" on boot.
+  if (cached?.companyId) setCompanyIdCache(cached.companyId);
   const [user, setUser] = useState<User | null>(cached?.user ?? null);
   const [loading, setLoading] = useState(!cached);
   const [companyId, setCompanyId] = useState<string | null>(cached?.companyId ?? null);
