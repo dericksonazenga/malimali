@@ -42,7 +42,7 @@ const roleBadge = (r: string) =>
   "bg-muted text-muted-foreground";
 
 const AdminPage = () => {
-  const { user } = useAuth();
+  const { user, companyId: authCompanyId } = useAuth();
   const { symbol } = useCurrency();
   const { allRoles, getRoleLabel } = useCustomRoles();
   const isAdmin = user?.role === "admin";
@@ -67,27 +67,27 @@ const AdminPage = () => {
   const [editRecruitValues, setEditRecruitValues] = useState<{ name: string; email: string; phone: string; id_number: string }>({ name: "", email: "", phone: "", id_number: "" });
 
   const fetchProfiles = useCallback(async () => {
-    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+    const cid = authCompanyId || await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase
       .from("profiles")
       .select("id, user_id, display_name, role")
-      .eq("company_id", company_id)
+      .eq("company_id", cid)
       .order("created_at", { ascending: true });
     if (error) { console.error("Failed to fetch profiles:", error); return; }
     setProfiles(data || []);
     setLoading(false);
-  }, []);
+  }, [authCompanyId]);
 
   const fetchRecruits = useCallback(async () => {
-    const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+    const cid = authCompanyId || await (await import("@/utils/getCompanyId")).getCompanyId();
     const { data, error } = await supabase
       .from("recruited_workers")
       .select("*")
-      .eq("company_id", company_id)
+      .eq("company_id", cid)
       .order("created_at", { ascending: false });
     if (error) { console.error("Failed to fetch recruits:", error); return; }
     setRecruits((data as RecruitedWorker[]) || []);
-  }, []);
+  }, [authCompanyId]);
 
   useEffect(() => {
     fetchProfiles();
