@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const { data: profile } = await admin
       .from("profiles")
       .select("company_id")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", userId)
       .maybeSingle();
     const companyId = profile?.company_id;
     if (!companyId) return json({ error: "no company" }, 400);
