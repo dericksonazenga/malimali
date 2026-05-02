@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { User, UserRole, Permission } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { setCompanyIdCache } from "@/utils/getCompanyId";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -87,9 +86,6 @@ const buildUser = async (profile: { user_id: string; display_name: string; role:
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const cached = getCachedUser();
-  // Seed the company ID cache immediately from localStorage so page-level
-  // fetches via getCompanyId() never hit "Not authenticated" on boot.
-  if (cached?.companyId) setCompanyIdCache(cached.companyId);
   const [user, setUser] = useState<User | null>(cached?.user ?? null);
   const [loading, setLoading] = useState(!cached);
   const [companyId, setCompanyId] = useState<string | null>(cached?.companyId ?? null);
@@ -129,7 +125,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     setCompanyId(data.company_id);
-    setCompanyIdCache(data.company_id);
     const u = await buildUser(data);
     u.email = supabaseUser.email || "";
     setUser(u);
