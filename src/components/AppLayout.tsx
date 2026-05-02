@@ -52,6 +52,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   const [companyName, setCompanyName] = useState("");
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const mainScrollRef = useRef<HTMLElement>(null);
+  const { canInstall, promptInstall, showIOSHint, dismissIOSHint } = usePWAInstall();
 
   // Fetch user avatar
   useEffect(() => {
