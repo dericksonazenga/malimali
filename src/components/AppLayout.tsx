@@ -5,12 +5,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, Settings2,
   Users, Wallet, Package, LogOut, Menu, X, Recycle, ChevronRight, Cog,
-  ShieldCheck, Banknote, BarChart3, MessageSquare, ClipboardList, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History, RefreshCw,
+  ShieldCheck, Banknote, BarChart3, MessageSquare, ClipboardList, UserCircle, CreditCard, ArrowLeft, PanelLeftClose, PanelLeft, PiggyBank, Building2, History, RefreshCw, Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
 import PullToRefresh from "@/components/PullToRefresh";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
 
 interface NavItem {
   label: string;
