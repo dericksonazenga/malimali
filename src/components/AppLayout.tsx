@@ -267,6 +267,18 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
                  .split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "))}
           </h1>
           <div className="ml-auto shrink-0 flex items-center gap-1">
+            {canInstall && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary animate-pulse hover:animate-none"
+                onClick={promptInstall}
+                title="Install App"
+                aria-label="Install app"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -283,6 +295,22 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
             </Button>
             <ThemeToggle />
           </div>
+
+          {/* iOS install hint banner */}
+          {showIOSHint && (
+            <div className="absolute top-full left-0 right-0 z-50 mx-2 mt-1 rounded-xl border border-primary/30 bg-card p-3 text-sm text-foreground/90 shadow-lg">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <strong className="text-primary">Install on iPhone/iPad:</strong> Tap the{" "}
+                  <span className="font-mono text-xs bg-muted px-1 rounded">Share</span> button in Safari, then{" "}
+                  <span className="font-mono text-xs bg-muted px-1 rounded">Add to Home Screen</span>.
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={dismissIOSHint}>
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </header>
         <PullToRefresh
           ref={mainScrollRef}
