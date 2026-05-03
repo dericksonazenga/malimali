@@ -614,20 +614,34 @@ const SavingsPage = () => {
               </div>
               {/* Mobile */}
               <div className="md:hidden space-y-2">
-                {transactions.map(tx => (
-                  <div key={tx.id} className="border border-border rounded-lg p-3 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">{tx.type}</Badge>
-                      <span className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, HH:mm")}</span>
+                {(() => {
+                  const sorted = [...transactions].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                  let running = 0;
+                  const withBalance = sorted.map(tx => {
+                    running += tx.type === "deposit" ? tx.amount : -tx.amount;
+                    return { ...tx, runningBalance: running };
+                  });
+                  withBalance.reverse();
+                  return withBalance.map(tx => (
+                    <div key={tx.id} className="border border-border rounded-lg p-3 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">{tx.type}</Badge>
+                        <span className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, HH:mm")}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className={`text-sm font-medium ${tx.type === "deposit" ? "text-green-600" : "text-destructive"}`}>
+                          {tx.type === "deposit" ? "+" : "-"}{symbol}{tx.amount.toLocaleString()}
+                        </span>
+                        <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Served by: {tx.served_by_name}</span>
+                        <span className="font-mono">Bal: {symbol}{tx.runningBalance.toLocaleString()}</span>
+                      </div>
+                      {tx.notes && <p className="text-xs text-muted-foreground">{tx.notes}</p>}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">{tx.amount.toLocaleString()}</span>
-                      <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Served by: {tx.served_by_name}</p>
-                    {tx.notes && <p className="text-xs text-muted-foreground">{tx.notes}</p>}
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </>
           )}
