@@ -514,7 +514,7 @@ const SavingsPage = () => {
       <Dialog open={showWithdrawDialog} onOpenChange={v => { setShowWithdrawDialog(v); if (!v) { resetForm(); setSelectedAccount(null); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Withdraw from {selectedAccount?.customer_name}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Current balance: <strong>{selectedAccount?.balance.toLocaleString()}</strong></p>
+          <p className="text-sm text-muted-foreground">Current balance: <strong>{symbol}{selectedAccount?.balance.toLocaleString()}</strong></p>
           <div className="space-y-3">
             <div>
               <Label>Amount</Label>
