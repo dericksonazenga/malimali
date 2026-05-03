@@ -226,7 +226,7 @@ const SavingsPage = () => {
       changedByName: user?.name || "Unknown",
     });
 
-    toast.success(`Withdrawn ${withdrawAmount.toLocaleString()} from ${selectedAccount.customer_name}`);
+    toast.success(`Withdrawn ${symbol}${withdrawAmount.toLocaleString()} from ${selectedAccount.customer_name}`);
     resetForm();
     setShowWithdrawDialog(false);
     setSelectedAccount(null);
