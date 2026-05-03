@@ -192,9 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         void import("@/utils/getCompanyId").then((m) => m.clearCompanyIdCache());
       }
       currentUserIdRef.current = session.user.id;
-      setTimeout(() => {
-        void fetchProfile(session.user);
-      }, 0);
+      void fetchProfile(session.user);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
