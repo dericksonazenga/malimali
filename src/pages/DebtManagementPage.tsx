@@ -432,19 +432,19 @@ const DebtManagementPage = () => {
     toast.success("Updated");
   };
 
-  const handlePayment = async () => {
-    if (!payDebt || !payAmount) { toast.error("Enter payment amount"); return; }
-    const amt = parseFloat(payAmount);
-    if (amt <= 0) { toast.error("Invalid amount"); return; }
+  const handlePayment = async (fullPay = false) => {
+    if (!payDebt) { toast.error("No debt selected"); return; }
+    const amt = fullPay ? payDebt.balance : parseFloat(payAmount);
+    if (!amt || amt <= 0) { toast.error("Enter payment amount"); return; }
     if (amt > payDebt.balance) { toast.error("Amount exceeds balance"); return; }
 
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: payErr } = await supabase.from("debt_payments").insert({
       debt_id: payDebt.id,
       amount: amt,
-      notes: payNotes,
+      notes: fullPay ? "Full balance payment" : payNotes,
       paid_by: user?.id,
-      payment_method: payMethod,
+      payment_method: fullPay ? "cash" : payMethod,
       paid_by_name: user?.name || "Unknown",
       paid_to_name: payToName.trim() || payDebt.customer_name,
       company_id,
@@ -460,12 +460,15 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", payDebt.id);
 
-    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: payNotes, method: payMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
+    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: fullPay ? "Full balance payment" : payNotes, method: fullPay ? "cash" : payMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmount(""); setPayNotes(""); setPayMethod("cash"); setPayToName("");
-    toast.success("Payment recorded");
+    toast.success(fullPay ? "Full payment recorded!" : "Payment recorded");
     fetchPayments(payDebt.id);
-    // realtime keeps the list in sync — no manual refetch needed
-    setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
+    if (newBalance <= 0) {
+      setPayDebt(null);
+    } else {
+      setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
+    }
   };
 
   const handleCreditorPayment = async () => {
