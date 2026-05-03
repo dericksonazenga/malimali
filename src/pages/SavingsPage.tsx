@@ -368,7 +368,7 @@ const SavingsPage = () => {
                   </datalist>
                   {customerName && accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase()) && (
                     <p className="text-xs text-primary mt-1">
-                      Existing customer — balance: {accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase())!.balance.toLocaleString()}
+                      Existing customer — balance: {symbol}{accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase())!.balance.toLocaleString()}
                     </p>
                   )}
                 </div>
