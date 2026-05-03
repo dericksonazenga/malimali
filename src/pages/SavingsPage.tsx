@@ -560,7 +560,7 @@ const SavingsPage = () => {
       <Dialog open={showHistoryDialog} onOpenChange={v => { setShowHistoryDialog(v); if (!v) { setSelectedAccount(null); setTransactions([]); } }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Transaction History — {selectedAccount?.customer_name}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground mb-2">Current balance: <strong>{selectedAccount?.balance.toLocaleString()}</strong></p>
+          <p className="text-sm text-muted-foreground mb-2">Current balance: <strong>{symbol}{selectedAccount?.balance.toLocaleString()}</strong></p>
           {transactions.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">No transactions yet</p>
           ) : (
