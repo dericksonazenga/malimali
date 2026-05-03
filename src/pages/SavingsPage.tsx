@@ -303,7 +303,7 @@ const SavingsPage = () => {
             <PiggyBank className="w-8 h-8 text-primary" />
             <div>
               <p className="text-xs text-muted-foreground">Total Savings</p>
-              <p className="text-xl font-bold">{totalSavings.toLocaleString()}</p>
+              <p className="text-xl font-bold">{symbol}{totalSavings.toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
