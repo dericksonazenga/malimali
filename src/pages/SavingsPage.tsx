@@ -342,13 +342,13 @@ const SavingsPage = () => {
             ...filtered.map((a, i) => [
               i + 1,
               a.customer_name,
-              a.balance.toLocaleString(),
+              `${symbol}${a.balance.toLocaleString()}`,
               format(new Date(a.updated_at), "yyyy-MM-dd HH:mm"),
             ]),
-            ["", "TOTAL", totalSavings.toLocaleString(), ""],
+            ["", "TOTAL", `${symbol}${totalSavings.toLocaleString()}`, ""],
           ]}
           summary={[
-            `Total Savings: ${totalSavings.toLocaleString()}`,
+            `Total Savings: ${symbol}${totalSavings.toLocaleString()}`,
             `Active Accounts: ${accounts.length}`,
           ]}
         />
