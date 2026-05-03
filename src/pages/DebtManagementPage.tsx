@@ -740,44 +740,54 @@ const DebtManagementPage = () => {
     </TableRow>
   );
 
-  const renderCreditorCard = (c: Creditor) => (
-    <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
-      <div className="flex justify-between items-start">
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm truncate">{c.customer_name}</p>
-          <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate.toFixed(2)}</p>
+  const renderCreditorCard = (c: Creditor) => {
+    const payPercent = c.total_amount > 0 ? Math.min(100, Math.round((c.paid_amount / c.total_amount) * 100)) : 0;
+    return (
+      <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
+        <div className="flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate">{c.customer_name}</p>
+            <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate.toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground">{format(new Date(c.created_at), "MMM dd, yyyy")}</p>
+          </div>
+          {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
         </div>
-        {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
-      </div>
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</p></div>
-        <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</p></div>
-        <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
-      </div>
-      <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
-      <div className="flex gap-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
-          <Clock className="w-3.5 h-3.5" />
-        </Button>
-        {c.status !== "paid" && canPay && (
-          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</p></div>
+          <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</p></div>
+          <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
+        </div>
+        {c.status !== "paid" && (
+          <div className="space-y-1">
+            <Progress value={payPercent} className="h-1.5" />
+            <p className="text-[10px] text-muted-foreground text-right">{payPercent}% paid</p>
+          </div>
         )}
-        {canEditDebt && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-            setEditCreditor(c);
-            setEditCreditorName(c.customer_name);
-            setEditCreditorCommodity(c.commodity);
-            setEditCreditorKg(String(c.kg));
-            setEditCreditorRate(String(c.rate));
-            setEditCreditorAmount(String(c.total_amount));
-          }}><Edit className="w-3.5 h-3.5" /></Button>
-        )}
-        {canDelete && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-        )}
+        <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
+            <Clock className="w-3.5 h-3.5" />
+          </Button>
+          {c.status !== "paid" && canPay && (
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+          )}
+          {canEditDebt && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+              setEditCreditor(c);
+              setEditCreditorName(c.customer_name);
+              setEditCreditorCommodity(c.commodity);
+              setEditCreditorKg(String(c.kg));
+              setEditCreditorRate(String(c.rate));
+              setEditCreditorAmount(String(c.total_amount));
+            }}><Edit className="w-3.5 h-3.5" /></Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const desktopTableHeaders = (
     <TableHeader>
