@@ -246,13 +246,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.error("Login error:", error.message);
       return false;
     }
     // Clear the manual-logout flag so the session is treated as active.
     localStorage.removeItem(MANUAL_LOGOUT_KEY);
+    // Eagerly hydrate the profile so navigation is instant — don't wait for the
+    // auth state change listener which fires asynchronously.
+    if (data.user) {
+      currentUserIdRef.current = data.user.id;
+      fetchProfile(data.user);
+    }
     return true;
   };
 
