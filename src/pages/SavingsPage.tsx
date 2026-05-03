@@ -573,28 +573,42 @@ const SavingsPage = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Running Balance</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Served By</TableHead>
                       <TableHead>Notes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map(tx => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(tx.created_at), "MMM dd, yyyy HH:mm")}</TableCell>
-                        <TableCell>
-                          <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">
-                            {tx.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">{tx.amount.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{tx.served_by_name}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || "—"}</TableCell>
-                      </TableRow>
-                    ))}
+                    {(() => {
+                      // Compute running balance from oldest to newest, then display newest-first
+                      const sorted = [...transactions].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+                      let running = 0;
+                      const withBalance = sorted.map(tx => {
+                        running += tx.type === "deposit" ? tx.amount : -tx.amount;
+                        return { ...tx, runningBalance: running };
+                      });
+                      withBalance.reverse();
+                      return withBalance.map(tx => (
+                        <TableRow key={tx.id}>
+                          <TableCell className="text-xs whitespace-nowrap">{format(new Date(tx.created_at), "MMM dd, yyyy HH:mm")}</TableCell>
+                          <TableCell>
+                            <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">
+                              {tx.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${tx.type === "deposit" ? "text-green-600" : "text-destructive"}`}>
+                            {tx.type === "deposit" ? "+" : "-"}{symbol}{tx.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">{symbol}{tx.runningBalance.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{tx.served_by_name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || "—"}</TableCell>
+                        </TableRow>
+                      ));
+                    })()}
                   </TableBody>
                 </Table>
               </div>
