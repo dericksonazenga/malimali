@@ -41,6 +41,7 @@ interface SavingsTransaction {
 
 const SavingsPage = () => {
   const { user, hasPermission } = useAuth();
+  const { symbol } = useCurrency();
   const canManage = hasPermission("manage_savings");
   const canActOnAccounts = canManage || hasPermission("edit_savings") || hasPermission("withdraw_savings") || hasPermission("delete_savings") || user?.role === "admin";
   const canEditSavings = hasPermission("edit_savings") || user?.role === "admin";
