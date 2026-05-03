@@ -660,36 +660,46 @@ const DebtManagementPage = () => {
     );
   };
 
-  const renderDebtCard = (d: Debt) => (
-    <div key={d.id} className="border border-border rounded-lg p-3 space-y-2">
-      <div className="flex justify-between items-start">
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-sm truncate">{d.customer_name}</p>
-          <p className="text-xs text-muted-foreground truncate">{d.description}</p>
+  const renderDebtCard = (d: Debt) => {
+    const payPercent = d.total_amount > 0 ? Math.min(100, Math.round((d.paid_amount / d.total_amount) * 100)) : 0;
+    return (
+      <div key={d.id} className="border border-border rounded-lg p-3 space-y-2">
+        <div className="flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate">{d.customer_name}</p>
+            <p className="text-xs text-muted-foreground truncate">{d.description}</p>
+            <p className="text-[10px] text-muted-foreground">{format(new Date(d.created_at), "MMM dd, yyyy")}</p>
+          </div>
+          {getStatusBadge(d.status)}
         </div>
-        {getStatusBadge(d.status)}
-      </div>
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</p></div>
-        <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
-        <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
-      </div>
-      <div className="flex gap-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
-          <Clock className="w-3.5 h-3.5" />
-        </Button>
-        {d.status !== "paid" && canPay && (
-          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</p></div>
+          <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
+          <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
+        </div>
+        {d.status !== "paid" && (
+          <div className="space-y-1">
+            <Progress value={payPercent} className="h-1.5" />
+            <p className="text-[10px] text-muted-foreground text-right">{payPercent}% paid</p>
+          </div>
         )}
-        {canEditDebt && (
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
-        )}
-        {canDelete && (
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-        )}
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
+            <Clock className="w-3.5 h-3.5" />
+          </Button>
+          {d.status !== "paid" && canPay && (
+            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
+          )}
+          {canEditDebt && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderCreditorRow = (c: Creditor) => (
     <TableRow key={c.id}>
