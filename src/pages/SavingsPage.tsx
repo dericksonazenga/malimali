@@ -476,7 +476,7 @@ const SavingsPage = () => {
                     <p className="font-medium">{a.customer_name}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(a.updated_at), "MMM dd, yyyy")}</p>
                   </div>
-                  <p className="font-bold text-lg">{a.balance.toLocaleString()}</p>
+                  <p className="font-bold text-lg">{symbol}{a.balance.toLocaleString()}</p>
                 </div>
                 <div className="flex gap-1">
                   <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => openHistory(a)}>
