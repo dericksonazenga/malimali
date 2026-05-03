@@ -421,7 +421,7 @@ const SavingsPage = () => {
                   <TableRow key={a.id}>
                     <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                     <TableCell className="font-medium">{a.customer_name}</TableCell>
-                    <TableCell className="text-right font-semibold">{a.balance.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-semibold">{symbol}{a.balance.toLocaleString()}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{format(new Date(a.updated_at), "MMM dd, yyyy HH:mm")}</TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-1">
