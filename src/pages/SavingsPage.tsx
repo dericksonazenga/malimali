@@ -182,7 +182,7 @@ const SavingsPage = () => {
       changedByName: user?.name || "Unknown",
     });
 
-    toast.success(`Deposited ${depositAmount.toLocaleString()} for ${name}`);
+    toast.success(`Deposited ${symbol}${depositAmount.toLocaleString()} for ${name}`);
     resetForm();
     setShowDepositDialog(false);
     fetchAccounts();
