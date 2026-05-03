@@ -1143,7 +1143,14 @@ const DebtManagementPage = () => {
             </div>
             <div className="space-y-1"><Label>Paid To</Label><Input value={payToName} onChange={e => setPayToName(e.target.value)} placeholder={payDebt?.customer_name || "Recipient name"} /></div>
             <div className="space-y-1"><Label>Notes</Label><Input value={payNotes} onChange={e => setPayNotes(e.target.value)} placeholder="Optional" /></div>
-            <Button onClick={handlePayment} className="w-full">Record Payment</Button>
+            <div className="flex gap-2">
+              <Button onClick={() => handlePayment(false)} className="flex-1">Record Payment</Button>
+              {payDebt && payDebt.balance > 0 && (
+                <Button variant="outline" onClick={() => handlePayment(true)} className="gap-1" title="Pay full remaining balance">
+                  <CheckCircle2 className="w-4 h-4" /> Pay Full
+                </Button>
+              )}
+            </div>
           </div>
 
           {payments.length > 0 && (
