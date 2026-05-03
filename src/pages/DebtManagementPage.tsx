@@ -11,8 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users, Clock, ArrowDownToLine, ArrowUpFromLine, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Edit, CreditCard, Search, ArrowDownCircle, ArrowUpCircle, Minus, FileSpreadsheet, Users, Clock, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { downloadCSV } from "@/utils/downloadCSV";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -432,19 +431,19 @@ const DebtManagementPage = () => {
     toast.success("Updated");
   };
 
-  const handlePayment = async (fullPay = false) => {
-    if (!payDebt) { toast.error("No debt selected"); return; }
-    const amt = fullPay ? payDebt.balance : parseFloat(payAmount);
-    if (!amt || amt <= 0) { toast.error("Enter payment amount"); return; }
+  const handlePayment = async () => {
+    if (!payDebt || !payAmount) { toast.error("Enter payment amount"); return; }
+    const amt = parseFloat(payAmount);
+    if (amt <= 0) { toast.error("Invalid amount"); return; }
     if (amt > payDebt.balance) { toast.error("Amount exceeds balance"); return; }
 
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error: payErr } = await supabase.from("debt_payments").insert({
       debt_id: payDebt.id,
       amount: amt,
-      notes: fullPay ? "Full balance payment" : payNotes,
+      notes: payNotes,
       paid_by: user?.id,
-      payment_method: fullPay ? "cash" : payMethod,
+      payment_method: payMethod,
       paid_by_name: user?.name || "Unknown",
       paid_to_name: payToName.trim() || payDebt.customer_name,
       company_id,
@@ -460,31 +459,28 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", payDebt.id);
 
-    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: fullPay ? "Full balance payment" : payNotes, method: fullPay ? "cash" : payMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
+    await logAuditEvent({ tableName: "debts", recordId: payDebt.id, action: "payment", newData: { payment_amount: amt, notes: payNotes, method: payMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setPayAmount(""); setPayNotes(""); setPayMethod("cash"); setPayToName("");
-    toast.success(fullPay ? "Full payment recorded!" : "Payment recorded");
+    toast.success("Payment recorded");
     fetchPayments(payDebt.id);
-    if (newBalance <= 0) {
-      setPayDebt(null);
-    } else {
-      setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
-    }
+    // realtime keeps the list in sync — no manual refetch needed
+    setPayDebt({ ...payDebt, paid_amount: newPaid, balance: newBalance });
   };
 
-  const handleCreditorPayment = async (fullPay = false) => {
-    if (!payCreditor) { toast.error("No creditor selected"); return; }
-    const amt = fullPay ? payCreditor.balance : parseFloat(creditorPayAmount);
-    if (!amt || amt <= 0) { toast.error("Enter payment amount"); return; }
+  const handleCreditorPayment = async () => {
+    if (!payCreditor || !creditorPayAmount) { toast.error("Enter payment amount"); return; }
+    const amt = parseFloat(creditorPayAmount);
+    if (amt <= 0) { toast.error("Invalid amount"); return; }
     if (amt > payCreditor.balance) { toast.error("Amount exceeds balance"); return; }
 
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
     const { error } = await supabase.from("creditor_payments").insert({
       creditor_id: payCreditor.id,
       amount: amt,
-      payment_method: fullPay ? "cash" : creditorPayMethod,
+      payment_method: creditorPayMethod,
       paid_by: user?.id,
       paid_by_name: user?.name || "Unknown",
-      notes: fullPay ? "Full balance payment" : creditorPayNotes,
+      notes: creditorPayNotes,
       company_id,
     });
     if (error) { toast.error("Payment failed"); return; }
@@ -498,15 +494,12 @@ const DebtManagementPage = () => {
       updated_at: new Date().toISOString(),
     }).eq("id", payCreditor.id);
 
-    await logAuditEvent({ tableName: "creditors", recordId: payCreditor.id, action: "payment", newData: { payment_amount: amt, method: fullPay ? "cash" : creditorPayMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
+    await logAuditEvent({ tableName: "creditors", recordId: payCreditor.id, action: "payment", newData: { payment_amount: amt, method: creditorPayMethod, new_balance: newBalance }, changedByName: user?.name || "Unknown" });
     setCreditorPayAmount(""); setCreditorPayNotes(""); setCreditorPayMethod("cash");
-    toast.success(fullPay ? "Full payment recorded!" : "Payment recorded");
+    toast.success("Payment recorded");
     fetchCreditorPayments(payCreditor.id);
-    if (newBalance <= 0) {
-      setPayCreditor(null);
-    } else {
-      setPayCreditor({ ...payCreditor, paid_amount: newPaid, balance: newBalance });
-    }
+    // realtime keeps the list in sync — no manual refetch needed
+    setPayCreditor({ ...payCreditor, paid_amount: newPaid, balance: newBalance });
   };
 
   const handleDelete = async (id: string) => {
@@ -663,46 +656,36 @@ const DebtManagementPage = () => {
     );
   };
 
-  const renderDebtCard = (d: Debt) => {
-    const payPercent = d.total_amount > 0 ? Math.min(100, Math.round((d.paid_amount / d.total_amount) * 100)) : 0;
-    return (
-      <div key={d.id} className="border border-border rounded-lg p-3 space-y-2">
-        <div className="flex justify-between items-start">
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-sm truncate">{d.customer_name}</p>
-            <p className="text-xs text-muted-foreground truncate">{d.description}</p>
-            <p className="text-[10px] text-muted-foreground">{format(new Date(d.created_at), "MMM dd, yyyy")}</p>
-          </div>
-          {getStatusBadge(d.status)}
+  const renderDebtCard = (d: Debt) => (
+    <div key={d.id} className="border border-border rounded-lg p-3 space-y-2">
+      <div className="flex justify-between items-start">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm truncate">{d.customer_name}</p>
+          <p className="text-xs text-muted-foreground truncate">{d.description}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
-        </div>
-        {d.status !== "paid" && (
-          <div className="space-y-1">
-            <Progress value={payPercent} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground text-right">{payPercent}% paid</p>
-          </div>
-        )}
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
-            <Clock className="w-3.5 h-3.5" />
-          </Button>
-          {d.status !== "paid" && canPay && (
-            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
-          )}
-          {canEditDebt && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-          )}
-        </div>
+        {getStatusBadge(d.status)}
       </div>
-    );
-  };
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{d.total_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{d.paid_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{d.balance.toLocaleString()}</p></div>
+      </div>
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("debt", d.id, d.customer_name)}>
+          <Clock className="w-3.5 h-3.5" />
+        </Button>
+        {d.status !== "paid" && canPay && (
+          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayDebt(d); fetchPayments(d.id); }}>Pay</Button>
+        )}
+        {canEditDebt && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditDebt(d); setEditName(d.customer_name); setEditDesc(d.description); setEditAmount(String(d.total_amount)); }}><Edit className="w-3.5 h-3.5" /></Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(d.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+        )}
+      </div>
+    </div>
+  );
 
   const renderCreditorRow = (c: Creditor) => (
     <TableRow key={c.id}>
@@ -740,54 +723,44 @@ const DebtManagementPage = () => {
     </TableRow>
   );
 
-  const renderCreditorCard = (c: Creditor) => {
-    const payPercent = c.total_amount > 0 ? Math.min(100, Math.round((c.paid_amount / c.total_amount) * 100)) : 0;
-    return (
-      <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
-        <div className="flex justify-between items-start">
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-sm truncate">{c.customer_name}</p>
-            <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate.toFixed(2)}</p>
-            <p className="text-[10px] text-muted-foreground">{format(new Date(c.created_at), "MMM dd, yyyy")}</p>
-          </div>
-          {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
+  const renderCreditorCard = (c: Creditor) => (
+    <div key={c.id} className="border border-border rounded-lg p-3 space-y-2">
+      <div className="flex justify-between items-start">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-sm truncate">{c.customer_name}</p>
+          <p className="text-xs text-muted-foreground">{c.commodity} — {c.kg} kg @ {symbol}{c.rate.toFixed(2)}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
-        </div>
-        {c.status !== "paid" && (
-          <div className="space-y-1">
-            <Progress value={payPercent} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground text-right">{payPercent}% paid</p>
-          </div>
-        )}
-        <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
-            <Clock className="w-3.5 h-3.5" />
-          </Button>
-          {c.status !== "paid" && canPay && (
-            <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
-          )}
-          {canEditDebt && (
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-              setEditCreditor(c);
-              setEditCreditorName(c.customer_name);
-              setEditCreditorCommodity(c.commodity);
-              setEditCreditorKg(String(c.kg));
-              setEditCreditorRate(String(c.rate));
-              setEditCreditorAmount(String(c.total_amount));
-            }}><Edit className="w-3.5 h-3.5" /></Button>
-          )}
-          {canDelete && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-          )}
-        </div>
+        {c.status === "paid" ? <Badge variant="default" className="text-xs">Paid</Badge> : <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-600"><Users className="w-3 h-3 mr-1" />Creditor</Badge>}
       </div>
-    );
-  };
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div><span className="text-muted-foreground">Amount</span><p className="font-mono font-semibold">{symbol}{c.total_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Paid</span><p className="font-mono text-green-600">{symbol}{c.paid_amount.toLocaleString()}</p></div>
+        <div><span className="text-muted-foreground">Balance</span><p className="font-mono text-destructive font-semibold">{symbol}{c.balance.toLocaleString()}</p></div>
+      </div>
+      <p className="text-[10px] text-muted-foreground">Recorded by: {c.recorded_by_name}</p>
+      <div className="flex gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7" title="History" onClick={() => openHistory("creditor", c.id, c.customer_name)}>
+          <Clock className="w-3.5 h-3.5" />
+        </Button>
+        {c.status !== "paid" && canPay && (
+          <Button variant="outline" size="sm" className="h-7 text-xs flex-1" onClick={() => { setPayCreditor(c); fetchCreditorPayments(c.id); }}>Pay</Button>
+        )}
+        {canEditDebt && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+            setEditCreditor(c);
+            setEditCreditorName(c.customer_name);
+            setEditCreditorCommodity(c.commodity);
+            setEditCreditorKg(String(c.kg));
+            setEditCreditorRate(String(c.rate));
+            setEditCreditorAmount(String(c.total_amount));
+          }}><Edit className="w-3.5 h-3.5" /></Button>
+        )}
+        {canDelete && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteCreditor(c.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+        )}
+      </div>
+    </div>
+  );
 
   const desktopTableHeaders = (
     <TableHeader>
@@ -1166,14 +1139,7 @@ const DebtManagementPage = () => {
             </div>
             <div className="space-y-1"><Label>Paid To</Label><Input value={payToName} onChange={e => setPayToName(e.target.value)} placeholder={payDebt?.customer_name || "Recipient name"} /></div>
             <div className="space-y-1"><Label>Notes</Label><Input value={payNotes} onChange={e => setPayNotes(e.target.value)} placeholder="Optional" /></div>
-            <div className="flex gap-2">
-              <Button onClick={() => handlePayment(false)} className="flex-1">Record Payment</Button>
-              {payDebt && payDebt.balance > 0 && (
-                <Button variant="outline" onClick={() => handlePayment(true)} className="gap-1" title="Pay full remaining balance">
-                  <CheckCircle2 className="w-4 h-4" /> Pay Full
-                </Button>
-              )}
-            </div>
+            <Button onClick={handlePayment} className="w-full">Record Payment</Button>
           </div>
 
           {payments.length > 0 && (
@@ -1229,14 +1195,7 @@ const DebtManagementPage = () => {
               </Select>
             </div>
             <div className="space-y-1"><Label>Notes</Label><Input value={creditorPayNotes} onChange={e => setCreditorPayNotes(e.target.value)} placeholder="Optional" /></div>
-            <div className="flex gap-2">
-              <Button onClick={() => handleCreditorPayment(false)} className="flex-1">Record Payment</Button>
-              {payCreditor && payCreditor.balance > 0 && (
-                <Button variant="outline" onClick={() => handleCreditorPayment(true)} className="gap-1" title="Pay full remaining balance">
-                  <CheckCircle2 className="w-4 h-4" /> Pay Full
-                </Button>
-              )}
-            </div>
+            <Button onClick={handleCreditorPayment} className="w-full">Record Payment</Button>
           </div>
 
           {creditorPayments.length > 0 && (

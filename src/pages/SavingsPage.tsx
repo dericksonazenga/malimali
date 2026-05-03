@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +40,6 @@ interface SavingsTransaction {
 
 const SavingsPage = () => {
   const { user, hasPermission } = useAuth();
-  const { symbol } = useCurrency();
   const canManage = hasPermission("manage_savings");
   const canActOnAccounts = canManage || hasPermission("edit_savings") || hasPermission("withdraw_savings") || hasPermission("delete_savings") || user?.role === "admin";
   const canEditSavings = hasPermission("edit_savings") || user?.role === "admin";
@@ -182,7 +180,7 @@ const SavingsPage = () => {
       changedByName: user?.name || "Unknown",
     });
 
-    toast.success(`Deposited ${symbol}${depositAmount.toLocaleString()} for ${name}`);
+    toast.success(`Deposited ${depositAmount.toLocaleString()} for ${name}`);
     resetForm();
     setShowDepositDialog(false);
     fetchAccounts();
@@ -226,7 +224,7 @@ const SavingsPage = () => {
       changedByName: user?.name || "Unknown",
     });
 
-    toast.success(`Withdrawn ${symbol}${withdrawAmount.toLocaleString()} from ${selectedAccount.customer_name}`);
+    toast.success(`Withdrawn ${withdrawAmount.toLocaleString()} from ${selectedAccount.customer_name}`);
     resetForm();
     setShowWithdrawDialog(false);
     setSelectedAccount(null);
@@ -303,7 +301,7 @@ const SavingsPage = () => {
             <PiggyBank className="w-8 h-8 text-primary" />
             <div>
               <p className="text-xs text-muted-foreground">Total Savings</p>
-              <p className="text-xl font-bold">{symbol}{totalSavings.toLocaleString()}</p>
+              <p className="text-xl font-bold">{totalSavings.toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>
@@ -342,13 +340,13 @@ const SavingsPage = () => {
             ...filtered.map((a, i) => [
               i + 1,
               a.customer_name,
-              `${symbol}${a.balance.toLocaleString()}`,
+              a.balance.toLocaleString(),
               format(new Date(a.updated_at), "yyyy-MM-dd HH:mm"),
             ]),
-            ["", "TOTAL", `${symbol}${totalSavings.toLocaleString()}`, ""],
+            ["", "TOTAL", totalSavings.toLocaleString(), ""],
           ]}
           summary={[
-            `Total Savings: ${symbol}${totalSavings.toLocaleString()}`,
+            `Total Savings: ${totalSavings.toLocaleString()}`,
             `Active Accounts: ${accounts.length}`,
           ]}
         />
@@ -368,7 +366,7 @@ const SavingsPage = () => {
                   </datalist>
                   {customerName && accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase()) && (
                     <p className="text-xs text-primary mt-1">
-                      Existing customer — balance: {symbol}{accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase())!.balance.toLocaleString()}
+                      Existing customer — balance: {accounts.find(a => a.customer_name.toLowerCase() === customerName.toLowerCase())!.balance.toLocaleString()}
                     </p>
                   )}
                 </div>
@@ -421,7 +419,7 @@ const SavingsPage = () => {
                   <TableRow key={a.id}>
                     <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                     <TableCell className="font-medium">{a.customer_name}</TableCell>
-                    <TableCell className="text-right font-semibold">{symbol}{a.balance.toLocaleString()}</TableCell>
+                    <TableCell className="text-right font-semibold">{a.balance.toLocaleString()}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{format(new Date(a.updated_at), "MMM dd, yyyy HH:mm")}</TableCell>
                     <TableCell>
                       <div className="flex justify-center gap-1">
@@ -476,7 +474,7 @@ const SavingsPage = () => {
                     <p className="font-medium">{a.customer_name}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(a.updated_at), "MMM dd, yyyy")}</p>
                   </div>
-                  <p className="font-bold text-lg">{symbol}{a.balance.toLocaleString()}</p>
+                  <p className="font-bold text-lg">{a.balance.toLocaleString()}</p>
                 </div>
                 <div className="flex gap-1">
                   <Button variant="outline" size="sm" className="flex-1 h-7 text-xs" onClick={() => openHistory(a)}>
@@ -514,7 +512,7 @@ const SavingsPage = () => {
       <Dialog open={showWithdrawDialog} onOpenChange={v => { setShowWithdrawDialog(v); if (!v) { resetForm(); setSelectedAccount(null); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Withdraw from {selectedAccount?.customer_name}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Current balance: <strong>{symbol}{selectedAccount?.balance.toLocaleString()}</strong></p>
+          <p className="text-sm text-muted-foreground">Current balance: <strong>{selectedAccount?.balance.toLocaleString()}</strong></p>
           <div className="space-y-3">
             <div>
               <Label>Amount</Label>
@@ -560,7 +558,7 @@ const SavingsPage = () => {
       <Dialog open={showHistoryDialog} onOpenChange={v => { setShowHistoryDialog(v); if (!v) { setSelectedAccount(null); setTransactions([]); } }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Transaction History — {selectedAccount?.customer_name}</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground mb-2">Current balance: <strong>{symbol}{selectedAccount?.balance.toLocaleString()}</strong></p>
+          <p className="text-sm text-muted-foreground mb-2">Current balance: <strong>{selectedAccount?.balance.toLocaleString()}</strong></p>
           {transactions.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-6">No transactions yet</p>
           ) : (
@@ -573,75 +571,47 @@ const SavingsPage = () => {
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Running Balance</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Served By</TableHead>
                       <TableHead>Notes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(() => {
-                      // Compute running balance from oldest to newest, then display newest-first
-                      const sorted = [...transactions].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-                      let running = 0;
-                      const withBalance = sorted.map(tx => {
-                        running += tx.type === "deposit" ? tx.amount : -tx.amount;
-                        return { ...tx, runningBalance: running };
-                      });
-                      withBalance.reverse();
-                      return withBalance.map(tx => (
-                        <TableRow key={tx.id}>
-                          <TableCell className="text-xs whitespace-nowrap">{format(new Date(tx.created_at), "MMM dd, yyyy HH:mm")}</TableCell>
-                          <TableCell>
-                            <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">
-                              {tx.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className={`text-right font-medium ${tx.type === "deposit" ? "text-green-600" : "text-destructive"}`}>
-                            {tx.type === "deposit" ? "+" : "-"}{symbol}{tx.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{symbol}{tx.runningBalance.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm">{tx.served_by_name}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || "—"}</TableCell>
-                        </TableRow>
-                      ));
-                    })()}
+                    {transactions.map(tx => (
+                      <TableRow key={tx.id}>
+                        <TableCell className="text-xs whitespace-nowrap">{format(new Date(tx.created_at), "MMM dd, yyyy HH:mm")}</TableCell>
+                        <TableCell>
+                          <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">
+                            {tx.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{tx.amount.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{tx.served_by_name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">{tx.notes || "—"}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
               {/* Mobile */}
               <div className="md:hidden space-y-2">
-                {(() => {
-                  const sorted = [...transactions].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-                  let running = 0;
-                  const withBalance = sorted.map(tx => {
-                    running += tx.type === "deposit" ? tx.amount : -tx.amount;
-                    return { ...tx, runningBalance: running };
-                  });
-                  withBalance.reverse();
-                  return withBalance.map(tx => (
-                    <div key={tx.id} className="border border-border rounded-lg p-3 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">{tx.type}</Badge>
-                        <span className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, HH:mm")}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className={`text-sm font-medium ${tx.type === "deposit" ? "text-green-600" : "text-destructive"}`}>
-                          {tx.type === "deposit" ? "+" : "-"}{symbol}{tx.amount.toLocaleString()}
-                        </span>
-                        <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Served by: {tx.served_by_name}</span>
-                        <span className="font-mono">Bal: {symbol}{tx.runningBalance.toLocaleString()}</span>
-                      </div>
-                      {tx.notes && <p className="text-xs text-muted-foreground">{tx.notes}</p>}
+                {transactions.map(tx => (
+                  <div key={tx.id} className="border border-border rounded-lg p-3 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <Badge variant={tx.type === "deposit" ? "default" : "destructive"} className="text-xs capitalize">{tx.type}</Badge>
+                      <span className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, HH:mm")}</span>
                     </div>
-                  ));
-                })()}
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">{tx.amount.toLocaleString()}</span>
+                      <Badge variant="outline" className="text-xs capitalize">{tx.payment_method}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Served by: {tx.served_by_name}</p>
+                    {tx.notes && <p className="text-xs text-muted-foreground">{tx.notes}</p>}
+                  </div>
+                ))}
               </div>
             </>
           )}
