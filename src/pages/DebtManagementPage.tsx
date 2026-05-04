@@ -228,7 +228,16 @@ const DebtManagementPage = () => {
         }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Re-fetch when auth session is confirmed (fixes data loss on manual refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        fetchDebts();
+        fetchCreditors();
+      }
+    });
+
+    return () => { supabase.removeChannel(channel); subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchDebts, fetchCreditors, payDebt?.id, payCreditor?.id]);
 
