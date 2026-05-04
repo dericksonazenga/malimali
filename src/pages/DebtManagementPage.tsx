@@ -367,6 +367,14 @@ const DebtManagementPage = () => {
   const saveDebt = async (amt: number, desc?: string) => {
     const name = customerName.trim();
     const statusType: "unpaid" | "money_out" = debtType === "debt" ? "money_out" : "unpaid";
+
+    // Duplicate prevention: same name + same amount within 1 minute
+    const dupeKey = `debt:${normalizeName(name)}:${amt}:${statusType}`;
+    if (isDuplicate(dupeKey)) {
+      toast.error("Duplicate entry blocked — same name & amount was just added. Wait 1 minute to re-enter.");
+      return;
+    }
+
     const existing = findExistingDebt(name, statusType);
     const finalDesc = desc ?? description;
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
