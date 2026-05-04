@@ -111,11 +111,12 @@ const mapSales = (r: any): SalesEntry => ({
 });
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
-  const [agentEntries, setAgentEntries] = useState<AgentEntry[]>([]);
-  const [vipEntries, setVipEntries] = useState<VipEntry[]>([]);
-  const [salesEntries, setSalesEntries] = useState<SalesEntry[]>([]);
-  const [persistentStock, setPersistentStock] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const cached = useRef(loadCache());
+  const [agentEntries, setAgentEntries] = useState<AgentEntry[]>(cached.current?.agentEntries ?? []);
+  const [vipEntries, setVipEntries] = useState<VipEntry[]>(cached.current?.vipEntries ?? []);
+  const [salesEntries, setSalesEntries] = useState<SalesEntry[]>(cached.current?.salesEntries ?? []);
+  const [persistentStock, setPersistentStock] = useState<Record<string, number>>(cached.current?.persistentStock ?? {});
+  const [loading, setLoading] = useState(!cached.current);
 
   const fetchPersistentStock = useCallback(async () => {
     const { data } = await supabase.from("persistent_stock").select("*");
