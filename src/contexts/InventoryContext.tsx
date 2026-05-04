@@ -151,9 +151,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const [agentRes, vipRes, salesRes] = await Promise.all([agentQuery, vipQuery, salesQuery]);
-    if (agentRes.data) setAgentEntries(agentRes.data.map(mapAgent));
-    if (vipRes.data) setVipEntries(vipRes.data.map(mapVip));
-    if (salesRes.data) setSalesEntries(salesRes.data.map(mapSales));
+    const newAgent = agentRes.data ? agentRes.data.map(mapAgent) : [];
+    const newVip = vipRes.data ? vipRes.data.map(mapVip) : [];
+    const newSales = salesRes.data ? salesRes.data.map(mapSales) : [];
+    setAgentEntries(newAgent);
+    setVipEntries(newVip);
+    setSalesEntries(newSales);
     setLoading(false);
   }, []);
 
