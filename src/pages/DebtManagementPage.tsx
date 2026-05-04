@@ -392,6 +392,8 @@ const DebtManagementPage = () => {
       const mergedDesc = finalDesc
         ? (existing.description ? `${existing.description} | + ${finalDesc}` : finalDesc)
         : existing.description;
+      // Optimistic update
+      setDebts((prev) => prev.map((d) => d.id === existing.id ? { ...d, total_amount: newTotal, balance: newBalance, description: mergedDesc, status: newBalance <= 0 ? "paid" : statusType } : d));
       const { error } = await supabase.from("debts").update({
         total_amount: newTotal,
         balance: newBalance,
@@ -399,7 +401,7 @@ const DebtManagementPage = () => {
         status: newBalance <= 0 ? "paid" : statusType,
         updated_at: new Date().toISOString(),
       }).eq("id", existing.id);
-      if (error) { toast.error("Failed to update"); return; }
+      if (error) { toast.error("Failed to update"); fetchDebts(); return; }
       await logAuditEvent({
         tableName: "debts",
         recordId: existing.id,
@@ -410,6 +412,10 @@ const DebtManagementPage = () => {
       });
       toast.success(`Added ${symbol}${amt.toLocaleString()} to ${name}'s ${statusType === "money_out" ? "debt" : "advance"}`);
     } else {
+      // Optimistic insert
+      const tempId = `temp-${crypto.randomUUID()}`;
+      const optimistic: Debt = { id: tempId, customer_name: name, description: finalDesc, total_amount: amt, paid_amount: 0, balance: amt, status: statusType, created_at: new Date().toISOString() };
+      setDebts((prev) => [optimistic, ...prev]);
       const { data, error } = await supabase.from("debts").insert({
         customer_name: name,
         description: finalDesc,
@@ -419,7 +425,8 @@ const DebtManagementPage = () => {
         status: statusType,
         company_id,
       }).select("id").single();
-      if (error) { toast.error("Failed to add"); return; }
+      if (error) { toast.error("Failed to add"); setDebts((prev) => prev.filter((d) => d.id !== tempId)); return; }
+      setDebts((prev) => prev.map((d) => d.id === tempId ? { ...d, id: data.id } : d));
       await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: name, total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
       toast.success("Record added");
     }
