@@ -150,6 +150,18 @@ const DebtManagementPage = () => {
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Track recent submissions to prevent duplicates: key → timestamp
+  const recentSubmissions = useRef<Map<string, number>>(new Map());
+  const DUPLICATE_WINDOW_MS = 60_000; // 1 minute
+
+  const isDuplicate = (key: string): boolean => {
+    const now = Date.now();
+    const last = recentSubmissions.current.get(key);
+    if (last && now - last < DUPLICATE_WINDOW_MS) return true;
+    recentSubmissions.current.set(key, now);
+    return false;
+  };
+
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
       .from("debts")
