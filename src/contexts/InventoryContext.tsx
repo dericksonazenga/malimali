@@ -4,6 +4,34 @@ import { AgentEntry, VipEntry, SalesEntry } from "@/types";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 import { resolveStockCommodity } from "@/constants/specialCommodity";
 
+// ---------- localStorage cache helpers ----------
+const CACHE_KEY = "malimali_inventory_cache";
+const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
+
+interface InventoryCache {
+  agentEntries: AgentEntry[];
+  vipEntries: VipEntry[];
+  salesEntries: SalesEntry[];
+  persistentStock: Record<string, number>;
+  ts: number;
+}
+
+const saveCache = (data: Omit<InventoryCache, "ts">) => {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, ts: Date.now() })); } catch {}
+};
+
+const loadCache = (): Omit<InventoryCache, "ts"> | null => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed: InventoryCache = JSON.parse(raw);
+    if (Date.now() - parsed.ts > CACHE_MAX_AGE) { localStorage.removeItem(CACHE_KEY); return null; }
+    return { agentEntries: parsed.agentEntries, vipEntries: parsed.vipEntries, salesEntries: parsed.salesEntries, persistentStock: parsed.persistentStock };
+  } catch { return null; }
+};
+
+const clearInventoryCache = () => { try { localStorage.removeItem(CACHE_KEY); } catch {} };
+
 interface InventoryContextType {
   agentEntries: AgentEntry[];
   vipEntries: VipEntry[];
