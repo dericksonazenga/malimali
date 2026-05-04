@@ -4,6 +4,34 @@ import { AgentEntry, VipEntry, SalesEntry } from "@/types";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
 import { resolveStockCommodity } from "@/constants/specialCommodity";
 
+// ---------- localStorage cache helpers ----------
+const CACHE_KEY = "malimali_inventory_cache";
+const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
+
+interface InventoryCache {
+  agentEntries: AgentEntry[];
+  vipEntries: VipEntry[];
+  salesEntries: SalesEntry[];
+  persistentStock: Record<string, number>;
+  ts: number;
+}
+
+const saveCache = (data: Omit<InventoryCache, "ts">) => {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, ts: Date.now() })); } catch {}
+};
+
+const loadCache = (): Omit<InventoryCache, "ts"> | null => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed: InventoryCache = JSON.parse(raw);
+    if (Date.now() - parsed.ts > CACHE_MAX_AGE) { localStorage.removeItem(CACHE_KEY); return null; }
+    return { agentEntries: parsed.agentEntries, vipEntries: parsed.vipEntries, salesEntries: parsed.salesEntries, persistentStock: parsed.persistentStock };
+  } catch { return null; }
+};
+
+const clearInventoryCache = () => { try { localStorage.removeItem(CACHE_KEY); } catch {} };
+
 interface InventoryContextType {
   agentEntries: AgentEntry[];
   vipEntries: VipEntry[];
@@ -83,11 +111,12 @@ const mapSales = (r: any): SalesEntry => ({
 });
 
 export const InventoryProvider = ({ children }: { children: ReactNode }) => {
-  const [agentEntries, setAgentEntries] = useState<AgentEntry[]>([]);
-  const [vipEntries, setVipEntries] = useState<VipEntry[]>([]);
-  const [salesEntries, setSalesEntries] = useState<SalesEntry[]>([]);
-  const [persistentStock, setPersistentStock] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const cached = useRef(loadCache());
+  const [agentEntries, setAgentEntries] = useState<AgentEntry[]>(cached.current?.agentEntries ?? []);
+  const [vipEntries, setVipEntries] = useState<VipEntry[]>(cached.current?.vipEntries ?? []);
+  const [salesEntries, setSalesEntries] = useState<SalesEntry[]>(cached.current?.salesEntries ?? []);
+  const [persistentStock, setPersistentStock] = useState<Record<string, number>>(cached.current?.persistentStock ?? {});
+  const [loading, setLoading] = useState(!cached.current);
 
   const fetchPersistentStock = useCallback(async () => {
     const { data } = await supabase.from("persistent_stock").select("*");
@@ -122,9 +151,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const [agentRes, vipRes, salesRes] = await Promise.all([agentQuery, vipQuery, salesQuery]);
-    if (agentRes.data) setAgentEntries(agentRes.data.map(mapAgent));
-    if (vipRes.data) setVipEntries(vipRes.data.map(mapVip));
-    if (salesRes.data) setSalesEntries(salesRes.data.map(mapSales));
+    const newAgent = agentRes.data ? agentRes.data.map(mapAgent) : [];
+    const newVip = vipRes.data ? vipRes.data.map(mapVip) : [];
+    const newSales = salesRes.data ? salesRes.data.map(mapSales) : [];
+    setAgentEntries(newAgent);
+    setVipEntries(newVip);
+    setSalesEntries(newSales);
     setLoading(false);
   }, []);
 
@@ -151,6 +183,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     if (cutoff && row.created_at && row.created_at <= cutoff) return false;
     return true;
   }, []);
+
+  // Persist to localStorage whenever data changes so refreshes are instant
+  useEffect(() => {
+    if (loading) return; // Don't cache initial empty state
+    saveCache({ agentEntries, vipEntries, salesEntries, persistentStock });
+  }, [agentEntries, vipEntries, salesEntries, persistentStock, loading]);
 
   useEffect(() => {
     fetchToday();
@@ -190,6 +228,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
     refreshEodCutoff();
 
+    // Background auto-refresh every 30 seconds as a resilience fallback
+    const bgInterval = setInterval(() => {
+      fetchToday();
+      fetchPersistentStock();
+    }, 30_000);
+
     // Re-fetch when auth state changes (e.g. user signs in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
@@ -202,6 +246,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel);
       subscription.unsubscribe();
+      clearInterval(bgInterval);
     };
   }, [fetchToday, fetchPersistentStock, refreshEodCutoff, matchesView]);
 
@@ -390,6 +435,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     setAgentEntries([]);
     setVipEntries([]);
     setSalesEntries([]);
+    clearInventoryCache();
 
     // Immediately refresh persistent stock so Current Stock stays accurate
     await fetchPersistentStock();

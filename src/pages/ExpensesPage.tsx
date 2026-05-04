@@ -65,7 +65,8 @@ const ExpensesPage = () => {
         );
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const bgInterval = setInterval(fetchExpenses, 30_000);
+    return () => { supabase.removeChannel(channel); clearInterval(bgInterval); };
   }, [fetchExpenses, mapExpense, todayStr]);
 
   useEffect(() => {

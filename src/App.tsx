@@ -91,6 +91,7 @@ const queryClient = new QueryClient({
       staleTime: 60_000,
       refetchOnWindowFocus: false,
       retry: 1,
+      placeholderData: (prev: any) => prev, // Keep stale data visible during refetch — no blank screens
     },
   },
 });

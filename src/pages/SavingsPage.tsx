@@ -120,7 +120,8 @@ const SavingsPage = () => {
         );
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const bgInterval = setInterval(fetchAccounts, 30_000);
+    return () => { supabase.removeChannel(channel); clearInterval(bgInterval); };
   }, [selectedAccount]);
 
   const handleDeposit = async () => {

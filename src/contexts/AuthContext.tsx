@@ -295,6 +295,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCompanyId(null);
     setIsSystemAdmin(false);
     cacheUser(null, null);
+    // Clear inventory cache so next user doesn't see stale data
+    try { localStorage.removeItem("malimali_inventory_cache"); } catch {}
     (await import("@/utils/getCompanyId")).clearCompanyIdCache();
   };
 
