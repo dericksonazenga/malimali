@@ -229,6 +229,12 @@ const DebtManagementPage = () => {
       })
       .subscribe();
 
+    // Background auto-refresh every 30 seconds as resilience fallback
+    const bgInterval = setInterval(() => {
+      fetchDebts();
+      fetchCreditors();
+    }, 30_000);
+
     // Re-fetch when auth session is confirmed (fixes data loss on manual refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
@@ -237,7 +243,7 @@ const DebtManagementPage = () => {
       }
     });
 
-    return () => { supabase.removeChannel(channel); subscription.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); subscription.unsubscribe(); clearInterval(bgInterval); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchDebts, fetchCreditors, payDebt?.id, payCreditor?.id]);
 
