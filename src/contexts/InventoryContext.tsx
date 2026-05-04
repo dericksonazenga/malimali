@@ -435,6 +435,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     setAgentEntries([]);
     setVipEntries([]);
     setSalesEntries([]);
+    clearInventoryCache();
 
     // Immediately refresh persistent stock so Current Stock stays accurate
     await fetchPersistentStock();
