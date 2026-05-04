@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -20,7 +20,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
-import { nameIncludes } from "@/utils/nameMatch";
+import { nameIncludes, normalizeName } from "@/utils/nameMatch";
 
 interface Debt {
   id: string;
@@ -150,6 +150,18 @@ const DebtManagementPage = () => {
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Track recent submissions to prevent duplicates: key → timestamp
+  const recentSubmissions = useRef<Map<string, number>>(new Map());
+  const DUPLICATE_WINDOW_MS = 60_000; // 1 minute
+
+  const isDuplicate = (key: string): boolean => {
+    const now = Date.now();
+    const last = recentSubmissions.current.get(key);
+    if (last && now - last < DUPLICATE_WINDOW_MS) return true;
+    recentSubmissions.current.set(key, now);
+    return false;
+  };
+
   const fetchDebts = useCallback(async () => {
     const { data } = await supabase
       .from("debts")
@@ -216,7 +228,16 @@ const DebtManagementPage = () => {
         }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Re-fetch when auth session is confirmed (fixes data loss on manual refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        fetchDebts();
+        fetchCreditors();
+      }
+    });
+
+    return () => { supabase.removeChannel(channel); subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchDebts, fetchCreditors, payDebt?.id, payCreditor?.id]);
 
@@ -288,6 +309,13 @@ const DebtManagementPage = () => {
     const rate = parseFloat(creditorRate) || 0;
     const amount = kg * rate;
     const name = customerName.trim();
+
+    // Duplicate prevention: same name + commodity + kg within 1 minute
+    const dupeKey = `creditor:${normalizeName(name)}:${creditorCommodity}:${kg}`;
+    if (isDuplicate(dupeKey)) {
+      toast.error("Duplicate entry blocked — same creditor & kg was just added. Wait 1 minute to re-enter.");
+      return;
+    }
     const existing = findExistingCreditor(name, creditorCommodity);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
 
@@ -346,6 +374,14 @@ const DebtManagementPage = () => {
   const saveDebt = async (amt: number, desc?: string) => {
     const name = customerName.trim();
     const statusType: "unpaid" | "money_out" = debtType === "debt" ? "money_out" : "unpaid";
+
+    // Duplicate prevention: same name + same amount within 1 minute
+    const dupeKey = `debt:${normalizeName(name)}:${amt}:${statusType}`;
+    if (isDuplicate(dupeKey)) {
+      toast.error("Duplicate entry blocked — same name & amount was just added. Wait 1 minute to re-enter.");
+      return;
+    }
+
     const existing = findExistingDebt(name, statusType);
     const finalDesc = desc ?? description;
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
@@ -356,6 +392,8 @@ const DebtManagementPage = () => {
       const mergedDesc = finalDesc
         ? (existing.description ? `${existing.description} | + ${finalDesc}` : finalDesc)
         : existing.description;
+      // Optimistic update
+      setDebts((prev) => prev.map((d) => d.id === existing.id ? { ...d, total_amount: newTotal, balance: newBalance, description: mergedDesc, status: newBalance <= 0 ? "paid" : statusType } : d));
       const { error } = await supabase.from("debts").update({
         total_amount: newTotal,
         balance: newBalance,
@@ -363,7 +401,7 @@ const DebtManagementPage = () => {
         status: newBalance <= 0 ? "paid" : statusType,
         updated_at: new Date().toISOString(),
       }).eq("id", existing.id);
-      if (error) { toast.error("Failed to update"); return; }
+      if (error) { toast.error("Failed to update"); fetchDebts(); return; }
       await logAuditEvent({
         tableName: "debts",
         recordId: existing.id,
@@ -374,6 +412,10 @@ const DebtManagementPage = () => {
       });
       toast.success(`Added ${symbol}${amt.toLocaleString()} to ${name}'s ${statusType === "money_out" ? "debt" : "advance"}`);
     } else {
+      // Optimistic insert
+      const tempId = `temp-${crypto.randomUUID()}`;
+      const optimistic: Debt = { id: tempId, customer_name: name, description: finalDesc, total_amount: amt, paid_amount: 0, balance: amt, status: statusType, created_at: new Date().toISOString() };
+      setDebts((prev) => [optimistic, ...prev]);
       const { data, error } = await supabase.from("debts").insert({
         customer_name: name,
         description: finalDesc,
@@ -383,7 +425,8 @@ const DebtManagementPage = () => {
         status: statusType,
         company_id,
       }).select("id").single();
-      if (error) { toast.error("Failed to add"); return; }
+      if (error) { toast.error("Failed to add"); setDebts((prev) => prev.filter((d) => d.id !== tempId)); return; }
+      setDebts((prev) => prev.map((d) => d.id === tempId ? { ...d, id: data.id } : d));
       await logAuditEvent({ tableName: "debts", recordId: data.id, action: "create", newData: { customer_name: name, total_amount: amt, type: debtType }, changedByName: user?.name || "Unknown" });
       toast.success("Record added");
     }

@@ -181,8 +181,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // TOKEN_REFRESHED is the most common event in long-lived sessions and
       // should NOT trigger a profile re-fetch — the user/permissions haven't
       // changed. This avoids unnecessary network work in background tabs.
-      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
+      if (event === "TOKEN_REFRESHED") {
         currentUserIdRef.current = session.user.id;
+        return;
+      }
+
+      // INITIAL_SESSION fires on every page load / refresh. If we already have
+      // a cached user for the same id we skip re-fetching the profile (it was
+      // already hydrated from cache). But we still need to ensure the session
+      // user id ref is set so downstream data fetches succeed with RLS.
+      if (event === "INITIAL_SESSION") {
+        currentUserIdRef.current = session.user.id;
+        // If no cached user or different user, hydrate fully.
+        if (!cached || cached.user.id !== session.user.id) {
+          void fetchProfile(session.user);
+        }
         return;
       }
 
