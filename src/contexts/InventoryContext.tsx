@@ -192,7 +192,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
     // Re-fetch when auth state changes (e.g. user signs in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         refreshEodCutoff();
         fetchToday();
         fetchPersistentStock();
