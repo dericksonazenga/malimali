@@ -184,6 +184,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return true;
   }, []);
 
+  // Persist to localStorage whenever data changes so refreshes are instant
+  useEffect(() => {
+    if (loading) return; // Don't cache initial empty state
+    saveCache({ agentEntries, vipEntries, salesEntries, persistentStock });
+  }, [agentEntries, vipEntries, salesEntries, persistentStock, loading]);
+
   useEffect(() => {
     fetchToday();
     fetchPersistentStock();
@@ -222,6 +228,12 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
 
     refreshEodCutoff();
 
+    // Background auto-refresh every 30 seconds as a resilience fallback
+    const bgInterval = setInterval(() => {
+      fetchToday();
+      fetchPersistentStock();
+    }, 30_000);
+
     // Re-fetch when auth state changes (e.g. user signs in)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
@@ -234,6 +246,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel);
       subscription.unsubscribe();
+      clearInterval(bgInterval);
     };
   }, [fetchToday, fetchPersistentStock, refreshEodCutoff, matchesView]);
 
