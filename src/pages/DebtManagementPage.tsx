@@ -309,6 +309,13 @@ const DebtManagementPage = () => {
     const rate = parseFloat(creditorRate) || 0;
     const amount = kg * rate;
     const name = customerName.trim();
+
+    // Duplicate prevention: same name + commodity + kg within 1 minute
+    const dupeKey = `creditor:${normalizeName(name)}:${creditorCommodity}:${kg}`;
+    if (isDuplicate(dupeKey)) {
+      toast.error("Duplicate entry blocked — same creditor & kg was just added. Wait 1 minute to re-enter.");
+      return;
+    }
     const existing = findExistingCreditor(name, creditorCommodity);
     const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
 
