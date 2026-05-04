@@ -20,7 +20,7 @@ import AuditLogViewer from "@/components/AuditLogViewer";
 import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { applyRealtimePayload } from "@/utils/applyRealtimePayload";
-import { nameIncludes } from "@/utils/nameMatch";
+import { nameIncludes, normalizeName } from "@/utils/nameMatch";
 
 interface Debt {
   id: string;
