@@ -263,6 +263,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       actual_weight: entry.actualWeight,
       rate: entry.rate,
       amount: entry.amount,
+      date: today(),
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
     }).select().single();
@@ -288,6 +289,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       actual_weight: entry.actualWeight,
       rate: entry.rate,
       amount: entry.amount,
+      date: today(),
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
     }).select().single();
@@ -317,6 +319,7 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
       exchange_commodity: entry.exchangeCommodity || null,
       exchange_weight: entry.exchangeWeight || null,
       exchange_fee: entry.exchangeFee || 0,
+      date: today(),
       created_by: (await supabase.auth.getUser()).data.user?.id,
       company_id,
     }).select().single();
