@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, TrendingUp, TrendingDown, Wrench, Trash2, History } from "lucide-react";
+import { Package, TrendingUp, TrendingDown, Wrench, Trash2, History, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
@@ -14,6 +14,17 @@ import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
 import { namesEqual, normalizeName } from "@/utils/nameMatch";
 import { resolveStockCommodity, isSpecialCommodity } from "@/constants/specialCommodity";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AdjustmentLog {
   id: string;
