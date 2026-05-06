@@ -124,7 +124,8 @@ const InventoryPage = () => {
         // Special sales physically deduct from Heavy — route via resolveStockCommodity.
         const dailyOut = salesEntries.filter((e) => !e.isExchange && namesEqual(resolveStockCommodity(e.commodity), c.name)).reduce((s, e) => s + e.weight, 0);
         const persistent = stockMap[normalizeName(c.name)] || 0;
-        const current = persistent + dailyIn - dailyOut;
+        // Current Stock = only the carried-over (persistent) balance; daily in/out are informational until EOD
+        const current = persistent;
         return { name: c.name, persistent, stockIn: dailyIn, stockOut: dailyOut, current: Math.max(0, current) };
       });
   }, [commodities, agentEntries, vipEntries, salesEntries, persistentStock]);
