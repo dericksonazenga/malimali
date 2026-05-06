@@ -119,6 +119,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(!cached.current);
 
   const fetchPersistentStock = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     const { data } = await supabase.from("persistent_stock").select("*");
     if (data) {
       const stock: Record<string, number> = {};
