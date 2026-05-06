@@ -6,7 +6,7 @@ import { resolveStockCommodity } from "@/constants/specialCommodity";
 
 // ---------- localStorage cache helpers ----------
 const CACHE_KEY = "malimali_inventory_cache";
-const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours — cache is just a visual placeholder until fresh DB data arrives
 
 interface InventoryCache {
   agentEntries: AgentEntry[];
@@ -119,6 +119,8 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(!cached.current);
 
   const fetchPersistentStock = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
     const { data } = await supabase.from("persistent_stock").select("*");
     if (data) {
       const stock: Record<string, number> = {};
@@ -128,6 +130,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchToday = useCallback(async () => {
+    // Guard: skip fetch if no authenticated session yet — RLS would return empty results
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     const d = today();
 
     // Check if EOD was triggered today — only show entries created after the last trigger

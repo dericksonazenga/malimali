@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, TrendingUp, TrendingDown, Wrench, Trash2, History } from "lucide-react";
+import { Package, TrendingUp, TrendingDown, Wrench, Trash2, History, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StockAdjustmentDialog from "@/components/StockAdjustmentDialog";
@@ -14,6 +14,17 @@ import PDFDownloadButton from "@/components/PDFDownloadButton";
 import { format } from "date-fns";
 import { namesEqual, normalizeName } from "@/utils/nameMatch";
 import { resolveStockCommodity, isSpecialCommodity } from "@/constants/specialCommodity";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AdjustmentLog {
   id: string;
@@ -28,12 +39,31 @@ interface AdjustmentLog {
 
 const InventoryPage = () => {
   const { commodities } = useCommodities();
-  const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
+  const { agentEntries, vipEntries, salesEntries, persistentStock, clearAll } = useInventory();
   const { hasPermission, user } = useAuth();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustments, setAdjustments] = useState<AdjustmentLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [eodRunning, setEodRunning] = useState(false);
 
+  const handleEndOfDay = async () => {
+    setEodRunning(true);
+    try {
+      await clearAll();
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase.from("end_of_day_log").insert({
+        date: new Date().toISOString().split("T")[0],
+        triggered_by: authUser?.id,
+        company_id,
+      });
+      toast.success("End of Day completed — stock carried over.");
+    } catch (err: any) {
+      toast.error("End of Day failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setEodRunning(false);
+    }
+  };
   const fetchAdjustments = useCallback(async () => {
     const { data } = await supabase
       .from("stock_adjustments")
@@ -134,6 +164,29 @@ const InventoryPage = () => {
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setAdjustOpen(true)}>
                   <Wrench className="w-4 h-4" /> Adjust Stock
                 </Button>
+              )}
+              {hasPermission("end_of_day") && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-2" disabled={eodRunning}>
+                      <Moon className="w-4 h-4" /> End of Day
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>End of Day</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will carry over today's stock into the persistent balance and clear the daily entries. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEndOfDay} disabled={eodRunning}>
+                        {eodRunning ? "Processing…" : "Confirm"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
           </CardTitle>
