@@ -128,6 +128,10 @@ export const InventoryProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchToday = useCallback(async () => {
+    // Guard: skip fetch if no authenticated session yet — RLS would return empty results
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
     const d = today();
 
     // Check if EOD was triggered today — only show entries created after the last trigger
