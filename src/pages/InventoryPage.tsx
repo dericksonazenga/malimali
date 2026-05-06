@@ -39,12 +39,31 @@ interface AdjustmentLog {
 
 const InventoryPage = () => {
   const { commodities } = useCommodities();
-  const { agentEntries, vipEntries, salesEntries, persistentStock } = useInventory();
+  const { agentEntries, vipEntries, salesEntries, persistentStock, clearAll } = useInventory();
   const { hasPermission, user } = useAuth();
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustments, setAdjustments] = useState<AdjustmentLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [eodRunning, setEodRunning] = useState(false);
 
+  const handleEndOfDay = async () => {
+    setEodRunning(true);
+    try {
+      await clearAll();
+      const company_id = await (await import("@/utils/getCompanyId")).getCompanyId();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase.from("end_of_day_log").insert({
+        date: new Date().toISOString().split("T")[0],
+        triggered_by: authUser?.id,
+        company_id,
+      });
+      toast.success("End of Day completed — stock carried over.");
+    } catch (err: any) {
+      toast.error("End of Day failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setEodRunning(false);
+    }
+  };
   const fetchAdjustments = useCallback(async () => {
     const { data } = await supabase
       .from("stock_adjustments")
