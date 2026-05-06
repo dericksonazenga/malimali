@@ -165,6 +165,29 @@ const InventoryPage = () => {
                   <Wrench className="w-4 h-4" /> Adjust Stock
                 </Button>
               )}
+              {hasPermission("end_of_day") && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" className="gap-2" disabled={eodRunning}>
+                      <Moon className="w-4 h-4" /> End of Day
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>End of Day</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will carry over today's stock into the persistent balance and clear the daily entries. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEndOfDay} disabled={eodRunning}>
+                        {eodRunning ? "Processing…" : "Confirm"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </CardTitle>
         </CardHeader>
